@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Build the bundle and patch an app with it. The patched APK goes to $WORK/out/.
+# Usage: bin/patch <app> [version] [--no-build] [--install[=SERIAL]] [-- <morphe patch options>]
+# Morphe options, for example: -e "Patch name" (enable), -d "Patch name" (disable), --exclusive, -f
+source "$(dirname "$0")/lib/common.sh"
+
+slug="" version="" build=1 install=() extra=()
+while (($#)); do
+    case "$1" in
+        --no-build) build="" ;;
+        --install) install=(--install) ;;
+        --install=*) install=("--install=${1#--install=}") ;;
+        --) shift; extra=("$@"); break ;;
+        -*) die "unknown option $1 (Morphe options go after --)" ;;
+        *) if [[ -z "$slug" ]]; then slug="$1"; else version="$1"; fi ;;
+    esac
+    shift
+done
+[[ -n "$slug" ]] || die "usage: bin/patch <app> [version] [--no-build] [--install[=SERIAL]] [-- <morphe options>]"
+[[ -f "$MORPHE_DESKTOP_JAR" ]] || die "Morphe Desktop missing: run bin/bootstrap"
+version="$(app_version "$slug" "$version")"
+input="$(app_input "$slug" "$version")"
+
+if [[ -n "$build" ]]; then
+    mpp="$("$ROOT/bin/build")"
+else
+    mpp="$(latest_mpp)"
+    [[ -n "$mpp" ]] || die "no built bundle: run without --no-build"
+fi
+
+mkdir -p "$WORK/out" "$WORK/tmp" "$MORPHE_DATA_DIR"
+out="$WORK/out/$slug-$version-patched.apk"
+note "patching $(basename "$input") with $(basename "$mpp")"
+java -jar "$MORPHE_DESKTOP_JAR" patch "${install[@]}" \
+    -p "$mpp" -o "$out" -t "$WORK/tmp" "${extra[@]}" "$input"
+echo "$out"

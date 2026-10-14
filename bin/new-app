@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Add an app to the bundle: patches/.../<slug>/shared/Constants.kt and apks/<slug>/.
+# Usage: bin/new-app <slug> "<Launcher name>" <package> [0xRRGGBB icon color]
+source "$(dirname "$0")/lib/common.sh"
+
+slug="${1:-}" name="${2:-}" package="${3:-}" color="${4:-0x888888}"
+[[ "$slug" =~ ^[a-z][a-z0-9]*$ && -n "$name" && "$package" == *.* ]] ||
+    die "usage: bin/new-app <slug> \"<Launcher name>\" <package> [0xRRGGBB]  (slug: lowercase letters and digits)"
+[[ "$color" =~ ^0x[0-9A-Fa-f]{6}$ ]] || die "icon color must look like 0x53FC18"
+dir="$PATCHES_SRC/$slug/shared"
+[[ ! -e "$dir/Constants.kt" ]] || die "$slug already exists"
+if existing="$(slug_for_package "$package")"; then die "$package is already app '$existing'"; fi
+
+mkdir -p "$dir" "$ROOT/apks/$slug"
+cat >"$dir/Constants.kt" <<KT
+package io.github.jordanwoodson.patches.$slug.shared
+
+import app.morphe.patcher.patch.ApkFileType
+import app.morphe.patcher.patch.AppTarget
+import app.morphe.patcher.patch.Compatibility
+
+object Constants {
+    val COMPATIBILITY_$(tr a-z A-Z <<<"$slug") = Compatibility(
+        name = "$name",
+        packageName = "$package",
+        // Match the file type APKMirror/Uptodown serve, or Manager won't link users there.
+        apkFileType = ApkFileType.APKM,
+        appIconColor = $color,
+        // Original signing cert (apksigner "certificate SHA-256 digest"). bin/apk-add pins it.
+        signatures = null,
+        targets = listOf(
+            // Replace with the version you develop and test against.
+            AppTarget(version = null, isExperimental = true),
+        ),
+    )
+}
+KT
+note "created ${dir#"$ROOT"/}/Constants.kt. Next: download it from APKMirror, Google Play or Uptodown, then bin/apk-add <file>"

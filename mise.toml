@@ -1,0 +1,7 @@
+# Analysis tools for this workspace. `mise install` (or bin/bootstrap) fetches them.
+# The JDK is not managed here: builds use $JAVA_HOME (~/.local/opt/jdk-21 on the server).
+[tools]
+"github:skylot/jadx" = "1.5.6"
+"github:EFForg/apkeep" = "1.1.0"
+# Kick is React Native: its logic is Hermes bytecode in assets/index.android.bundle.
+"pipx:hermes-dec" = "0.1.7"

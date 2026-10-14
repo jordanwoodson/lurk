@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Clone or update Morphe's own repos into $WORK/refs for API docs and examples:
+# patcher (docs/), patches-library (shared helpers), patches (real-world patches), template.
+source "$(dirname "$0")/lib/common.sh"
+
+mkdir -p "$WORK/refs"
+for repo in morphe-patcher morphe-patches-library morphe-patches morphe-patches-template; do
+    dir="$WORK/refs/$repo"
+    if [[ -d "$dir/.git" ]]; then
+        git -C "$dir" pull -q --ff-only
+    else
+        git clone -q --depth 1 "https://github.com/MorpheApp/$repo.git" "$dir"
+    fi
+    echo "$dir"
+done
