@@ -72,3 +72,19 @@ Artifacts are in `~/scratch/morphe/out/`: `rumble-3.21.0.mpp`,
 `rumble-3.21.0-patched.apk` and the Morphe result JSON. Build and verification logs
 are in `~/scratch/morphe/build-rumble/`; the launch screenshot is in
 `~/scratch/morphe/shots/rumble-premium-launch.png`.
+
+## Lurk icon
+
+`Lurk icon` replaces the launcher icon with `assets/rumble-icon.png`. Rumble 3.21.0 builds its
+adaptive icon from `drawable/ic_launcher_background.xml` and `drawable/ic_launcher_foreground.xml`
+(`mipmap-anydpi/ic_launcher[_round].xml`) and ships `.webp` fallbacks per density. The patch
+overwrites those files under the same names, so resource IDs and the manifest stay untouched, and
+adds a themed (monochrome) layer. It fails if any of the files is missing in a new version.
+
+Regenerate the resources after changing the artwork with
+`bin/app-icon rumble <artwork.png>`.
+
+Validated on 2026-10-14 with a local build: Morphe Desktop 1.18.1 applies `Lurk icon` and
+`Unlock Premium` to 3.21.0; the launcher and the Android 16 splash screen show the new icon and the
+app cold-launches to its home feed.
+
