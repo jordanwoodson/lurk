@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.5.0...v1.6.0) (2026-10-14)
+
+### ✨ New Features
+
+* **twitch:** add thirteen patches with native and Hermes runtime controls ([224042e](https://github.com/jordanwoodson/lurk-morphe-patches/commit/224042ee212146d7d0321edc32cbbf876828b46f))
+
 ## [1.6.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.5.0...v1.6.0-dev.1) (2026-10-14)
 
 ### ✨ New Features
