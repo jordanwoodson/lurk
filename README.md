@@ -100,6 +100,9 @@ bin/emu shot             # screenshot → ~/scratch/morphe/shots/
 
 ### Writing a patch
 
+The [Rumble 3.21.0 notes](docs/rumble.md) cover the premium patch, sign-in requirement
+and its Android integration test.
+
 One folder per feature under the app, with the patch and its fingerprints:
 
 ```
