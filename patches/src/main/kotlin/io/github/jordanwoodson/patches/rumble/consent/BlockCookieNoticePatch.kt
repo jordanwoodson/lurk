@@ -1,9 +1,15 @@
 package io.github.jordanwoodson.patches.rumble.consent
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
+import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
+import io.github.jordanwoodson.patches.shared.settings.Section
+import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
+import io.github.jordanwoodson.patches.shared.settings.addInstructionsIfEnabled
+
+private const val KEY = "block_cookie_notice"
 
 @Suppress("unused")
 val blockCookieNoticePatch = bytecodePatch(
@@ -14,6 +20,7 @@ val blockCookieNoticePatch = bytecodePatch(
         "Settings > Data Consent no longer opens.",
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
+    dependsOn(settingsPatch)
 
     execute {
         // Rumble calls load() on every resume. Where no privacy law applies, Ketch records consent to
@@ -27,13 +34,22 @@ val blockCookieNoticePatch = bytecodePatch(
                     "${fingerprint.javaClass.simpleName}. This patch targets 3.21.0; " +
                     "recheck the Ketch SDK before updating compatibility.")
 
-            match.method.addInstructions(
-                0,
+            match.method.addInstructionsIfEnabled(
+                KEY,
                 """
                     const/4 v0, 0x0
                     return v0
                 """,
             )
         }
+
+        rumbleSettings.add(
+            SwitchSetting(
+                KEY,
+                "Block cookie notice",
+                "No Ketch consent notice and no consent recorded. Push notifications need consent.",
+                Section.PRIVACY,
+            ),
+        )
     }
 }

@@ -28,10 +28,13 @@ Tap **Add to Morphe** on an Android phone with [Morphe Manager](https://morphe.s
 a computer it shows a QR code to scan with the phone. Releases from the `dev` branch are pre-releases:
 turn on pre-releases for this source in Manager to get them.
 
+Patched apps get a **Lurk** settings screen (Rumble: Settings > App info > Lurk, or long-press the app
+icon > Lurk settings) that turns the included patches off and on without patching again.
+
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.3.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.3.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
+> **[v1.4.0-dev.2](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.4.0-dev.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
 <details open>
 <summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;14 patches</summary>
 <br>

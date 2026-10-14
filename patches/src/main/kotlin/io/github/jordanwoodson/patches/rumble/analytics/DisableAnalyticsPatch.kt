@@ -1,12 +1,10 @@
 package io.github.jordanwoodson.patches.rumble.analytics
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
-import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.booleanOption
 import app.morphe.patcher.patch.bytecodePatch
-import app.morphe.patcher.util.smali.ExternalLabel
+import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
+import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.kotlinObject
 import io.github.jordanwoodson.patches.rumble.shared.newInstanceTypes
@@ -14,8 +12,14 @@ import io.github.jordanwoodson.patches.rumble.shared.parameters
 import io.github.jordanwoodson.patches.rumble.shared.singleMethod
 import io.github.jordanwoodson.patches.rumble.shared.staticFieldReads
 import io.github.jordanwoodson.patches.rumble.shared.unitReference
+import io.github.jordanwoodson.patches.shared.settings.Section
+import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
+import io.github.jordanwoodson.patches.shared.settings.addInstructionsIfEnabled
+import io.github.jordanwoodson.patches.shared.settings.isEnabled
 
 private const val STRING = "Ljava/lang/String;"
+private const val KEY = "disable_analytics"
+private const val KEEP_WATCH_PROGRESS_KEY = "keep_watch_progress"
 
 @Suppress("unused")
 val disableAnalyticsPatch = bytecodePatch(
@@ -26,13 +30,14 @@ val disableAnalyticsPatch = bytecodePatch(
         "unless watch progress is kept.",
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
+    dependsOn(settingsPatch)
 
     val keepWatchProgress by booleanOption(
         key = "keepWatchProgress",
         default = false,
         title = "Keep watch progress",
         description = "Keep sending watch progress (video, position and player state). Rumble may use it for " +
-            "your watch history and for creators' view counts.",
+            "your watch history and for creators' view counts. Can be changed later in Settings > Lurk.",
     )
 
     execute {
@@ -62,46 +67,59 @@ val disableAnalyticsPatch = bytecodePatch(
             "Success",
             among = upload.methods.flatMap { it.staticFieldReads() }.map { it.definingClass }.toSet(),
         )
-        val skip = """
-            sget-object v0, $success
-            return-object v0
-        """
+        val watchProgress = WatchProgressEventToStringFingerprint.matchAllOrNull()?.singleOrNull()?.classDef?.type
+            ?: throw PatchException("Rumble: expected exactly one WatchProgressEvent class")
 
-        if (keepWatchProgress == true) {
-            // Rumble sends watch progress in its own uploads; let a list through when it holds any.
-            val watchProgress = WatchProgressEventToStringFingerprint.matchAllOrNull()?.singleOrNull()?.classDef?.type
-                ?: throw PatchException("Rumble: expected exactly one WatchProgressEvent class")
-            sendEvents.addInstructionsWithLabels(
-                0,
-                """
-                    invoke-interface { p1 }, Ljava/util/List;->iterator()Ljava/util/Iterator;
-                    move-result-object v0
-                    :next
-                    invoke-interface { v0 }, Ljava/util/Iterator;->hasNext()Z
-                    move-result v1
-                    if-eqz v1, :skip
-                    invoke-interface { v0 }, Ljava/util/Iterator;->next()Ljava/lang/Object;
-                    move-result-object v1
-                    instance-of v1, v1, $watchProgress
-                    if-nez v1, :send
-                    goto :next
-                    :skip
-                    $skip
-                """,
-                ExternalLabel("send", sendEvents.getInstruction(0)),
-            )
-        } else {
-            sendEvents.addInstructions(0, skip)
-        }
+        // Rumble sends watch progress in its own uploads. While it's kept, let a list through when it
+        // holds any.
+        sendEvents.addInstructionsIfEnabled(
+            KEY,
+            """
+                ${isEnabled(KEEP_WATCH_PROGRESS_KEY, "v0")}
+                if-eqz v0, :skip
+                invoke-interface { p1 }, Ljava/util/List;->iterator()Ljava/util/Iterator;
+                move-result-object v0
+                :next
+                invoke-interface { v0 }, Ljava/util/Iterator;->hasNext()Z
+                move-result v1
+                if-eqz v1, :skip
+                invoke-interface { v0 }, Ljava/util/Iterator;->next()Ljava/lang/Object;
+                move-result-object v1
+                instance-of v1, v1, $watchProgress
+                if-nez v1, :lurk_off
+                goto :next
+                :skip
+                sget-object v0, $success
+                return-object v0
+            """,
+            locals = 2,
+        )
 
         listOf(sendSearchClick, sendDebugEvent).forEach { method ->
-            method.addInstructions(
-                0,
+            method.addInstructionsIfEnabled(
+                KEY,
                 """
                     sget-object v0, ${method.unitReference()}
                     return-object v0
                 """,
             )
         }
+
+        rumbleSettings.add(
+            SwitchSetting(
+                KEY,
+                "Disable analytics",
+                "Stops Rumble's own event uploads to e.rumble.com and its debug log.",
+                Section.PRIVACY,
+            ),
+            SwitchSetting(
+                KEEP_WATCH_PROGRESS_KEY,
+                "Keep watch progress",
+                "Still send watch progress, which Rumble may use for your watch history.",
+                Section.PRIVACY,
+                default = keepWatchProgress == true,
+                parent = KEY,
+            ),
+        )
     }
 }

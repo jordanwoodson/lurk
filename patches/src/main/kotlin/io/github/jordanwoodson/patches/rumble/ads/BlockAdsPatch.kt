@@ -1,15 +1,21 @@
 package io.github.jordanwoodson.patches.rumble.ads
 
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
+import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.kotlinObject
 import io.github.jordanwoodson.patches.rumble.shared.parameters
 import io.github.jordanwoodson.patches.rumble.shared.singleMethod
 import io.github.jordanwoodson.patches.rumble.shared.staticFieldReads
 import io.github.jordanwoodson.patches.rumble.shared.unitReference
+import io.github.jordanwoodson.patches.shared.settings.Section
+import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
+import io.github.jordanwoodson.patches.shared.settings.addInstructionsIfEnabled
+
+private const val KEY = "block_ads"
 
 @Suppress("unused")
 val blockAdsPatch = bytecodePatch(
@@ -19,6 +25,7 @@ val blockAdsPatch = bytecodePatch(
         "advertising ID, and no ad or Boosted video impressions or clicks are reported.",
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
+    dependsOn(settingsPatch)
 
     execute {
         val useCase = VideoAdUseCaseFingerprint.matchAllOrNull()?.singleOrNull()
@@ -51,8 +58,8 @@ val blockAdsPatch = bytecodePatch(
             sget-object v0, ${kotlinObject(name)}
             return-object v0
         """
-        fetchVideoAds.addInstructions(0, returnObject("EmptyVideoAdList"))
-        fetchDisplayAds.forEach { it.addInstructions(0, returnObject("WaitingForAds")) }
+        fetchVideoAds.addInstructionsIfEnabled(KEY, returnObject("EmptyVideoAdList"))
+        fetchDisplayAds.forEach { it.addInstructionsIfEnabled(KEY, returnObject("WaitingForAds")) }
 
         // reportImpression(url): the pixel Boosted (promoted) videos in feeds and ads fire when shown
         // (d4.ads.rmbl.ws). sendAdEvents(urls, time): click and progress beacons. Both report success.
@@ -62,8 +69,8 @@ val blockAdsPatch = bytecodePatch(
         val sendAdEvents = repository.singleMethod("ad event report") {
             it.parameters().dropLast(1) == listOf("Ljava/util/List;", "J")
         }
-        reportImpression.addInstructions(
-            0,
+        reportImpression.addInstructionsIfEnabled(
+            KEY,
             """
                 sget-object v0, ${reportImpression.unitReference()}
                 return-object v0
@@ -71,12 +78,16 @@ val blockAdsPatch = bytecodePatch(
         )
         val eventsSent = sendAdEvents.staticFieldReads().singleOrNull { it.type == it.definingClass }
             ?: throw PatchException("Rumble: ad event report has no single success object")
-        sendAdEvents.addInstructions(
-            0,
+        sendAdEvents.addInstructionsIfEnabled(
+            KEY,
             """
                 sget-object v0, $eventsSent
                 return-object v0
             """,
+        )
+
+        rumbleSettings.add(
+            SwitchSetting(KEY, "Block ads", "Video, feed and video page ads, and ad impression reports.", Section.PRIVACY),
         )
     }
 }
