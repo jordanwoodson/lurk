@@ -1,14 +1,31 @@
-# Jordan's Morphe Patches
+<p align="center">
+  <img src="patches-bundle.png" width="128" alt="">
+</p>
 
-Privacy-focused [Morphe](https://morphe.software) patches for streaming apps: Twitch, Kick and Rumble
-to start, more apps later. This repo is both the patch bundle and the workspace for building it.
+<h1 align="center">Lurk</h1>
+
+<p align="center">
+  <b>Morphe privacy patches for Twitch, Kick and Rumble.</b><br>
+  Watch the stream. Skip the tracking.
+</p>
+
+<p align="center">
+  <a href="https://morphe.software/add-source?github=jordanwoodson/lurk&name=Lurk"><img src="https://img.shields.io/badge/Add_to_Morphe-FFC247?style=for-the-badge&logo=android&logoColor=0E1016" alt="Add to Morphe"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/jordanwoodson/lurk/releases/latest"><img src="https://img.shields.io/github/v/release/jordanwoodson/lurk?label=release&color=FFC247" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
+</p>
+
+Lurk is a set of privacy-focused patches for streaming apps, applied with [Morphe](https://morphe.software):
+Twitch, Kick and Rumble to start, more apps later. This repo is both the patch bundle and the workspace
+for building it. Lurk has no connection to Twitch, Kick, Rumble or the Morphe project.
 
 ### How to use these patches
 
-[![Add to Morphe](https://img.shields.io/badge/Add_to_Morphe-1E5AA8?style=for-the-badge&logo=android&logoColor=white)](https://morphe.software/add-source?github=jordanwoodson/morphe&name=Jordan%27s%20Morphe%20Patches)
-
-Tap the button on an Android phone with [Morphe Manager](https://morphe.software) installed; on a
-computer it shows a QR code to scan with the phone. Releases from the `dev` branch are pre-releases:
+Tap **Add to Morphe** on an Android phone with [Morphe Manager](https://morphe.software) installed; on
+a computer it shows a QR code to scan with the phone. Releases from the `dev` branch are pre-releases:
 turn on pre-releases for this source in Manager to get them.
 
 ## 🩹 Patches list
@@ -58,6 +75,7 @@ gh auth refresh -h github.com -s read:packages
 | `patches/src/main/kotlin/io/github/jordanwoodson/patches/<app>/` | Patches for one app. `shared/Constants.kt` holds its package, target versions and pinned signing cert. |
 | `patches/.../patches/shared/` | Code shared across apps. |
 | `extensions/shared/` | Java code injected into patched apps (`extensions/shared.mpe`). Add `extensions/<app>/` when an app needs its own. |
+| `assets/icon.svg` | The Lurk icon. `patches-bundle.png` (Manager's icon for this source) is rendered from it: `mise exec aqua:linebender/resvg@0.47.0 -- resvg -w 512 -h 512 assets/icon.svg patches-bundle.png`. |
 | `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
 | `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
 | `~/scratch/morphe/` | Decompiled code, patched APKs, the test emulator, reference repos. Regenerable. |
@@ -101,7 +119,7 @@ bin/decompile rumble     # jadx Java, apktool smali, Hermes disassembly → ~/sc
 bin/patch rumble         # build the bundle, patch the newest stored version → ~/scratch/morphe/out/
 bin/emu start            # headless Android 16 emulator (emulator-5580)
 bin/patch rumble --no-build --install=emulator-5580
-adb -s emulator-5580 logcat -s jw-morphe    # Logger output from patched code
+adb -s emulator-5580 logcat -s lurk    # Logger output from patched code
 bin/emu shot             # screenshot → ~/scratch/morphe/shots/
 ```
 
