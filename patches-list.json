@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.4.0",
+  "version": "1.5.0-dev.1",
   "patches": [
     {
       "name": "Block ads",
@@ -59,6 +59,72 @@
       "options": []
     },
     {
+      "name": "Bypass VOD ad sessions",
+      "description": "Experimental: uses the original VOD URL instead of requesting a separate ad-session manifest. Does not remove ads stitched into live streams. Enable in Lurk settings after patching.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Change app name",
+      "description": "Changes Kick's name in the launcher and Android settings.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "appName",
+          "title": "App name",
+          "description": "The name to show.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "Kick Lurk",
+          "values": null
+        }
+      ]
+    },
+    {
       "name": "Change app name",
       "description": "Changes the name shown under Rumble's launcher icon and in Android's settings.",
       "default": false,
@@ -101,6 +167,34 @@
     },
     {
       "name": "Clean share links",
+      "description": "Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Clean share links",
       "description": "Removes everything after the ? from Rumble links before they are shared, so tracking tags such as e9s (where you found the video) can't go out with them. Rumble 3.21.0 shares clean links; this keeps them clean if the server starts adding tags.",
       "default": true,
       "category": null,
@@ -126,6 +220,44 @@
         }
       ],
       "options": []
+    },
+    {
+      "name": "Clone app",
+      "description": "Installs Kick under another package name alongside the original, with separate sign-in and settings. Sharing sign-in with Kick's broadcaster app may not work after re-signing.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "packageName",
+          "title": "Package name",
+          "description": "A unique package name for this install.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "com.kick.mobile.lurk",
+          "values": null
+        }
+      ]
     },
     {
       "name": "Clone app",
@@ -163,6 +295,50 @@
           "default": "com.rumble.battles.lurk",
           "values": {
             "Rumble (Lurk)": "com.rumble.battles.lurk"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Default video quality",
+      "description": "Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "quality",
+          "title": "Default quality ceiling",
+          "description": "Adaptive playback ceiling. Repatch to change this height.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "1080",
+          "values": {
+            "1080p": "1080",
+            "720p": "720",
+            "480p": "480",
+            "360p": "360",
+            "240p": "240"
           }
         }
       ]
@@ -215,6 +391,34 @@
     },
     {
       "name": "Disable analytics",
+      "description": "Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Disable analytics",
       "description": "Stops Rumble's own analytics, which it sends whatever the consent setting: clicks, impressions, searches, watch progress and player state, with your user ID, username, advertising ID and AppsFlyer ID, to e.rumble.com and its debug log. Signed-in watch history may stop updating unless watch progress is kept.",
       "default": true,
       "category": null,
@@ -250,6 +454,34 @@
           "values": null
         }
       ]
+    },
+    {
+      "name": "Disable autoplay",
+      "description": "Starts Kick's feed previews switched off. Existing preferences and Kick's own autoplay switch keep working. Does not change intentionally opened streams.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
     },
     {
       "name": "Disable autoplay",
@@ -297,6 +529,62 @@
           "values": null
         }
       ]
+    },
+    {
+      "name": "Hide Clips",
+      "description": "Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Hide KICKs tipping",
+      "description": "Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
     },
     {
       "name": "Hide Premium upsells",
@@ -355,6 +643,34 @@
       "options": []
     },
     {
+      "name": "Hide subscription upsells",
+      "description": "Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hide tipping and Rants",
       "description": "Hides the Tip buttons on channels, videos and Shorts, Rants (paid live chat messages) and paying with Rumble Wallet. Rants other viewers send still show.",
       "default": false,
@@ -384,6 +700,34 @@
     },
     {
       "name": "Lurk icon",
+      "description": "Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Lurk icon",
       "description": "Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+.",
       "default": true,
       "category": null,
@@ -400,6 +744,34 @@
           "targets": [
             {
               "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Remove tracking permissions",
+      "description": "Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
