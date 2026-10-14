@@ -88,3 +88,37 @@ Validated on 2026-10-14 with a local build: Morphe Desktop 1.18.1 applies `Lurk 
 `Unlock Premium` to 3.21.0; the launcher and the Android 16 splash screen show the new icon and the
 app cold-launches to its home feed.
 
+## Block cookie notice
+
+Rumble 3.21.0 shows its cookie and privacy notice through the Ketch consent SDK (organization `rumble`,
+property `rumble_android_app`). Rumble's consent service calls `Ketch.load()` at startup and on every
+resume. Settings > Data Consent calls `Ketch.showPreferences()`. Each loads Ketch's web experience in a
+WebView, which fetches the config for the user's jurisdiction and sends the identities Rumble supplied
+(Android advertising ID and AppsFlyer installation ID) to `global.ketchcdn.com`. What it shows depends on
+the jurisdiction: a banner or modal where privacy laws apply. In `us___no_privacy_laws` it shows nothing
+and records consent to every purpose (`targeted_advertising`, `analytics`, `essential_services`).
+Recorded consent starts AppsFlyer and enables Firebase Analytics. Opening Data Consent records the same
+defaults as soon as the dialog appears, before anything is tapped.
+
+The patch makes both SDK methods return `false` immediately, which is what they return when they cannot
+create the WebView. They are found by the SDK's log lines ("Not loading…" / "Not showing preferences…
+as an experience is already being shown") and the `(ZZII)Z` signature, so the R8-renamed class name
+doesn't matter. Without stored consent, Rumble's tracker hooks only ever receive an empty purpose set:
+AppsFlyer is never initialized, and Firebase Analytics, Firebase Performance and the Facebook SDK's
+automatic event logging stay off.
+Settings > Data Consent no longer opens anything.
+
+Validated on 2026-10-14 on the Android 16 emulator, fresh data each time, location resolved by Ketch as
+US-MO:
+
+- Stock: Ketch loads on launch, sends the advertising ID in its `log` request and writes
+  `consent_cache.json` with every purpose granted. AppsFlyer records `first_launch`, Firebase consent is
+  `G111` and measurement is enabled.
+- Patched (`Block cookie notice` only): launch, signed-out home feed, background/resume and Settings >
+  Data Consent make no Ketch requests and no crashes. No `consent_cache.json`, no AppsFlyer
+  `first_launch`, Firebase consent `G100` with measurement disabled.
+- Morphe Desktop 1.18.1 applies it together with `Unlock Premium`. The bundle was built with the local
+  fallback described above, because Gradle still can't reach GitHub Packages.
+
+The visible banner itself wasn't reproduced, since no notice is shown at that location; the patch doesn't
+depend on jurisdiction, because both entry points that can display one are disabled.
