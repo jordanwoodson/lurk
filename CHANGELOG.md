@@ -1,3 +1,9 @@
+## [1.4.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.3.0...v1.4.0-dev.1) (2026-10-14)
+
+### ✨ New Features
+
+* add Lurk settings to turn Rumble patches off and on ([4558f65](https://github.com/jordanwoodson/lurk-morphe-patches/commit/4558f6516155d2a030e8979ead6905ecd0ec16ff))
+
 ## [1.3.0](https://github.com/jordanwoodson/lurk/compare/v1.2.0...v1.3.0) (2026-10-14)
 
 ### 🐛 Bug Fixes
