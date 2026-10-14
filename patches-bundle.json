@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-14T18:57:01",
-  "description": "## [1.4.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.3.0...v1.4.0-dev.1) (2026-10-14)\n\n### ✨ New Features\n\n* add Lurk settings to turn Rumble patches off and on ([4558f65](https://github.com/jordanwoodson/lurk-morphe-patches/commit/4558f6516155d2a030e8979ead6905ecd0ec16ff))",
-  "download_url": "https://github.com/jordanwoodson/lurk-morphe-patches/releases/download/v1.4.0-dev.1/patches-1.4.0-dev.1.mpp",
+  "created_at": "2026-10-14T19:03:59",
+  "description": "## [1.4.0-dev.2](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.4.0-dev.1...v1.4.0-dev.2) (2026-10-14)\n\n### 🐛 Bug Fixes\n\n* keep Kotlin's standard library out of the Lurk extension ([6f4b4fe](https://github.com/jordanwoodson/lurk-morphe-patches/commit/6f4b4fe2d88e6ce9e3191a9653acb28176bd4e0b))",
+  "download_url": "https://github.com/jordanwoodson/lurk-morphe-patches/releases/download/v1.4.0-dev.2/patches-1.4.0-dev.2.mpp",
   "signature_download_url": "",
-  "version": "1.4.0-dev.1"
+  "version": "1.4.0-dev.2"
 }

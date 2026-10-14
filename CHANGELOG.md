@@ -1,3 +1,9 @@
+## [1.4.0-dev.2](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.4.0-dev.1...v1.4.0-dev.2) (2026-10-14)
+
+### 🐛 Bug Fixes
+
+* keep Kotlin's standard library out of the Lurk extension ([6f4b4fe](https://github.com/jordanwoodson/lurk-morphe-patches/commit/6f4b4fe2d88e6ce9e3191a9653acb28176bd4e0b))
+
 ## [1.4.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.3.0...v1.4.0-dev.1) (2026-10-14)
 
 ### ✨ New Features
