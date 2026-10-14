@@ -4,10 +4,10 @@ patches {
     about {
         name = "Lurk"
         description = "Privacy patches for Twitch, Kick and Rumble. Watch the stream, skip the tracking."
-        source = "git@github.com:jordanwoodson/lurk.git"
+        source = "git@github.com:jordanwoodson/lurk-morphe-patches.git"
         author = "jordanwoodson"
-        contact = "https://github.com/jordanwoodson/lurk/issues"
-        website = "https://github.com/jordanwoodson/lurk"
+        contact = "https://github.com/jordanwoodson/lurk-morphe-patches/issues"
+        website = "https://github.com/jordanwoodson/lurk-morphe-patches"
         license = "GPLv3"
     }
 }

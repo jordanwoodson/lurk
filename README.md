@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://morphe.software/add-source?github=jordanwoodson/lurk&name=Lurk"><img src="https://img.shields.io/badge/Add_to_Morphe-39F8AE?style=for-the-badge&logo=android&logoColor=080D1B" alt="Add to Morphe"></a>
+  <a href="https://morphe.software/add-source?github=jordanwoodson/lurk-morphe-patches&name=Lurk"><img src="https://img.shields.io/badge/Add_to_Morphe-39F8AE?style=for-the-badge&logo=android&logoColor=080D1B" alt="Add to Morphe"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/jordanwoodson/lurk/releases/latest"><img src="https://img.shields.io/github/v/release/jordanwoodson/lurk?label=release&color=39F8AE" alt="Latest release"></a>
+  <a href="https://github.com/jordanwoodson/lurk-morphe-patches/releases/latest"><img src="https://img.shields.io/github/v/release/jordanwoodson/lurk-morphe-patches?label=release&color=39F8AE" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
 </p>
 
@@ -31,7 +31,7 @@ turn on pre-releases for this source in Manager to get them.
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.3.0](https://github.com/jordanwoodson/lurk/releases/tag/v1.3.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
+> **[v1.3.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.3.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
 <details open>
 <summary>📦 Rumble&nbsp;&nbsp;•&nbsp;&nbsp;14 patches</summary>
 <br>
