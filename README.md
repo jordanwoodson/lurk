@@ -76,6 +76,7 @@ gh auth refresh -h github.com -s read:packages
 | `patches/.../patches/shared/` | Code shared across apps. |
 | `extensions/shared/` | Java code injected into patched apps (`extensions/shared.mpe`). Add `extensions/<app>/` when an app needs its own. |
 | `assets/icon.png` | The Lurk icon at full size (1254 px). `patches-bundle.png` is a 512 px copy: Manager shows it for this source, and the README header uses it. |
+| `assets/<app>-icon.png` | An app's Lurk launcher artwork, flattened to its two colors. `bin/app-icon` turns it into `patches/src/main/resources/<app>/icon/` (adaptive icon, vector logo, legacy `.webp`), which the app's icon patch copies in. |
 | `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
 | `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
 | `~/scratch/morphe/` | Decompiled code, patched APKs, the test emulator, reference repos. Regenerable. |
@@ -123,6 +124,7 @@ adb -s emulator-5580 logcat -s lurk    # Logger output from patched code
 bin/emu shot             # screenshot → ~/scratch/morphe/shots/
 ```
 
+`bin/app-icon <app> <artwork.png>` regenerates an app's launcher icon from square two-color artwork (a flat logo on a flat background).
 `bin/patch` passes anything after `--` to Morphe Desktop, for example
 `bin/patch twitch -- --exclusive -e "Disable analytics"`.
 `bin/refs` clones Morphe's own repos (patcher docs, patches library, official patches) for API reference.

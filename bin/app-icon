@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Turn two-color logo artwork into launcher icon resources for an app's icon patch.
+# Usage: bin/app-icon <app> <artwork.png>
+# Writes assets/<app>-icon.png (the artwork flattened to its two colors) and
+# patches/src/main/resources/<app>/icon/ (adaptive icon, vector logo, legacy .webp icons).
+source "$(dirname "$0")/lib/common.sh"
+
+app="${1:?usage: bin/app-icon <app> <artwork.png>}"
+art="${2:?usage: bin/app-icon <app> <artwork.png>}"
+app_constants "$app" >/dev/null
+[[ -f "$art" ]] || die "no such file: $art"
+
+out="$ROOT/patches/src/main/resources/$app/icon"
+rm -rf "$out"
+"$(tool uv)" run -q --no-project \
+    --with pillow==12.3.0 --with numpy==2.5.4 --with potracer==0.0.4 \
+    python -I "$ROOT/bin/lib/app_icon.py" "$art" "$ROOT/assets/$app-icon.png" "$out"
+note "wrote assets/$app-icon.png and ${out#"$ROOT"/}/"
