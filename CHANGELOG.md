@@ -1,3 +1,9 @@
+## [1.5.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.4.0...v1.5.0) (2026-10-14)
+
+### ✨ New Features
+
+* **kick:** add twelve patches with runtime settings and verified Hermes edits ([b5d8b4a](https://github.com/jordanwoodson/lurk-morphe-patches/commit/b5d8b4a193fef4fd13f73d58c67f2c14858ce825))
+
 ## [1.5.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.4.0...v1.5.0-dev.1) (2026-10-14)
 
 ### ✨ New Features
