@@ -30,8 +30,8 @@ turn on pre-releases for this source in Manager to get them.
 
 Patched apps get a **Lurk** settings screen that turns included patches off and on without patching
 again. Long-press the app icon > Lurk settings; Rumble also has Settings > App info > Lurk.
-Kick's JavaScript settings require a restart. See the [Kick notes](docs/kick.md) for patch scope and
-the experimental VOD option.
+Kick and Twitch's JavaScript settings require a restart. See the [Kick notes](docs/kick.md) for
+the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage and testing limits.
 
 ## 🩹 Patches list
 

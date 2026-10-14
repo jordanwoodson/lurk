@@ -1,0 +1,64 @@
+package io.github.jordanwoodson.patches.twitch.analytics
+
+import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.methodCall
+import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+
+internal object SpadeEventFingerprint : Fingerprint(
+    returnType = "V",
+    strings = listOf("branch_campaign", "mweb_device_id", "x_untrusted_minute-watched_spade"),
+    custom = { method, _ -> method.parameterTypes.size == 4 &&
+        method.parameterTypes.take(2).map { it.toString() } ==
+        listOf("Ljava/lang/String;", "Ljava/util/LinkedHashMap;") &&
+        method.parameterTypes.last().toString() == "Z" },
+)
+
+internal object SpadeBatchFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("Ljava/util/ArrayList;"),
+    strings = listOf("graphQL", "both", "[", "]"),
+)
+
+internal object BranchEventFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("Ljava/lang/String;"), strings = listOf("branch_event_name"),
+)
+
+internal object UserDataConsentFingerprint : Fingerprint(
+    name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
+    strings = listOf("UserDataConsent(consentOptions="),
+)
+
+internal object VendorConsentFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
+    filters = listOf(methodCall(
+        definingClass = "Ltv/twitch/android/models/privacy/VendorConsentSetting;", name = "getConsentStatus",
+    )),
+    custom = { method, _ -> method.parameterTypes.size == 2 &&
+        method.parameterTypes.all { it.toString().startsWith("L") } &&
+        method.implementation?.instructions?.any {
+            val reference = (it as? ReferenceInstruction)?.reference as? MethodReference
+            reference?.definingClass == "Ltv/twitch/android/models/privacy/VendorConsentSetting;" &&
+                reference.name == "getConsentStatus" && reference.returnType == method.returnType
+        } == true },
+)
+
+internal object SentryInitializationFingerprint : Fingerprint(
+    definingClass = "Lio/sentry/android/core/SentryAndroid;", name = "init", returnType = "V",
+    parameters = listOf("Landroid/content/Context;", "Lio/sentry/ILogger;", "Lio/sentry/Sentry\$OptionsConfiguration;"),
+)
+
+internal object CrashlyticsArbiterFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR), returnType = "V",
+    strings = listOf("com.google.firebase.crashlytics", "firebase_crashlytics_collection_enabled"),
+)
+
+internal object BranchInitializationFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR), returnType = "V", parameters = listOf("Landroid/content/Context;"),
+    strings = listOf("bnc_tracking_state", "bnc_retry_count"),
+)
+
+internal object BranchTrackingSetterFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("Landroid/content/Context;", "Z"),
+    strings = listOf("disableTracking context: ", "Tracking disabled. Clearing all pending requests"),
+)

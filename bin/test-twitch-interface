@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Run the real Twitch profile enum and emitted chat UI state constructors on ART.
+source "$(dirname "$0")/lib/common.sh"
+compile_only=false
+stock=false
+while [[ ${1:-} == --* ]]; do
+    case $1 in
+        --compile-only) compile_only=true ;;
+        --stock) stock=true ;;
+        *) die "unknown option: $1" ;;
+    esac
+    shift
+done
+[[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-twitch-interface [--compile-only] [--stock] <apk>"
+serial=emulator-5580
+out="$WORK/twitch-interface/art-probe"
+remote=/data/local/tmp/lurk-twitch-interface
+mkdir -p "$out/classes" "$out/dex" "$WORK/tmp"
+export TMPDIR="$WORK/tmp"
+android="$ANDROID_HOME/platforms/android-36/android.jar"
+javac --release 17 -classpath "$android" -d "$out/classes" "$ROOT/tests/twitch/InterfaceArtProbe.java"
+"$(build_tool d8)" --min-api 29 --lib "$android" --output "$out/dex" "$out/classes/"*.class
+(cd "$out/dex" && jar cf "$out/probe.jar" classes.dex)
+if $compile_only; then
+    note "Interface probe compiled: $out/probe.jar"
+    exit 0
+fi
+adb -s "$serial" shell mkdir -p "$remote"
+trap 'adb -s "$serial" shell rm -rf "$remote" >/dev/null 2>&1 || true' EXIT
+adb -s "$serial" push "$1" "$remote/app.apk" >/dev/null
+adb -s "$serial" push "$out/probe.jar" "$remote/probe.jar" >/dev/null
+mode=patched
+if $stock; then mode=stock; fi
+adb -s "$serial" shell "CLASSPATH=$remote/probe.jar:$remote/app.apk app_process /system/bin InterfaceArtProbe $mode"
