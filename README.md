@@ -10,11 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://morphe.software/add-source?github=jordanwoodson/lurk&name=Lurk"><img src="https://img.shields.io/badge/Add_to_Morphe-FFC247?style=for-the-badge&logo=android&logoColor=0E1016" alt="Add to Morphe"></a>
+  <a href="https://morphe.software/add-source?github=jordanwoodson/lurk&name=Lurk"><img src="https://img.shields.io/badge/Add_to_Morphe-39F8AE?style=for-the-badge&logo=android&logoColor=080D1B" alt="Add to Morphe"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/jordanwoodson/lurk/releases/latest"><img src="https://img.shields.io/github/v/release/jordanwoodson/lurk?label=release&color=FFC247" alt="Latest release"></a>
+  <a href="https://github.com/jordanwoodson/lurk/releases/latest"><img src="https://img.shields.io/github/v/release/jordanwoodson/lurk?label=release&color=39F8AE" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
 </p>
 
@@ -75,7 +75,7 @@ gh auth refresh -h github.com -s read:packages
 | `patches/src/main/kotlin/io/github/jordanwoodson/patches/<app>/` | Patches for one app. `shared/Constants.kt` holds its package, target versions and pinned signing cert. |
 | `patches/.../patches/shared/` | Code shared across apps. |
 | `extensions/shared/` | Java code injected into patched apps (`extensions/shared.mpe`). Add `extensions/<app>/` when an app needs its own. |
-| `assets/icon.svg` | The Lurk icon. `patches-bundle.png` (Manager's icon for this source) is rendered from it: `mise exec aqua:linebender/resvg@0.47.0 -- resvg -w 512 -h 512 assets/icon.svg patches-bundle.png`. |
+| `assets/icon.png` | The Lurk icon at full size (1254 px). `patches-bundle.png` is a 512 px copy: Manager shows it for this source, and the README header uses it. |
 | `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
 | `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
 | `~/scratch/morphe/` | Decompiled code, patched APKs, the test emulator, reference repos. Regenerable. |
