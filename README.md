@@ -36,7 +36,7 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.5.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.5.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;26 patches total
+> **[v1.6.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.6.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;39 patches total
 <details open>
 <summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;14 patches</summary>
 <br>
@@ -62,6 +62,33 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 | [Lurk icon](#lurk-icon) | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
 | [Remove tracking permissions](#remove-tracking-permissions) | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
 | [Unlock Premium](#unlock-premium) | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
+
+</details>
+
+<details open>
+<summary>📦&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;13 patches</summary>
+<br>
+
+**🎯 Supported versions:**
+
+| 31.6.0 |
+| :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [Block client ads](#block-client-ads) | Declines ads handled by Twitch's native client ad eligibility check using its existing not eligible result. Does not remove ads stitched into streams by the server or guarantee ad-free playback. |  |
+| [Block cookie notice](#block-cookie-notice) | Hides Twitch's automatic cookie consent notice without accepting it or changing saved vendor consent. Manual consent settings stay available. Use Disable analytics to block tracking. |  |
+| [Change app name](#change-app-name) | Changes the name shown under Twitch's launcher icon and in Android's settings. | • App name |
+| [Clean share links](#clean-share-links) | Removes known Twitch attribution and campaign parameters from shared links and copied share text. Keeps timestamps, clip IDs, unknown parameters and fragments. Covers native and React Native sharing. |  |
+| [Clone app](#clone-app) | Installs Twitch under another package name alongside the original, with separate sign-in and settings. Amazon sign-in and verified app links may not work after re-signing. | • Package name |
+| [Default video quality](#default-video-quality) | Starts playback at the selected rendition when available, with Source as the default. Saved player choices, including Auto, take priority. Unavailable renditions use Twitch's fallback. | • Default rendition |
+| [Disable analytics](#disable-analytics) | Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK consent, enables Branch's limited tracking mode, blocks Crashlytics uploads and prevents Sentry initialization. Watch progress, viewing statistics and rewards may stop updating. Restart Twitch after changing this setting. Playback requests still run. |  |
+| [Disable autoplay](#disable-autoplay) | Stops the next recommended video and React Native feed clip from playing automatically, and defaults feed previews to Never. Manual Play and saved feed preview choices keep working. | • Feed previews<br>• Next video |
+| [Hide Bits tipping](#hide-bits-tipping) | Hides chat Bits buttons, Bits purchase cards, the cheering tray and one-tap Bits controls. Keeps normal chat and Bits messages sent by other viewers. |  |
+| [Hide Clips](#hide-clips) | Hides the Clips discovery tab on Home and the Clips tab on native channel profiles. Shared clip links still open. |  |
+| [Hide subscription upsells](#hide-subscription-upsells) | Hides Subscribe and Gift a Sub prompts, Turbo promotions and the native Turbo signup/startup offer. Keeps the existing subscribed indicator and legitimate account entitlements. |  |
+| [Lurk icon](#lurk-icon) | Replaces Twitch's launcher icon with Lurk artwork, including Android's themed icon. |  |
+| [Remove tracking permissions](#remove-tracking-permissions) | Removes advertising ID and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
 
 </details>
 

@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.5.0",
+  "version": "1.6.0-dev.1",
   "patches": [
     {
       "name": "Block ads",
@@ -31,6 +31,34 @@
       "options": []
     },
     {
+      "name": "Block client ads",
+      "description": "Declines ads handled by Twitch's native client ad eligibility check using its existing not eligible result. Does not remove ads stitched into streams by the server or guarantee ad-free playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Block cookie notice",
       "description": "Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Push notifications stop too, since Rumble only starts its push service (Airship) with consent. Settings > Data Consent no longer opens.",
       "default": true,
@@ -48,6 +76,34 @@
           "targets": [
             {
               "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Block cookie notice",
+      "description": "Hides Twitch's automatic cookie consent notice without accepting it or changing saved vendor consent. Manual consent settings stay available. Use Disable analytics to block tracking.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -166,6 +222,47 @@
       ]
     },
     {
+      "name": "Change app name",
+      "description": "Changes the name shown under Twitch's launcher icon and in Android's settings.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "appName",
+          "title": "App name",
+          "description": "The name to show.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "Twitch Lurk",
+          "values": {
+            "Twitch Lurk": "Twitch Lurk",
+            "Lurk": "Lurk"
+          }
+        }
+      ]
+    },
+    {
       "name": "Clean share links",
       "description": "Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean.",
       "default": true,
@@ -211,6 +308,34 @@
           "targets": [
             {
               "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Clean share links",
+      "description": "Removes known Twitch attribution and campaign parameters from shared links and copied share text. Keeps timestamps, clip IDs, unknown parameters and fragments. Covers native and React Native sharing.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -296,6 +421,44 @@
           "values": {
             "Rumble (Lurk)": "com.rumble.battles.lurk"
           }
+        }
+      ]
+    },
+    {
+      "name": "Clone app",
+      "description": "Installs Twitch under another package name alongside the original, with separate sign-in and settings. Amazon sign-in and verified app links may not work after re-signing.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "packageName",
+          "title": "Package name",
+          "description": "A unique package name for this install.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "tv.twitch.android.app.lurk",
+          "values": null
         }
       ]
     },
@@ -390,6 +553,54 @@
       ]
     },
     {
+      "name": "Default video quality",
+      "description": "Starts playback at the selected rendition when available, with Source as the default. Saved player choices, including Auto, take priority. Unavailable renditions use Twitch's fallback.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "quality",
+          "title": "Default rendition",
+          "description": "Rendition to use before a player quality is saved.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "1",
+          "values": {
+            "Twitch's default": "0",
+            "Source": "1",
+            "1080p60": "108060",
+            "1080p": "1080",
+            "720p60": "72060",
+            "720p": "720",
+            "480p": "480",
+            "360p": "360",
+            "160p": "160"
+          }
+        }
+      ]
+    },
+    {
       "name": "Disable analytics",
       "description": "Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads.",
       "default": true,
@@ -454,6 +665,34 @@
           "values": null
         }
       ]
+    },
+    {
+      "name": "Disable analytics",
+      "description": "Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK consent, enables Branch's limited tracking mode, blocks Crashlytics uploads and prevents Sentry initialization. Watch progress, viewing statistics and rewards may stop updating. Restart Twitch after changing this setting. Playback requests still run.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
     },
     {
       "name": "Disable autoplay",
@@ -531,6 +770,81 @@
       ]
     },
     {
+      "name": "Disable autoplay",
+      "description": "Stops the next recommended video and React Native feed clip from playing automatically, and defaults feed previews to Never. Manual Play and saved feed preview choices keep working.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": [
+        {
+          "key": "feedPreviews",
+          "title": "Feed previews",
+          "description": "Default feed previews to Never; existing Twitch preferences still take priority.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": true,
+          "values": null
+        },
+        {
+          "key": "nextVideo",
+          "title": "Next video",
+          "description": "Stop automatic recommendations and feed clip advancement; manual playback still works.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": true,
+          "values": null
+        }
+      ]
+    },
+    {
+      "name": "Hide Bits tipping",
+      "description": "Hides chat Bits buttons, Bits purchase cards, the cheering tray and one-tap Bits controls. Keeps normal chat and Bits messages sent by other viewers.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hide Clips",
       "description": "Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open.",
       "default": false,
@@ -548,6 +862,34 @@
           "targets": [
             {
               "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Hide Clips",
+      "description": "Hides the Clips discovery tab on Home and the Clips tab on native channel profiles. Shared clip links still open.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -671,6 +1013,34 @@
       "options": []
     },
     {
+      "name": "Hide subscription upsells",
+      "description": "Hides Subscribe and Gift a Sub prompts, Turbo promotions and the native Turbo signup/startup offer. Keeps the existing subscribed indicator and legitimate account entitlements.",
+      "default": false,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hide tipping and Rants",
       "description": "Hides the Tip buttons on channels, videos and Shorts, Rants (paid live chat messages) and paying with Rumble Wallet. Rants other viewers send still show.",
       "default": false,
@@ -755,6 +1125,34 @@
       "options": []
     },
     {
+      "name": "Lurk icon",
+      "description": "Replaces Twitch's launcher icon with Lurk artwork, including Android's themed icon.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Remove tracking permissions",
       "description": "Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls.",
       "default": true,
@@ -800,6 +1198,34 @@
           "targets": [
             {
               "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Remove tracking permissions",
+      "description": "Removes advertising ID and Google Play install-referrer permissions. Other identifiers and analytics require separate controls.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "tv.twitch.android.app",
+          "name": "Twitch",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#9146FF",
+          "signatures": [
+            "1338f9b049893cc70b78432a177582f90bd4bc6296ea4ed35bcc7df59687ac53"
+          ],
+          "targets": [
+            {
+              "version": "31.6.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
