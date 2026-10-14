@@ -10,6 +10,7 @@ val blockCookieNoticePatch = bytecodePatch(
     name = "Block cookie notice",
     description = "Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no " +
         "consent is recorded. Rumble then keeps the analytics and ad tracking it gates on consent switched off. " +
+        "Push notifications stop too, since Rumble only starts its push service (Airship) with consent. " +
         "Settings > Data Consent no longer opens.",
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
