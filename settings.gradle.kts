@@ -1,4 +1,4 @@
-rootProject.name = "morphe"
+rootProject.name = "lurk"
 
 pluginManagement {
     repositories {

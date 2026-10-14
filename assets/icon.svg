@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Lurk</title>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#1D2230"/>
+      <stop offset="1" stop-color="#0E1016"/>
+    </radialGradient>
+    <linearGradient id="screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#343C52"/>
+      <stop offset="1" stop-color="#232838"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-80%" width="200%" height="260%">
+      <feGaussianBlur stdDeviation="9" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <!-- Head peeking over the screen -->
+  <path d="M112 320 V252 A144 144 0 0 1 400 252 V320 Z" fill="#161A24"/>
+
+  <!-- Half-lidded eyes, glancing sideways -->
+  <g filter="url(#glow)" fill="#FFC247">
+    <path d="M136 232 Q191 210 246 232 Q191 286 136 232 Z"/>
+    <path d="M266 232 Q321 210 376 232 Q321 286 266 232 Z"/>
+  </g>
+  <g fill="#0E1016">
+    <circle cx="216" cy="241" r="16"/>
+    <circle cx="346" cy="241" r="16"/>
+  </g>
+
+  <!-- The stream -->
+  <rect x="96" y="300" width="320" height="112" rx="26" fill="url(#screen)"/>
+  <rect x="96" y="300" width="320" height="4" rx="2" fill="#4A536D"/>
+  <path d="M244 340 L276 356 L244 372 Z" fill="#FFC247" opacity="0.9" stroke="#FFC247" stroke-width="8" stroke-linejoin="round"/>
+</svg>

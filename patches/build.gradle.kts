@@ -2,12 +2,12 @@ group = "io.github.jordanwoodson"
 
 patches {
     about {
-        name = "Jordan's Morphe Patches"
-        description = "Privacy-focused patches for Twitch, Kick, Rumble and other apps"
-        source = "git@github.com:jordanwoodson/morphe.git"
+        name = "Lurk"
+        description = "Privacy patches for Twitch, Kick and Rumble. Watch the stream, skip the tracking."
+        source = "git@github.com:jordanwoodson/lurk.git"
         author = "jordanwoodson"
-        contact = "https://github.com/jordanwoodson/morphe/issues"
-        website = "https://github.com/jordanwoodson/morphe"
+        contact = "https://github.com/jordanwoodson/lurk/issues"
+        website = "https://github.com/jordanwoodson/lurk"
         license = "GPLv3"
     }
 }

@@ -1,7 +1,8 @@
-# Morphe patches workspace
+# Lurk patches workspace
 
-Jordan's Morphe patch bundle and the tooling around it. Main focus: privacy-focused clients for
-Twitch (`tv.twitch.android.app`), Kick (`com.kick.mobile`) and Rumble (`com.rumble.battles`).
+Lurk, Jordan's Morphe privacy patch bundle, and the tooling around it. Main focus: privacy-focused
+clients for Twitch (`tv.twitch.android.app`), Kick (`com.kick.mobile`) and Rumble (`com.rumble.battles`).
+Use "Morphe" only descriptively ("patches for Morphe"), never as part of Lurk's name (see `NOTICE`).
 README.md documents the layout, commands and workflow; read it first.
 
 ## Rules
@@ -24,7 +25,7 @@ README.md documents the layout, commands and workflow; read it first.
   holds `COMPATIBILITY_<APP>`; every patch calls `compatibleWith(...)` with it.
 - When patches are tested on a new app version, update that version in the app's `targets`.
 - Fingerprint on strings, method signatures and instruction patterns, not obfuscated class names.
-- Java that runs inside the app goes in `extensions/` (`extensions/shared` has `Logger`, tag `jw-morphe`).
+- Java that runs inside the app goes in `extensions/` (`extensions/shared` has `Logger`, tag `lurk`).
   `patches/.../shared/Extensions.kt` has the extension paths and the Logger descriptor.
 - Kick is React Native: logic is Hermes bytecode in `assets/index.android.bundle`. Use `hermesPatch`
   from morphe-patches-library for it; `bin/decompile kick` writes a disassembly and decompiled JS.
