@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Privacy scan: tracker SDKs (Exodus Privacy signatures) and the URL hosts compiled into the app,
+# including a React Native Hermes bundle. A starting list for what to patch out.
+# Usage: bin/scan <app> [version] | bin/scan <file> [--hosts N]
+source "$(dirname "$0")/lib/common.sh"
+
+args=() target="" version=""
+while (($#)); do
+    case "$1" in
+        --hosts) args+=(--hosts "$2"); shift ;;
+        *) if [[ -z "$target" ]]; then target="$1"; else version="$1"; fi ;;
+    esac
+    shift
+done
+[[ -n "$target" ]] || die "usage: bin/scan <app> [version] | bin/scan <file>"
+if [[ -f "$target" ]]; then
+    file="$target"
+else
+    version="$(app_version "$target" "$version")"
+    file="$(app_input "$target" "$version")"
+    echo "$target $version ($(app_package "$target"))"
+fi
+apk_py scan "$file" --cache "$TOOLS/exodus-trackers.json" "${args[@]}"

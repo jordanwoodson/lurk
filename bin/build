@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Build the patch bundle. Prints the .mpp path. Extra arguments go to Gradle.
+source "$(dirname "$0")/lib/common.sh"
+
+github_packages_env
+(cd "$ROOT" && ./gradlew buildAndroid "$@") >&2
+mpp="$(latest_mpp)"
+[[ -n "$mpp" ]] || die "build finished but no patches/build/libs/patches-*.mpp"
+echo "$mpp"

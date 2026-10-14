@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Run the 3.21.0 integration probe against an APK on the scratch emulator.
+# Usage: bash bin/test-rumble <base-or-patched.apk>
+source "$(dirname "$0")/lib/common.sh"
+
+[[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-rumble <base-or-patched.apk>"
+serial=emulator-5580
+out="$WORK/tests/rumble"
+remote=/data/local/tmp/morphe-rumble-test
+mkdir -p "$out/classes" "$out/dex" "$WORK/tmp"
+export TMPDIR="$WORK/tmp"
+
+javac --release 11 -d "$out/classes" "$ROOT/tests/rumble/PremiumProbe.java"
+"$(build_tool d8)" --min-api 26 --output "$out/dex" "$out/classes/PremiumProbe.class"
+(cd "$out/dex" && jar cf "$out/probe.jar" classes.dex)
+
+# The explicit emulator serial prevents installing or running tests on a connected phone.
+adb -s "$serial" shell mkdir -p "$remote"
+trap 'adb -s "$serial" shell rm -rf "$remote" >/dev/null 2>&1 || true' EXIT
+adb -s "$serial" push "$1" "$remote/app.apk" >/dev/null
+adb -s "$serial" push "$out/probe.jar" "$remote/probe.jar" >/dev/null
+adb -s "$serial" shell "CLASSPATH=$remote/probe.jar:$remote/app.apk app_process /system/bin PremiumProbe"

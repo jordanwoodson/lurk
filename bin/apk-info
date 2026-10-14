@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Show package, version and signing cert of a file, or the stored versions of an app.
+# Usage: bin/apk-info <file> | bin/apk-info <app>
+source "$(dirname "$0")/lib/common.sh"
+
+arg="${1:?usage: bin/apk-info <file|app>}"
+if [[ ! -f "$arg" ]]; then
+    app_constants "$arg" >/dev/null
+    echo "$arg ($(app_package "$arg")):"
+    for v in $(ls "$ROOT/apks/$arg" 2>/dev/null | sort -V); do
+        echo "  $v  $(basename "$(app_input "$arg" "$v")")"
+    done
+    exit
+fi
+
+mkdir -p "$WORK"
+tmp="$(mktemp -d "$WORK/apk-info.XXXXXX")"
+trap 'rm -rf "$tmp"' EXIT
+eval "$(apk_py info "$arg" --aapt2 "$(build_tool aapt2)" --tmp "$tmp/base.apk")"
+apk_py extract-base "$arg" "$tmp/base.apk"
+echo "package:      $package"
+echo "version:      $version ($version_code)"
+echo "format:       $format"
+echo "app:          $(slug_for_package "$package" || echo '(none yet: bin/new-app)')"
+"$(build_tool apksigner)" verify --print-certs "$tmp/base.apk" 2>/dev/null |
+    sed -n 's/^Signer #1 certificate SHA-256 digest: /signing cert: /p'

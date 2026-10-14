@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Download the current Google Play release of an app with apkeep, then bin/apk-add it.
+# Usage: bin/apk-fetch <app>
+# Needs a Google account token in ~/.config/apkeep/apkeep.ini (see README). Google Play only
+# serves the latest version; for older ones use APKMirror or Uptodown and bin/apk-add.
+source "$(dirname "$0")/lib/common.sh"
+
+slug="${1:?usage: bin/apk-fetch <app>}"
+package="$(app_package "$slug")"
+ini="${XDG_CONFIG_HOME:-$HOME/.config}/apkeep/apkeep.ini"
+[[ -f "$ini" ]] || die "no $ini. Create it with a [google] section holding email and aas_token (README: Google Play)"
+
+mkdir -p "$WORK"
+tmp="$(mktemp -d "$WORK/apk-fetch.XXXXXX")"
+trap 'rm -rf "$tmp"' EXIT
+
+"$(tool apkeep)" -a "$package" -d google-play -o split_apk=true -i "$ini" "$tmp"
+if [[ -d "$tmp/$package" ]]; then
+    apk_py pack-splits "$tmp/$package" "$package" "$tmp/$package.apks"
+    "$ROOT/bin/apk-add" "$tmp/$package.apks"
+elif [[ -f "$tmp/$package.apk" ]]; then
+    "$ROOT/bin/apk-add" "$tmp/$package.apk"
+else
+    die "apkeep produced nothing for $package"
+fi

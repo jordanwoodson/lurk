@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Store a downloaded app under apks/<app>/<version>/ after checking its signing cert.
+# Usage: bin/apk-add <file.apk|.apkm|.xapk|.apks> [--copy] [--force]
+# Sources: APKMirror (.apkm), Uptodown (.xapk/.apk) or Google Play (bin/apk-fetch). Nothing else.
+source "$(dirname "$0")/lib/common.sh"
+
+file="" copy="" force=""
+for arg in "$@"; do
+    case "$arg" in
+        --copy) copy=1 ;;
+        --force) force=1 ;;
+        -*) die "unknown option $arg" ;;
+        *) file="$arg" ;;
+    esac
+done
+[[ -f "$file" ]] || die "usage: bin/apk-add <file> [--copy] [--force]"
+
+mkdir -p "$WORK"
+tmp="$(mktemp -d "$WORK/apk-add.XXXXXX")"
+trap 'rm -rf "$tmp"' EXIT
+
+eval "$(apk_py info "$file" --aapt2 "$(build_tool aapt2)" --tmp "$tmp/base.apk")"
+slug="$(slug_for_package "$package")" ||
+    die "no app uses $package yet. Add one: bin/new-app <slug> \"<Name>\" $package"
+
+apk_py extract-base "$file" "$tmp/base.apk"
+certs="$("$(build_tool apksigner)" verify --print-certs "$tmp/base.apk" 2>/dev/null)" ||
+    die "base APK signature does not verify: corrupted or tampered file"
+digest="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$certs")"
+constants="$(app_constants "$slug")"
+
+case "$(apk_py pin "$constants" "$digest")" in
+    match) note "signing cert matches the one pinned for $slug" ;;
+    pinned) note "first $slug APK: pinned signing cert $digest in ${constants#"$ROOT"/}" ;;
+    mismatch)
+        [[ -n "$force" ]] || die "signing cert $digest is not the one pinned in ${constants#"$ROOT"/}. Wrong or tampered file? (--force stores it anyway)"
+        note "storing despite cert mismatch (--force)" ;;
+    *) note "${constants#"$ROOT"/} has no 'signatures = null,' line to fill; cert is $digest" ;;
+esac
+
+dest="$ROOT/apks/$slug/$version"
+mkdir -p "$dest"
+if [[ "$(cd "$(dirname "$file")" && pwd)" == "$dest" ]]; then
+    note "already stored there"
+elif [[ -n "$copy" ]]; then
+    cp "$file" "$dest/"
+else
+    mv "$file" "$dest/"
+fi
+note "$package $version ($version_code) stored as apks/$slug/$version/$(basename "$file")"
+grep -q "\"$version\"" "$constants" ||
+    note "Constants.kt targets don't list $version yet: update them once patches are tested on it"

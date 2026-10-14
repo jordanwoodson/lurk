@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Throwaway test emulator for patched apps (headless, Android 36, x86_64).
+# The AVD lives in $WORK/avd and is recreated when missing.
+# Usage: bin/emu start | stop | status | shot [name]
+source "$(dirname "$0")/lib/common.sh"
+
+export ANDROID_AVD_HOME="$WORK/avd"
+AVD=morphe
+PORT=5580
+export ANDROID_SERIAL="emulator-$PORT"
+IMAGE="system-images;android-36;google_apis;x86_64"
+
+case "${1:-status}" in
+    start)
+        mkdir -p "$ANDROID_AVD_HOME"
+        if [[ ! -d "$ANDROID_AVD_HOME/$AVD.avd" ]]; then
+            note "creating AVD $AVD in $ANDROID_AVD_HOME"
+            echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" -s create avd -n "$AVD" -k "$IMAGE" -d pixel_7 >/dev/null
+        fi
+        if adb devices | grep -q "^$ANDROID_SERIAL"; then
+            note "already running as $ANDROID_SERIAL"
+            exit
+        fi
+        nohup "$ANDROID_HOME/emulator/emulator" -avd "$AVD" -port "$PORT" -no-window -no-audio -no-boot-anim \
+            -gpu swiftshader_indirect >"$ANDROID_AVD_HOME/emulator.log" 2>&1 &
+        note "booting $ANDROID_SERIAL (log: $ANDROID_AVD_HOME/emulator.log)"
+        adb wait-for-device
+        until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == 1 ]]; do sleep 2; done
+        note "booted. Install with: bin/patch <app> --install=$ANDROID_SERIAL"
+        ;;
+    stop) adb emu kill ;;
+    status) adb devices | grep "^$ANDROID_SERIAL" || echo "not running" ;;
+    shot)
+        mkdir -p "$WORK/shots"
+        f="$WORK/shots/${2:-$(date +%Y%m%d-%H%M%S)}.png"
+        adb exec-out screencap -p >"$f"
+        echo "$f"
+        ;;
+    *) die "usage: bin/emu start | stop | status | shot [name]" ;;
+esac

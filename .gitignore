@@ -128,3 +128,7 @@ node_modules/
 # Ignore IDEA files
 .idea/
 local.properties
+
+# Workspace: downloaded apps (bin/apk-add) and tools (bin/bootstrap). Never committed.
+/apks/
+/tools/
