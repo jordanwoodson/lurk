@@ -14,7 +14,8 @@ Inspired by the profile-entry approach in
 [hoomans-morphe-patches](https://github.com/arandomhooman/hoomans-morphe-patches/blob/018277825a611ad61f3a16a70e562291c06f4081/patches/src/main/kotlin/hooman/morphe/patches/rumble/premium/UnlockPremiumPatch.kt),
 which targets 3.14.5. This implementation fingerprints the specific `isPremium:Z`
 field read, method signature and two-instruction getter, requires a unique match,
-and replaces that read with `true`. It does not depend on the obfuscated getter name
+and returns `true` after that read while the `unlock_premium` switch is on (see
+[Lurk settings](#lurk-settings)). It does not depend on the obfuscated getter name
 or the assumption that the DTO has only one boolean getter.
 
 The independently traced 3.21.0 path is:
@@ -28,7 +29,7 @@ UserProfile.l() reads isPremium (JSON is_premium)
 ```
 
 These obfuscated names describe this APK only; they are not patch fingerprints.
-Only the getter's field-read instruction changes. Nullable `premiumData`, account
+Only the getter's result changes. Nullable `premiumData`, account
 validation, age verification and onboarding retain their original behavior.
 
 ## Build and test
@@ -127,6 +128,64 @@ Block cookie notice also stops push notifications. Rumble only starts Airship, i
 the consent callback, and enables Airship's push feature only with the `essential_services` purpose. With
 no consent recorded, Airship never takes off and incoming pushes are dropped.
 
+## Lurk settings
+
+Every Rumble patch that changes code can be switched off and on in the app, without patching again:
+Settings > App info > **Lurk**, or long-press the launcher icon > **Lurk settings**. The screen lists
+only the patches that were included. Each switch starts at the patch's default (or its patch option)
+and keeps the user's choice from then on, including across updates. Reset to defaults forgets those
+choices.
+
+| Switch | Key | Takes effect |
+|---|---|---|
+| Block ads | `block_ads` | at the next ad request |
+| Block cookie notice | `block_cookie_notice` | at the next resume |
+| Clean share links | `clean_share_links` | at the next share |
+| Disable analytics, Keep watch progress | `disable_analytics`, `keep_watch_progress` | at the next upload |
+| Hide Premium upsells | `hide_premium_upsells` | when the screen is drawn again |
+| Hide Shorts | `hide_shorts` | after a restart |
+| Hide tipping and Rants | `hide_tipping` | when the data is loaded again |
+| Default video quality (a choice; "Rumble's default" is 0) | `video_quality` | at the next video |
+| No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
+| Unlock Premium | `unlock_premium` | after signing in again |
+
+Resource patches (Lurk icon, Remove tracking permissions, Clone app, Change app name) change the
+APK itself, so they aren't listed.
+
+How it works:
+
+- `rumble/settings/SettingsPatch.kt` is a hidden patch the others depend on. It merges
+  `extensions/shared.mpe`, adds the extension's `SettingsActivity` to the manifest (with its own task
+  affinity, so the launcher shortcut never opens inside Rumble's picture-in-picture task), and calls
+  `Settings.init(context)` first thing in `RumbleApplication.onCreate()`.
+- The Lurk row is a fourth `RowItemWithArrowView` after Send Feedback in the `AppInfoSection`
+  composable, drawn by a static method the patch adds next to it with the same arguments as Rumble's
+  rows. Its onClick is a `kotlin.jvm.functions.Function0` the extension makes with a `Proxy`, since
+  the extension doesn't compile against Kotlin.
+- Each patch registers its switches at the end of `execute`, so a patch that is left out or fails
+  shows none. The settings patch writes them as JSON into `Settings.registryJson()` in `finalize`.
+- Injected code calls `Settings.isEnabled(key)` (or `getInt(key)`) and runs Rumble's original code
+  when it returns false. Values live in the `lurk_settings` SharedPreferences, written only when
+  changed on the screen; unknown keys count as on.
+- Restart Rumble (shown after changing a switch that needs it) relaunches the launcher activity and
+  exits the process.
+
+Validated on 2026-10-14 on the Android 16 emulator with a local build, every patch except Clone app
+and Change app name applied (Gradle still can't reach GitHub Packages):
+
+- The Lurk row appears after Send feedback and opens the screen in Rumble's task; Back returns to Settings.
+- The launcher shortcut opens it full screen, also while a video plays in picture-in-picture.
+- Hide Shorts off + Restart Rumble: the Shorts tab and Home row come back. On + restart: hidden again.
+- The same walk-through (fresh launch, the featured video for 35 s, three scrolls) through the logging
+  proxy: with Block ads and Disable analytics on, only Rumble's own hosts and `graph.facebook.com`.
+  Both off: `e.rumble.com`, `a.ads.rmbl.ws`, `d4.ads.rmbl.ws`, `imasdk.googleapis.com` and
+  `pagead2.googlesyndication.com` are back. Both on again: gone again. Each run started from a stopped
+  app, so changes taking effect mid-session weren't checked separately.
+- Keep watch progress is disabled while Disable analytics is off. The quality picker, Reset to
+  defaults and dark mode (including switching while the screen is open) work.
+- `bin/test-rumble` passes on the patched APK. A build with only Clean share links and Clone app
+  shows just that switch and works under `com.rumble.battles.lurk`.
+
 ## Finding code in 3.21.0
 
 R8 renames Rumble's classes and methods, so the patches below find code through what survives:
@@ -156,7 +215,7 @@ of the event use cases check consent, so Block cookie notice doesn't stop these.
 the top of the three upload methods: `Success` for event lists (as after an upload, so queued watch time is
 cleared rather than retried) and `Unit` for the other two.
 
-The `keepWatchProgress` option lets an upload through when its list holds a watch progress event (found
+The Keep watch progress switch (initially the `keepWatchProgress` option) lets an upload through when its list holds a watch progress event (found
 by its `toString`, `"WatchProgressEvent(timeRange="`). Rumble's watch history is server side
 (`watch_history.clear`), probably fed by these events; that is untested, as it needs an account.
 
@@ -227,8 +286,8 @@ Both options change a DataStore default in `UserPreferenceManager` (constructor 
 accessor, and the inner class reading it. It then changes the value used when nothing is stored, so
 Settings > Playback still works.
 
-- **Next video:** `autoplayOnKey ?: true` becomes `?: false`.
-- **Feed previews:** `playbackInFeedKey ?: ALWAYS_ON` becomes `?: OFF`. Home's featured video asks its
+- **Next video:** `autoplayOnKey ?: true` becomes `?: !autoplay_next_video_off`.
+- **Feed previews:** `playbackInFeedKey ?: ALWAYS_ON` becomes `?: OFF` while `feed_previews_off` is on. Home's featured video asks its
   player builder to play even when feed playback is off; the patch clears that flag, so the featured card
   follows the setting too.
 
