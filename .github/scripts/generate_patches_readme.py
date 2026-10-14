@@ -37,14 +37,18 @@ with open(json_path, encoding="utf-8") as f:
     data = json.load(f)
 
 
-def pkg_emoji(pkg):
-    """Return a standard package emoji regardless of the package name."""
+def pkg_icon(name):
+    """The app's round Lurk launcher icon from bin/app-icon, or a package emoji if it has none."""
+    slug = re.sub(r"[^a-z0-9]+", "", name.lower())
+    icon = f"patches/src/main/resources/{slug}/icon/mipmap-xxxhdpi/ic_launcher_round.webp"
+    if (readme_path.parent / icon).is_file():
+        return f'<img src="{icon}" width="28" height="28" align="center" alt="">'
     return "📦"
 
 # Group patches by package; patches with no compatiblePackages are universal.
 # JSON structure: compatiblePackages is a list of objects with
 # { packageName, name, targets: [{ version, isExperimental, description }] }
-by_pkg = {}   # packageName -> { name, emoji, patches, targets }
+by_pkg = {}   # packageName -> { name, icon, patches, targets }
 universal = {}
 
 for patch in data["patches"]:
@@ -60,7 +64,7 @@ for patch in data["patches"]:
         if pkg not in by_pkg:
             by_pkg[pkg] = {
                 "name":    name,
-                "emoji":   pkg_emoji(pkg),
+                "icon":    pkg_icon(name),
                 "patches": {},
                 "targets": pkg_entry.get("targets", []),
             }
@@ -153,7 +157,7 @@ def build_content(expanded=False):
     # One spoiler per app, in the order they appear in the JSON
     for pkg, entry in by_pkg.items():
         patches = list(entry["patches"].values())
-        label   = f"{entry['emoji']} {entry['name']}"
+        label   = f"{entry['icon']}&nbsp;&nbsp;<b>{entry['name']}</b>"
         lines.append(spoiler(label, len(patches), entry["targets"], patches_table(patches), expanded))
         lines.append("")
 
