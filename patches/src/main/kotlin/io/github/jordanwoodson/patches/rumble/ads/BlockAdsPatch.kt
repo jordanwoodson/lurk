@@ -1,0 +1,82 @@
+package io.github.jordanwoodson.patches.rumble.ads
+
+import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.patch.PatchException
+import app.morphe.patcher.patch.bytecodePatch
+import com.android.tools.smali.dexlib2.iface.ClassDef
+import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
+import io.github.jordanwoodson.patches.rumble.shared.kotlinObject
+import io.github.jordanwoodson.patches.rumble.shared.parameters
+import io.github.jordanwoodson.patches.rumble.shared.singleMethod
+import io.github.jordanwoodson.patches.rumble.shared.staticFieldReads
+import io.github.jordanwoodson.patches.rumble.shared.unitReference
+
+@Suppress("unused")
+val blockAdsPatch = bytecodePatch(
+    name = "Block ads",
+    description = "Removes video ads (before and during videos and live streams) and the ads in feeds and " +
+        "under videos, signed in or not. The app never requests them, so it never sends the ad server your " +
+        "advertising ID, and no ad or Boosted video impressions or clicks are reported.",
+) {
+    compatibleWith(COMPATIBILITY_RUMBLE)
+
+    execute {
+        val useCase = VideoAdUseCaseFingerprint.matchAllOrNull()?.singleOrNull()
+            ?: throw PatchException("Rumble: expected exactly one video ad use case. " +
+                "This patch targets 3.21.0; recheck the ad code before updating compatibility.")
+        val repositoryInterface = useCase.originalMethod.parameterTypes.first().toString()
+
+        val implementations = mutableListOf<ClassDef>()
+        classDefForEach { if (repositoryInterface in it.interfaces) implementations += it }
+        val repository = mutableClassDefBy(implementations.singleOrNull()
+            ?: throw PatchException("Rumble: expected one ad repository, found ${implementations.size}"))
+
+        // fetchVideoAds(publisher, ..., width: Float, height: Float, continuation): the pre-roll and
+        // mid-roll list for a video or live stream, played through Google's IMA SDK.
+        val fetchVideoAds = repository.singleMethod("video ad fetch") { method ->
+            val parameters = method.parameters()
+            parameters.size == 8 && parameters[0] == "Ljava/lang/String;" &&
+                parameters[4] == "Ljava/lang/Long;" && parameters[5] == "F" && parameters[6] == "F"
+        }
+        // The two display ad fetches (feed and video page) take the targeting data: zone, keywords,
+        // categories, user and video IDs, advertising ID and consent strings.
+        val fetchDisplayAds = repository.methods.filter { it.parameterTypes.size >= 15 }
+        if (fetchDisplayAds.size != 2) {
+            throw PatchException("Rumble: expected two display ad fetches, found ${fetchDisplayAds.size}")
+        }
+
+        // Answer with the results Rumble already handles as "no ad": an empty video ad list, and
+        // "waiting for ads", which the feed and video page treat like a failed request.
+        fun returnObject(name: String) = """
+            sget-object v0, ${kotlinObject(name)}
+            return-object v0
+        """
+        fetchVideoAds.addInstructions(0, returnObject("EmptyVideoAdList"))
+        fetchDisplayAds.forEach { it.addInstructions(0, returnObject("WaitingForAds")) }
+
+        // reportImpression(url): the pixel Boosted (promoted) videos in feeds and ads fire when shown
+        // (d4.ads.rmbl.ws). sendAdEvents(urls, time): click and progress beacons. Both report success.
+        val reportImpression = repository.singleMethod("impression report") {
+            it.parameters().dropLast(1) == listOf("Ljava/lang/String;")
+        }
+        val sendAdEvents = repository.singleMethod("ad event report") {
+            it.parameters().dropLast(1) == listOf("Ljava/util/List;", "J")
+        }
+        reportImpression.addInstructions(
+            0,
+            """
+                sget-object v0, ${reportImpression.unitReference()}
+                return-object v0
+            """,
+        )
+        val eventsSent = sendAdEvents.staticFieldReads().singleOrNull { it.type == it.definingClass }
+            ?: throw PatchException("Rumble: ad event report has no single success object")
+        sendAdEvents.addInstructions(
+            0,
+            """
+                sget-object v0, $eventsSent
+                return-object v0
+            """,
+        )
+    }
+}
