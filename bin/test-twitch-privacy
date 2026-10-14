@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Execute actual patched Spade and client-ad completion paths on Android.
+source "$(dirname "$0")/lib/common.sh"
+compile_only=false
+if [[ ${1:-} == --compile-only ]]; then compile_only=true; shift; fi
+[[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-twitch-privacy [--compile-only] <patched.apk>"
+serial=emulator-5580
+out="$WORK/twitch-privacy/art-probe"
+remote=/data/local/tmp/lurk-twitch-privacy
+mkdir -p "$out/stub-src" "$out/stub-classes" "$out/classes" "$out/dex" "$WORK/tmp"
+export TMPDIR="$WORK/tmp"
+cat > "$out/stub-src/ur50.java" <<'JAVA'
+public abstract class ur50 {
+    public abstract void C(Object response);
+    public abstract void B(djg error);
+}
+JAVA
+cat > "$out/stub-src/djg.java" <<'JAVA'
+public class djg { }
+JAVA
+android="$ANDROID_HOME/platforms/android-36/android.jar"
+javac --release 17 -d "$out/stub-classes" "$out/stub-src/ur50.java" "$out/stub-src/djg.java"
+(cd "$out/stub-classes" && jar cf "$out/stubs.jar" ur50.class djg.class)
+javac --release 17 -classpath "$android:$out/stubs.jar" \
+    -d "$out/classes" "$ROOT/tests/twitch/PrivacyAdsProbe.java"
+# Compile-only stubs are classpath inputs. Only the actual probe classes enter DEX; at runtime
+# the superclass, callback error type, event dispatcher and emitter all come from the patched APK.
+"$(build_tool d8)" --min-api 29 --lib "$android" --classpath "$out/stubs.jar" \
+    --output "$out/dex" "$out/classes/"*.class
+(cd "$out/dex" && jar cf "$out/probe.jar" classes.dex)
+if $compile_only; then
+    note "Privacy probe compiled: $out/probe.jar (compile-only stubs excluded)"
+    exit 0
+fi
+adb -s "$serial" shell mkdir -p "$remote"
+trap 'adb -s "$serial" shell rm -rf "$remote" >/dev/null 2>&1 || true' EXIT
+adb -s "$serial" push "$1" "$remote/app.apk" >/dev/null
+adb -s "$serial" push "$out/probe.jar" "$remote/probe.jar" >/dev/null
+adb -s "$serial" shell "CLASSPATH=$remote/probe.jar:$remote/app.apk app_process /system/bin PrivacyAdsProbe"
