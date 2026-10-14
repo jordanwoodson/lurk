@@ -1,3 +1,9 @@
+## [1.3.0-dev.1](https://github.com/jordanwoodson/lurk/compare/v1.2.0...v1.3.0-dev.1) (2026-10-14)
+
+### ✨ New Features
+
+* add cookie notice patch for Rumble ([184919f](https://github.com/jordanwoodson/lurk/commit/184919f0ffbb06b1fb2ff3a5fda07f2c6bfab779))
+
 ## [1.2.0](https://github.com/jordanwoodson/lurk/compare/v1.1.0...v1.2.0) (2026-10-14)
 
 ### ✨ New Features

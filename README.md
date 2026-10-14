@@ -31,9 +31,9 @@ turn on pre-releases for this source in Manager to get them.
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.2.0](https://github.com/jordanwoodson/lurk/releases/tag/v1.2.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
+> **[v1.3.0-dev.1](https://github.com/jordanwoodson/lurk/releases/tag/v1.3.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;3 patches total
 <details open>
-<summary>📦 Rumble&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
+<summary>📦 Rumble&nbsp;&nbsp;•&nbsp;&nbsp;3 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -43,6 +43,7 @@ turn on pre-releases for this source in Manager to get them.
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
+| [Block cookie notice](#block-cookie-notice) | Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Settings > Data Consent no longer opens. |  |
 | [Lurk icon](#lurk-icon) | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
 | [Unlock Premium](#unlock-premium) | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
 
