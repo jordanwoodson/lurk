@@ -12,7 +12,7 @@ object Constants {
         apkFileType = ApkFileType.APKM,
         appIconColor = 0x53FC18,
         // Original signing cert (apksigner "certificate SHA-256 digest"). bin/apk-add pins it.
-        signatures = null,
+        signatures = setOf("b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"),
         targets = listOf(
             // Latest stable on APKMirror on 2026-10-14. Update to the version you develop against.
             AppTarget(version = "40.32.1"),

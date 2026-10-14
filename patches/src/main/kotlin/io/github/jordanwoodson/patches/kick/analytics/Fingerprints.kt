@@ -1,0 +1,61 @@
+package io.github.jordanwoodson.patches.kick.analytics
+
+import app.morphe.patcher.Fingerprint
+
+internal const val FIREBASE = "Lcom/google/firebase/analytics/FirebaseAnalytics;"
+internal const val REACT_PROMISE = "Lcom/facebook/react/bridge/Promise;"
+internal const val EXPO_PROMISE = "Lexpo/modules/kotlin/Promise;"
+private const val STRING = "Ljava/lang/String;"
+private const val READABLE_MAP = "Lcom/facebook/react/bridge/ReadableMap;"
+
+// These are original, unobfuscated SDK/bridge names. Check complete signatures and each match count.
+internal object FirebaseEventFingerprint : Fingerprint(
+    definingClass = "Lio/invertase/firebase/analytics/NativeRNFBTurboAnalytics;",
+    name = "logEvent", returnType = "V", parameters = listOf(STRING, READABLE_MAP, REACT_PROMISE),
+)
+internal object FirebaseCollectionFingerprint : Fingerprint(
+    definingClass = FIREBASE, name = "setAnalyticsCollectionEnabled", returnType = "V", parameters = listOf("Z"),
+)
+internal object InsiderInitFingerprint : Fingerprint(
+    definingClass = "Lcom/useinsider/react/RNInsiderModule;", name = "init",
+    returnType = "V", parameters = listOf(STRING, STRING),
+)
+internal object InsiderEventFingerprint : Fingerprint(
+    name = "build", returnType = "V", parameters = emptyList(), strings = listOf("InsiderEvent-build"),
+)
+internal object InsiderSessionJobFingerprint : Fingerprint(
+    definingClass = "Lcom/useinsider/insider/SessionPayloadJobService;", name = "onStartJob",
+    returnType = "Z", parameters = listOf("Landroid/app/job/JobParameters;"),
+)
+internal object InsiderAmplificationJobFingerprint : Fingerprint(
+    definingClass = "Lcom/useinsider/insider/InsiderAmplificationService;", name = "onStartJob",
+    returnType = "Z", parameters = listOf("Landroid/app/job/JobParameters;"),
+)
+internal object DatadogBridgeFingerprint : Fingerprint(
+    definingClass = "Lcom/datadog/reactnative/DdSdkImplementation;", name = "initialize",
+    returnType = "V", parameters = listOf(READABLE_MAP, REACT_PROMISE), strings = listOf("configuration", "promise"),
+)
+internal object DatadogNativeFingerprint : Fingerprint(
+    definingClass = "Lcom/datadog/reactnative/DdSdkNativeInitialization;",
+    name = "initialize\$datadog_mobile_react_native_release", returnType = "V",
+    parameters = listOf("Lcom/datadog/reactnative/DdSdkConfiguration;", "Z"), strings = listOf("ddSdkConfiguration"),
+)
+internal object MuxInitializationFingerprint : Fingerprint(
+    definingClass = "Lcom/kick/mobile/kickivsplayerv2/KickIvsPlayerV2View;",
+    name = "initializeMuxAnalyticsListener", returnType = "V", parameters = emptyList(),
+    strings = listOf("android_ivs"),
+)
+internal object DatazoomApplyFingerprint : Fingerprint(
+    definingClass = "Lcom/kick/mobile/kickivsplayerv2/DatazoomAnalyticsManager;", name = "apply", returnType = "V",
+    parameters = listOf("Lcom/kick/mobile/kickivsplayerv2/DatazoomAnalyticsConfig;",
+        "Lcom/amazonaws/ivs/player/Player;", "Landroid/view/View;"), strings = listOf("player", "playerView"),
+)
+internal object PalNonceFingerprint : Fingerprint(
+    definingClass = "Lcom/kick/mobile/kickivsplayerv2/PalSDKModuleBridge;", name = "generateNonce", returnType = "V",
+    parameters = listOf("Landroid/content/Context;", "Lcom/kick/mobile/kickivsplayerv2/PalNonceRequestConfig;", EXPO_PROMISE),
+    strings = listOf("INVALID_PAL_NONCE_REQUEST", "React context is unavailable"),
+)
+internal object AnalyticsStartupFingerprint : Fingerprint(
+    definingClass = "Lcom/kick/mobile/MainApplication;", name = "onCreate", returnType = "V",
+    parameters = emptyList(), strings = listOf("experimental"),
+)
