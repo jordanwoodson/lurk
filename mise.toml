@@ -5,3 +5,5 @@
 "github:EFForg/apkeep" = "1.1.0"
 # Kick is React Native: its logic is Hermes bytecode in assets/index.android.bundle.
 "pipx:hermes-dec" = "0.1.7"
+# bin/app-icon runs its Python image tools (Pillow, NumPy, potrace) through uv.
+uv = "0.13.0"

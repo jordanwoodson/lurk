@@ -31,9 +31,9 @@ turn on pre-releases for this source in Manager to get them.
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.1.0](https://github.com/jordanwoodson/lurk/releases/tag/v1.1.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;1 patches total
+> **[v1.2.0-dev.1](https://github.com/jordanwoodson/lurk/releases/tag/v1.2.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;2 patches total
 <details open>
-<summary>📦 Rumble&nbsp;&nbsp;•&nbsp;&nbsp;1 patch</summary>
+<summary>📦 Rumble&nbsp;&nbsp;•&nbsp;&nbsp;2 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -43,6 +43,7 @@ turn on pre-releases for this source in Manager to get them.
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
+| [Lurk icon](#lurk-icon) | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
 | [Unlock Premium](#unlock-premium) | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
 
 </details>
@@ -76,6 +77,7 @@ gh auth refresh -h github.com -s read:packages
 | `patches/.../patches/shared/` | Code shared across apps. |
 | `extensions/shared/` | Java code injected into patched apps (`extensions/shared.mpe`). Add `extensions/<app>/` when an app needs its own. |
 | `assets/icon.png` | The Lurk icon at full size (1254 px). `patches-bundle.png` is a 512 px copy: Manager shows it for this source, and the README header uses it. |
+| `assets/<app>-icon.png` | An app's Lurk launcher artwork, flattened to its two colors. `bin/app-icon` turns it into `patches/src/main/resources/<app>/icon/` (adaptive icon, vector logo, legacy `.webp`), which the app's icon patch copies in. |
 | `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
 | `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
 | `~/scratch/morphe/` | Decompiled code, patched APKs, the test emulator, reference repos. Regenerable. |
@@ -123,6 +125,7 @@ adb -s emulator-5580 logcat -s lurk    # Logger output from patched code
 bin/emu shot             # screenshot → ~/scratch/morphe/shots/
 ```
 
+`bin/app-icon <app> <artwork.png>` regenerates an app's launcher icon from square two-color artwork (a flat logo on a flat background).
 `bin/patch` passes anything after `--` to Morphe Desktop, for example
 `bin/patch twitch -- --exclusive -e "Disable analytics"`.
 `bin/refs` clones Morphe's own repos (patcher docs, patches library, official patches) for API reference.

@@ -34,4 +34,4 @@ README.md documents the layout, commands and workflow; read it first.
 
 `bin/bootstrap` (setup), `bin/build`, `bin/apk-add <file>`, `bin/apk-fetch <app>`, `bin/apk-info`,
 `bin/scan <app>`, `bin/decompile <app>`, `bin/patch <app> [--install=emulator-5580]`,
-`bin/emu start|stop|status|shot`, `bin/new-app`, `bin/refs`.
+`bin/emu start|stop|status|shot`, `bin/new-app`, `bin/refs`, `bin/app-icon <app> <artwork.png>`.

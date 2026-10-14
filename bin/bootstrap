@@ -19,7 +19,7 @@ build_tool aapt2 >/dev/null
 build_tool apksigner >/dev/null
 [[ -d "$ANDROID_HOME/platforms/android-36" ]] || die "extensions need Android platform 36: sdkmanager 'platforms;android-36'"
 
-note "mise tools: jadx, apkeep, hermes-dec"
+note "mise tools: jadx, apkeep, hermes-dec, uv"
 (cd "$ROOT" && mise trust -q && mise install -q)
 
 note "jars in tools/"
