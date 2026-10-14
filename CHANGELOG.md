@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/jordanwoodson/lurk/compare/v1.1.0...v1.2.0) (2026-10-14)
+
+### ✨ New Features
+
+* add Lurk icon patch for Rumble ([7920e76](https://github.com/jordanwoodson/lurk/commit/7920e7627262c6872e38cbe46fed4fb098d2b837))
+
 ## [1.2.0-dev.1](https://github.com/jordanwoodson/lurk/compare/v1.1.0...v1.2.0-dev.1) (2026-10-14)
 
 ### ✨ New Features
