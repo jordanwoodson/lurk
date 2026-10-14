@@ -1,7 +1,6 @@
 package io.github.jordanwoodson.patches.rumble.shorts
 
 import app.morphe.patcher.Fingerprint
-import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructionsWithLabels
 import app.morphe.patcher.extensions.InstructionExtensions.getInstruction
 import app.morphe.patcher.methodCall
@@ -18,11 +17,19 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
+import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
+import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.enumConstant
 import io.github.jordanwoodson.patches.rumble.shared.enumWith
 import io.github.jordanwoodson.patches.rumble.shared.kotlinObject
 import io.github.jordanwoodson.patches.rumble.shared.single
+import io.github.jordanwoodson.patches.shared.settings.Section
+import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
+import io.github.jordanwoodson.patches.shared.settings.addInstructionsIfEnabled
+import io.github.jordanwoodson.patches.shared.settings.isEnabled
+
+private const val KEY = "hide_shorts"
 
 @Suppress("unused")
 val hideShortsPatch = bytecodePatch(
@@ -32,28 +39,26 @@ val hideShortsPatch = bytecodePatch(
     default = false,
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
+    dependsOn(settingsPatch)
 
     execute {
         hideShortsTab()
 
         // The Shorts row, wherever it appears.
-        ShortsListViewFingerprint.single("ShortsListView composable").method.addInstructions(0, "return-void")
+        ShortsListViewFingerprint.single("ShortsListView composable").method.addInstructionsIfEnabled(KEY, "return-void")
 
         // Home: treat a "shorts" section like one the server hides, so it is neither loaded nor drawn.
-        HomeSectionKindFingerprint.single("HomeSectionKind parser").method.apply {
-            addInstructionsWithLabels(
-                0,
-                """
-                    const-string v0, "shorts"
-                    invoke-virtual { v0, p1 }, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
-                    move-result v0
-                    if-eqz v0, :keep
-                    sget-object v0, Lcom/rumble/network/dto/home/HomeSectionKind;->HIDE:Lcom/rumble/network/dto/home/HomeSectionKind;
-                    return-object v0
-                """,
-                ExternalLabel("keep", getInstruction(0)),
-            )
-        }
+        HomeSectionKindFingerprint.single("HomeSectionKind parser").method.addInstructionsIfEnabled(
+            KEY,
+            """
+                const-string v0, "shorts"
+                invoke-virtual { v0, p1 }, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+                move-result v0
+                if-eqz v0, :lurk_off
+                sget-object v0, Lcom/rumble/network/dto/home/HomeSectionKind;->HIDE:Lcom/rumble/network/dto/home/HomeSectionKind;
+                return-object v0
+            """,
+        )
 
         // Channel pages: drop the "shorts" tab, unless it is the channel's only one. The getter has
         // two registers (the list and this), so this doubles as the size and the copy.
@@ -63,6 +68,8 @@ val hideShortsPatch = bytecodePatch(
                 1,
                 """
                     if-eqz v$list, :done
+                    ${isEnabled(KEY, "p0")}
+                    if-eqz p0, :done
                     invoke-interface { v$list }, Ljava/util/List;->size()I
                     move-result p0
                     add-int/lit8 p0, p0, -0x1
@@ -79,6 +86,16 @@ val hideShortsPatch = bytecodePatch(
 
         hideCategoryShortsTab()
         hideSearchShortsFilter()
+
+        rumbleSettings.add(
+            SwitchSetting(
+                KEY,
+                "Hide Shorts",
+                "The Shorts tab and rows, and Shorts on channels, categories and search.",
+                Section.INTERFACE,
+                restart = true,
+            ),
+        )
     }
 }
 
@@ -111,6 +128,8 @@ private fun BytecodePatchContext.hideShortsTab() {
         addInstructionsWithLabels(
             tabCast + 1,
             """
+                ${isEnabled(KEY, "v$scratch")}
+                if-eqz v$scratch, :keep
                 invoke-virtual { v$tab }, $tabType->${routeGetter.name}()$routeType
                 move-result-object v$scratch
                 instance-of v$scratch, v$scratch, $shortsRoute
@@ -152,12 +171,15 @@ private fun BytecodePatchContext.hideCategoryShortsTab() {
         val list = (instructions[toList + 1] as OneRegisterInstruction).registerA
         // The array's other registers are free once it is built.
         val scratch = arrayRegisters.first { it != list }
-        addInstructions(
+        addInstructionsWithLabels(
             toList + 2,
             """
+                ${isEnabled(KEY, "v$scratch")}
+                if-eqz v$scratch, :keep
                 sget-object v$scratch, $shorts
                 invoke-interface { v$list, v$scratch }, Ljava/util/List;->remove(Ljava/lang/Object;)Z
             """,
+            ExternalLabel("keep", getInstruction(toList + 2)),
         )
     }
 }
@@ -181,15 +203,18 @@ private fun BytecodePatchContext.hideSearchShortsFilter() {
         if (following.opcode != Opcode.SGET_OBJECT) throw PatchException("Rumble: unexpected search chip code")
         val scratch = (following as OneRegisterInstruction).registerA
         if (list > 15 || scratch > 15) throw PatchException("Rumble: unexpected registers in the search chips")
-        addInstructions(
+        addInstructionsWithLabels(
             call + 2,
             """
+                ${isEnabled(KEY, "v$scratch")}
+                if-eqz v$scratch, :keep
                 new-instance v$scratch, Ljava/util/ArrayList;
                 invoke-direct { v$scratch, v$list }, Ljava/util/ArrayList;-><init>(Ljava/util/Collection;)V
                 sget-object v$list, $shorts
                 invoke-virtual { v$scratch, v$list }, Ljava/util/ArrayList;->remove(Ljava/lang/Object;)Z
                 move-object v$list, v$scratch
             """,
+            ExternalLabel("keep", getInstruction(call + 2)),
         )
     }
 }
