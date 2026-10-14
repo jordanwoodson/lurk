@@ -28,13 +28,15 @@ Tap **Add to Morphe** on an Android phone with [Morphe Manager](https://morphe.s
 a computer it shows a QR code to scan with the phone. Releases from the `dev` branch are pre-releases:
 turn on pre-releases for this source in Manager to get them.
 
-Patched apps get a **Lurk** settings screen (Rumble: Settings > App info > Lurk, or long-press the app
-icon > Lurk settings) that turns the included patches off and on without patching again.
+Patched apps get a **Lurk** settings screen that turns included patches off and on without patching
+again. Long-press the app icon > Lurk settings; Rumble also has Settings > App info > Lurk.
+Kick's JavaScript settings require a restart. See the [Kick notes](docs/kick.md) for patch scope and
+the experimental VOD option.
 
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.4.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.4.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;14 patches total
+> **[v1.5.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.5.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;26 patches total
 <details open>
 <summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;14 patches</summary>
 <br>
@@ -60,6 +62,32 @@ icon > Lurk settings) that turns the included patches off and on without patchin
 | [Lurk icon](#lurk-icon) | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
 | [Remove tracking permissions](#remove-tracking-permissions) | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
 | [Unlock Premium](#unlock-premium) | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
+
+</details>
+
+<details open>
+<summary>📦&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;12 patches</summary>
+<br>
+
+**🎯 Supported versions:**
+
+| 40.32.1 |
+| :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| [Bypass VOD ad sessions](#bypass-vod-ad-sessions) | Experimental: uses the original VOD URL instead of requesting a separate ad-session manifest. Does not remove ads stitched into live streams. Enable in Lurk settings after patching. |  |
+| [Change app name](#change-app-name) | Changes Kick's name in the launcher and Android settings. | • App name |
+| [Clean share links](#clean-share-links) | Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean. |  |
+| [Clone app](#clone-app) | Installs Kick under another package name alongside the original, with separate sign-in and settings. Sharing sign-in with Kick's broadcaster app may not work after re-signing. | • Package name |
+| [Default video quality](#default-video-quality) | Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling. | • Default quality ceiling |
+| [Disable analytics](#disable-analytics) | Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads. |  |
+| [Disable autoplay](#disable-autoplay) | Starts Kick's feed previews switched off. Existing preferences and Kick's own autoplay switch keep working. Does not change intentionally opened streams. |  |
+| [Hide Clips](#hide-clips) | Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open. |  |
+| [Hide KICKs tipping](#hide-kicks-tipping) | Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt. |  |
+| [Hide subscription upsells](#hide-subscription-upsells) | Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator. |  |
+| [Lurk icon](#lurk-icon) | Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon. |  |
+| [Remove tracking permissions](#remove-tracking-permissions) | Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
 
 </details>
 
