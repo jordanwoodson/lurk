@@ -37,6 +37,47 @@ public final class TwitchInterface {
         return stock && !Settings.isEnabled("hide_tipping");
     }
 
+    /**
+     * The native Home's top tabs without Clips. {@code context} is what Home was opened on: the page
+     * itself, the Home fragment (its "DiscoveryFeedPage" argument), or the tab list being replaced.
+     * A Home opened on Clips, such as from a shared clip link, keeps its Clips tab.
+     */
+    public static List<?> homeTabs(List<?> tabs, Object context) {
+        if (tabs == null || !Settings.isEnabled("hide_clips")) return tabs;
+        if (context instanceof List) {
+            for (Object tab : (List<?>) context) if (isClipsPage(tab)) return tabs;
+        } else if (isClipsPage(requestedPage(context))) {
+            return tabs;
+        }
+        List<Object> kept = new ArrayList<>();
+        for (Object tab : tabs) if (!isClipsPage(tab)) kept.add(tab);
+        if (kept.isEmpty() || kept.size() == tabs.size()) return tabs;
+        return Collections.unmodifiableList(kept);
+    }
+
+    private static Object requestedPage(Object context) {
+        if (context == null || context.getClass().getName().startsWith("tv.twitch.android.models.feed.DiscoveryFeedPage")) {
+            return context;
+        }
+        try {
+            Object arguments = context.getClass().getMethod("getArguments").invoke(context);
+            return arguments instanceof Bundle ? ((Bundle) arguments).get("DiscoveryFeedPage") : null;
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            return null;
+        }
+    }
+
+    private static boolean isClipsPage(Object page) {
+        if (page == null || !page.getClass().getName().endsWith("DiscoveryFeedPage$FeedLocationPage")) return false;
+        try {
+            Object location = page.getClass().getMethod("getFeedLocation").invoke(page);
+            String name = location == null ? "" : location.getClass().getName();
+            return name.endsWith("FeedLocation$Clips") || name.endsWith("FeedLocation$ClipsCategory");
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            return false;
+        }
+    }
+
     public static Object clipTabs(Object stock) {
         return clipTabs(stock, null);
     }
