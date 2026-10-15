@@ -268,7 +268,8 @@ the original snapshot. On a manifest/file error it logs and uses embedded defaul
 Verification tools retained in this repository:
 
 - `tests/kick/verify_resources.py`: actual decoded resource/manifest assertions,
-  including signature-protected token sharing and intact internet permission.
+  including signature-protected token sharing, intact internet permission and
+  (`--analytics`) Firebase Analytics starting disabled.
 - `tests/kick/HermesProbe.kt`: actual-bundle parsing, negative controls, uniqueness,
   overlap rejection, preview literals and exact restoration.
 - `tests/kick/test_hermes.py`: independent instruction/branch decoding of emitted
@@ -304,8 +305,11 @@ The visible Hide Clips switch and Restart Kick action were exercised: the proces
 restarted, its private bundle matched the selected bytes exactly, and Browse's Clips
 tab returned. The launcher shortcut points to the non-exported settings activity.
 
-These tests do not establish zero telemetry from the first process instruction:
-Firebase's content provider initializes before the application collection hook.
+These tests do not establish zero telemetry from the first process instruction.
+Firebase's content provider initializes before the application collection hook, so
+Disable analytics also sets the manifest's `firebase_analytics_collection_enabled`
+default to false; Firebase prefers the value the startup hook persists, so the switch
+still turns collection back on.
 Authenticated flows, broadcaster token sharing and every server ad configuration
 need device/account coverage. Do not interpret SDK suppression or static VOD fallback
 validation as verified removal of every video ad.

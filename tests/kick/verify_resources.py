@@ -17,7 +17,7 @@ TRACKING = {
 }
 
 
-def verify(root, *, label=None, package=None, privacy=False, embedded=False, icon=False):
+def verify(root, *, label=None, package=None, privacy=False, embedded=False, icon=False, analytics=False):
     manifest = ET.parse(root / "AndroidManifest.xml").getroot()
     application = manifest.find("application")
     assert application is not None, "Application is missing"
@@ -29,6 +29,11 @@ def verify(root, *, label=None, package=None, privacy=False, embedded=False, ico
         metadata = {e.get(ANDROID + "name"): e.get(ANDROID + "value")
                     for e in application.findall("meta-data")}
         assert metadata.get("expo.modules.updates.ENABLED") == "false", "Expo updates can replace the patched bundle"
+    if analytics:
+        metadata = {e.get(ANDROID + "name"): e.get(ANDROID + "value")
+                    for e in application.findall("meta-data")}
+        assert metadata.get("firebase_analytics_collection_enabled") == "false", \
+            "Firebase Analytics starts collecting before the startup hook"
     if label is not None:
         labels = [e.text for e in ET.parse(root / "res/values/strings.xml").getroot()
                   if e.get("name") == "app_name"]
@@ -65,6 +70,7 @@ if __name__ == "__main__":
     parser.add_argument("--package")
     parser.add_argument("--privacy", action="store_true")
     parser.add_argument("--embedded", action="store_true")
+    parser.add_argument("--analytics", action="store_true")
     parser.add_argument("--icon", action="store_true")
     args = vars(parser.parse_args())
     verify(args.pop("decoded"), **args)
