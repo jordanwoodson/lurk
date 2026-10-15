@@ -47,3 +47,16 @@ internal object RecommendationCountdownFingerprint : Fingerprint(
     parameters = listOf("L"), returnType = "V",
     strings = listOf("progress", "Recommended model: ", " cannot be bound"),
 )
+
+// The app setting "Continue Playing Audio in the Background", which every player reads when the app is
+// left. Twitch's fallback when none is saved is "never".
+internal object BackgroundAudioSettingFingerprint : Fingerprint(
+    returnType = "L", parameters = emptyList(),
+    strings = listOf("background_audio_setting", "never", "headphones_speaker", "always"),
+)
+
+// Whether the native player's video stats panel is available: staff accounts with a debug preference.
+internal object VideoDebugPanelFingerprint : Fingerprint(
+    returnType = "Z", parameters = emptyList(), strings = listOf("showVideoDebugPanel"),
+    filters = listOf(methodCall(definingClass = "Landroid/content/SharedPreferences;", name = "getBoolean")),
+)
