@@ -109,6 +109,15 @@ AppsFlyer is never initialized, and Firebase Analytics, Firebase Performance and
 automatic event logging stay off.
 Settings > Data Consent no longer opens anything.
 
+Rumble also keeps the last decision in `consent_cache.json` and applies it at startup without Ketch, so
+consent recorded while the switch was off, or before the patch was included, would still start the
+trackers on every launch. While the switch is on, the cached model's `hasDecision` getter returns `false`
+(found as the class whose `toString` starts `CachedConsent(hasDecision=`; it is the only `()Z` there).
+Startup then hands every tracker an empty purpose set, as on a fresh install: Firebase Analytics,
+Crashlytics, Performance and Facebook switch their persisted collection off again, and AppsFlyer and
+Airship are never started. The cached consent strings still go into ad requests, which Block ads stops.
+Turning the switch off uses the cached consent again.
+
 Validated on 2026-10-14 on the Android 16 emulator, fresh data each time, location resolved by Ketch as
 US-MO:
 
