@@ -62,3 +62,17 @@ internal object BranchTrackingSetterFingerprint : Fingerprint(
     returnType = "V", parameters = listOf("Landroid/content/Context;", "Z"),
     strings = listOf("disableTracking context: ", "Tracking disabled. Clearing all pending requests"),
 )
+
+// Nielsen's server-to-server measurement: each ping is a GET to imrworldwide.com with the advertising ID.
+internal object NielsenPingFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(methodCall(
+        definingClass = "Ltv/twitch/android/shared/nielsen/NielsenS2SApi\$NielsenS2SService;", name = "firePing")),
+)
+
+// Sprig (UserLeap) in-app surveys and event tracking. The public Sprig facade delegates to this SDK object;
+// without an environment configured, its tracking and surveys have nowhere to send to.
+internal object SprigConfigureFingerprint : Fingerprint(
+    definingClass = "Lcom/userleap/UserLeap;", name = "configure", returnType = "V",
+    parameters = listOf("Landroid/content/Context;", "Ljava/lang/String;"),
+)
