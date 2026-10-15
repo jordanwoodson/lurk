@@ -7,20 +7,71 @@ import android.text.TextPaint;
 import android.text.style.CharacterStyle;
 import android.text.style.UpdateAppearance;
 import java.lang.reflect.Field;
+import java.security.SecureRandom;
 import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
 /** Hooks for the Twitch chat patches. */
 @SuppressWarnings("unused")
 public final class TwitchChat {
+    static final String ANONYMOUS = "chat_anonymous";
     static final String SHOW_DELETED = "chat_show_deleted";
     static final String IGNORE_CLEARS = "chat_ignore_clears";
     static final String TIMESTAMPS = "chat_timestamps";
     static final String TIMESTAMP_FORMAT = "chat_timestamp_format";
 
+    private static volatile Boolean anonymous;
+    private static String guestNick;
     private static volatile Field sourceField;
 
     private TwitchChat() { }
+
+    // Anonymous chat. One snapshot per process, so the IRC login and the read-only input always agree.
+
+    static boolean anonymous() {
+        Boolean current = anonymous;
+        if (current == null) {
+            synchronized (TwitchChat.class) {
+                current = anonymous;
+                if (current == null) anonymous = current = Settings.isEnabled(ANONYMOUS);
+            }
+        }
+        return current;
+    }
+
+    /** Injection point: the OAuth token for the IRC PASS line. Null makes Twitch send {@code PASS listen}. */
+    public static String ircToken(String token) {
+        return anonymous() ? null : token;
+    }
+
+    /** Injection point: the IRC NICK. A guest nick (justinfan and digits) that stays the same for the process. */
+    public static String ircNick(String nick) {
+        if (!anonymous()) return nick;
+        synchronized (TwitchChat.class) {
+            if (guestNick == null) {
+                guestNick = "justinfan" + (100000000 + new SecureRandom().nextInt(900000000));
+                Logger.d("chat: reading anonymously as " + guestNick);
+            }
+            return guestNick;
+        }
+    }
+
+    /** Injection point: whether the chat input shows Twitch's log-in restriction instead of accepting text. */
+    public static boolean readOnly() {
+        return anonymous();
+    }
+
+    /** Injection point: the text of the chat input's log-in restriction, which anonymous chat reuses. */
+    public static String loginLabel(String stock) {
+        return anonymous() ? "Anonymous chat: read only" : stock;
+    }
+
+    /** Injection point: the failure a chat message send returns instead of reaching GraphQL, or null to send. */
+    public static Throwable sendBlocked() {
+        if (!anonymous()) return null;
+        Logger.blocked("chat message send (anonymous chat is read-only)");
+        return new IllegalStateException("Lurk: anonymous chat is read-only");
+    }
 
     // Deleted messages.
 
