@@ -25,6 +25,7 @@ val hideTippingPatch = bytecodePatch(
         filterBitsFlag(ChatToolbarStateFingerprint, ", isBitsSpendingTrayVisibleBasedOnInput=")
         filterBitsFlag(OneChatStateFingerprint, ", isBitsButtonVisible=")
         filterBitsFlag(OneChatStateFingerprint, ", isOneTapEnabled=")
+        filterBitsFlag(MessageInputConfigFingerprint, ", isBitsPickerVisible=")
         twitchSettings.add(SwitchSetting("hide_tipping", "Hide Bits tipping", "Bits purchase buttons and cheering prompts. Received cheers still appear.", Section.INTERFACE, restart = true))
     }
 }
