@@ -660,6 +660,36 @@ public final class TwitchPlayer {
     }
 
     // ---------------------------------------------------------------------------------------------
+    // Normal latency
+
+    /** Players Lurk switched to normal latency, to switch back when the setting is turned off. */
+    private static final Map<Object, Boolean> NORMAL_LATENCY = Collections.synchronizedMap(new WeakHashMap<>());
+
+    /** Injection point: Twitch's native load, with the IVS player it is about to load (Twitch never sets the mode). */
+    public static void loadLatency(Object player) {
+        if (player == null) return;
+        try {
+            if (Settings.isEnabled("normal_latency")) {
+                setLowLatency(player, false);
+                NORMAL_LATENCY.put(player, Boolean.TRUE);
+            } else if (NORMAL_LATENCY.remove(player) != null) {
+                setLowLatency(player, true);
+            }
+        } catch (Throwable t) {
+            Logger.d("latency: " + t);
+        }
+    }
+
+    /** Injection point: IVS setLiveLowLatencyEnabled, which React Native and the portal player call. */
+    public static boolean lowLatency(boolean requested) {
+        return requested && !Settings.isEnabled("normal_latency");
+    }
+
+    private static void setLowLatency(Object player, boolean enabled) throws ReflectiveOperationException {
+        player.getClass().getMethod("setLiveLowLatencyEnabled", boolean.class).invoke(player, enabled);
+    }
+
+    // ---------------------------------------------------------------------------------------------
 
     private static Window window(View view) {
         Activity activity = activity(view.getContext());

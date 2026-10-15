@@ -26,6 +26,10 @@ internal object IvsReleaseFingerprint : Fingerprint(
     definingClass = IVS_PLAYER, name = "release", returnType = "V", parameters = emptyList(),
 )
 
+internal object IvsLowLatencyFingerprint : Fingerprint(
+    definingClass = IVS_PLAYER, name = "setLiveLowLatencyEnabled", returnType = "V", parameters = listOf("Z"),
+)
+
 // The base class of the native player presenters (live, VOD, clips, vertical): its property delegates
 // keep their Kotlin names.
 internal object PlayerPresenterFingerprint : Fingerprint(
@@ -130,6 +134,17 @@ internal object TheatreInterceptFingerprint : Fingerprint(
 internal object TheatreTouchFingerprint : Fingerprint(
     definingClass = "${DRAGGABLE}ConstraintTheatreContainerView;", name = "onTouchEvent",
     returnType = "Z", parameters = listOf("Landroid/view/MotionEvent;"),
+)
+
+// The native player's load into IVS (live, VOD, clips; classic, vertical and portal), which tags the
+// session with the player type and channel before loading.
+internal object NativePlayerLoadFingerprint : Fingerprint(
+    returnType = "V", strings = listOf("player", "channel_id"),
+    filters = listOf(
+        methodCall(definingClass = "Lcom/amazonaws/ivs/player/SessionConfig;", name = "addAnalyticsProperty"),
+        fieldAccess(type = "Lcom/amazonaws/ivs/player/MediaPlayer;", opcode = Opcode.IGET_OBJECT),
+        methodCall(definingClass = "Lcom/amazonaws/ivs/player/MediaPlayer;", name = "load"),
+    ),
 )
 
 // The Create Clip button's state, shared by the live overlay, the VOD/clip overlay and vertical theatre.
