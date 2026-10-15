@@ -12,6 +12,27 @@ import java.lang.reflect.Proxy;
 public final class TwitchInterface {
     private TwitchInterface() { }
 
+    /**
+     * The destination of a plain launch (Twitch's "Default", which opens Home) replaced by the chosen
+     * start screen. Every other destination, such as a link's, is kept.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Enum<?> startDestination(Enum<?> destination) {
+        if (destination == null || !"Default".equals(destination.name())) return destination;
+        String chosen;
+        switch (Settings.getInt("default_tab")) {
+            case 1: chosen = "Browse"; break;
+            case 2: chosen = "Following"; break;
+            case 3: chosen = "NotificationCenter"; break;
+            default: return destination;
+        }
+        try {
+            return Enum.valueOf((Class) destination.getDeclaringClass(), chosen);
+        } catch (IllegalArgumentException missing) {
+            return destination;
+        }
+    }
+
     public static boolean bitsVisible(boolean stock) {
         return stock && !Settings.isEnabled("hide_tipping");
     }
