@@ -148,9 +148,11 @@ The original Hermes v98 bundle SHA-256 is
 `50e73cce33e67272f9eb9a38b8d8e6f1ecd06ceccf4b88cc9dbc091743493fc9`.
 Patch-time parsing pins that hash/version, verifies function boundaries and unique
 instruction patterns, and permits only equal-length non-overlapping edits. The
-runtime loader validates the embedded hash and edit manifest, snapshots switches,
-applies original/replacement bytes, and recomputes the Hermes footer. All switches
-off must reproduce the independently hashed stock bundle. Changes require a restart.
+runtime loader snapshots switches. When every switch is at its patch-time default it
+loads the embedded asset as is and deletes any earlier private copy; otherwise it
+validates the embedded hash and edit manifest, applies original/replacement bytes,
+recomputes the Hermes footer and writes a private copy. All switches off must
+reproduce the independently hashed stock bundle. Changes require a restart.
 
 The shipped release `RNSourceModePolicy` disables Metro and selects the embedded
 asset through `RNReactHostFactory` and `DefaultReactHost`; the file path argument is

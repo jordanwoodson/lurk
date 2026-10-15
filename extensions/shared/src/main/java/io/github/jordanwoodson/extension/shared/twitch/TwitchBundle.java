@@ -21,6 +21,7 @@ import io.github.jordanwoodson.extension.shared.settings.Settings;
 public final class TwitchBundle {
     private static Context context;
     private static String prepared;
+    private static boolean embedded;
 
     private TwitchBundle() { }
 
@@ -31,7 +32,7 @@ public final class TwitchBundle {
     /** Called only at React Native's embedded asset loader. A reload uses the same settings snapshot. */
     public static synchronized String prepare(AssetManager assets, String assetUrl) {
         if (!"assets://index.android.bundle".equals(assetUrl)) return null;
-        if (prepared != null) return prepared;
+        if (prepared != null || embedded) return prepared;
         try {
             if (context == null) throw new IllegalStateException("No application context");
             JSONObject manifest = new JSONObject(new String(read(assets, "lurk-hermes.json", 1024 * 1024),
@@ -39,13 +40,29 @@ public final class TwitchBundle {
             if (manifest.getInt("format") != 1 || manifest.getInt("version") != 98) {
                 throw new IllegalArgumentException("Unknown bundle manifest");
             }
+            JSONArray edits = manifest.getJSONArray("edits");
+            // Each process gets a single snapshot.
+            Map<String, Boolean> snapshot = new HashMap<>();
+            boolean defaults = true;
+            for (int i = 0; i < edits.length(); i++) {
+                JSONObject edit = edits.getJSONObject(i);
+                String key = edit.getString("key");
+                if (!snapshot.containsKey(key)) snapshot.put(key, Settings.isEnabled(key));
+                if (snapshot.get(key) != edit.getBoolean("default")) defaults = false;
+            }
+            File output = new File(context.getCodeCacheDir(), "lurk-twitch.hbc");
+            if (defaults) {
+                // The embedded asset already has the patch-time defaults: don't copy 28 MB every start.
+                embedded = true;
+                output.delete();
+                Logger.d("Twitch Hermes: every setting is at its default, using the embedded bundle");
+                return null;
+            }
             byte[] bundle = read(assets, "index.android.bundle", 32 * 1024 * 1024);
             String embeddedHash = manifest.getString("embeddedSha256");
             if (!hex(MessageDigest.getInstance("SHA-256").digest(bundle)).equals(embeddedHash)) {
                 throw new IllegalArgumentException("Embedded bundle hash mismatch");
             }
-            JSONArray edits = manifest.getJSONArray("edits");
-            Map<String, Boolean> snapshot = new HashMap<>();
             int previousEnd = 0;
             for (int i = 0; i < edits.length(); i++) {
                 JSONObject edit = edits.getJSONObject(i);
@@ -60,17 +77,14 @@ public final class TwitchBundle {
                 if (!Arrays.equals(expected, Arrays.copyOfRange(bundle, offset, offset + expected.length))) {
                     throw new IllegalArgumentException("Bundle edit mismatch");
                 }
-                String key = edit.getString("key");
-                if (!snapshot.containsKey(key)) snapshot.put(key, Settings.isEnabled(key));
-                byte[] selected = snapshot.get(key) ? replacement : original;
+                byte[] selected = snapshot.get(edit.getString("key")) ? replacement : original;
                 System.arraycopy(selected, 0, bundle, offset, selected.length);
                 previousEnd = offset + original.length;
             }
             MessageDigest sha1 = MessageDigest.getInstance("SHA-1");
             sha1.update(bundle, 0, bundle.length - 20);
             System.arraycopy(sha1.digest(), 0, bundle, bundle.length - 20, 20);
-            // Each process gets a single snapshot. Atomic replacement also tolerates interrupted starts.
-            File output = new File(context.getCodeCacheDir(), "lurk-twitch.hbc");
+            // Atomic replacement tolerates interrupted starts.
             AtomicFile atomic = new AtomicFile(output);
             FileOutputStream stream = null;
             try {

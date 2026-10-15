@@ -260,8 +260,10 @@ The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its functio
 and string tables, requires unique targets and rejects overlapping or unequal-length
 edits. The official Morphe `hermesPatch` performs the actual replacements and footer
 update. A generated manifest records the original/default byte ranges. The native
-bundle loader verifies the embedded hash, chooses ranges from a settings snapshot,
-refreshes SHA-1 and atomically writes an app-private bundle. Disabling every switch
+bundle loader takes a settings snapshot. When every switch is at its patch-time
+default it loads the embedded asset as is and deletes any earlier private copy;
+otherwise it verifies the embedded hash, chooses ranges from the snapshot, refreshes
+SHA-1 and atomically writes an app-private bundle. Disabling every switch
 reconstructs the original bundle byte for byte; reloading in the same process keeps
 the original snapshot. On a manifest/file error it logs and uses embedded defaults.
 
