@@ -12,8 +12,70 @@ import java.lang.reflect.Proxy;
 public final class TwitchInterface {
     private TwitchInterface() { }
 
+    /**
+     * The destination of a plain launch (Twitch's "Default", which opens Home) replaced by the chosen
+     * start screen. Every other destination, such as a link's, is kept.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Enum<?> startDestination(Enum<?> destination) {
+        if (destination == null || !"Default".equals(destination.name())) return destination;
+        String chosen;
+        switch (Settings.getInt("default_tab")) {
+            case 1: chosen = "Browse"; break;
+            case 2: chosen = "Following"; break;
+            case 3: chosen = "NotificationCenter"; break;
+            default: return destination;
+        }
+        try {
+            return Enum.valueOf((Class) destination.getDeclaringClass(), chosen);
+        } catch (IllegalArgumentException missing) {
+            return destination;
+        }
+    }
+
     public static boolean bitsVisible(boolean stock) {
         return stock && !Settings.isEnabled("hide_tipping");
+    }
+
+    /**
+     * The native Home's top tabs without Clips. {@code context} is what Home was opened on: the page
+     * itself, the Home fragment (its "DiscoveryFeedPage" argument), or the tab list being replaced.
+     * A Home opened on Clips, such as from a shared clip link, keeps its Clips tab.
+     */
+    public static List<?> homeTabs(List<?> tabs, Object context) {
+        if (tabs == null || !Settings.isEnabled("hide_clips")) return tabs;
+        if (context instanceof List) {
+            for (Object tab : (List<?>) context) if (isClipsPage(tab)) return tabs;
+        } else if (isClipsPage(requestedPage(context))) {
+            return tabs;
+        }
+        List<Object> kept = new ArrayList<>();
+        for (Object tab : tabs) if (!isClipsPage(tab)) kept.add(tab);
+        if (kept.isEmpty() || kept.size() == tabs.size()) return tabs;
+        return Collections.unmodifiableList(kept);
+    }
+
+    private static Object requestedPage(Object context) {
+        if (context == null || context.getClass().getName().startsWith("tv.twitch.android.models.feed.DiscoveryFeedPage")) {
+            return context;
+        }
+        try {
+            Object arguments = context.getClass().getMethod("getArguments").invoke(context);
+            return arguments instanceof Bundle ? ((Bundle) arguments).get("DiscoveryFeedPage") : null;
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            return null;
+        }
+    }
+
+    private static boolean isClipsPage(Object page) {
+        if (page == null || !page.getClass().getName().endsWith("DiscoveryFeedPage$FeedLocationPage")) return false;
+        try {
+            Object location = page.getClass().getMethod("getFeedLocation").invoke(page);
+            String name = location == null ? "" : location.getClass().getName();
+            return name.endsWith("FeedLocation$Clips") || name.endsWith("FeedLocation$ClipsCategory");
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            return false;
+        }
     }
 
     public static Object clipTabs(Object stock) {

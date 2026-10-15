@@ -36,7 +36,59 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.7.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.7.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;39 patches total
+> **[v1.8.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.8.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;64 patches total
+<details open>
+<summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;38 patches</summary>
+<br>
+
+**🎯 Supported versions:**
+
+| 31.6.0 |
+| :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| Anonymous chat | Adds a switch that reads chat as an anonymous guest, the way Twitch does when signed out, while the rest of the app stays signed in, so you aren't listed among a channel's chatters. Sending chat messages is disabled while it's on. Off by default; applies after a restart. |  |
+| Auto-claim channel points | Adds a switch that claims the channel points bonus for your account as soon as its chest appears in a channel's chat, with the same request as tapping the chest. Each bonus is claimed once. Off by default; needs a signed-in account. |  |
+| Background audio | Keeps streams and videos playing as audio when you leave the app, using Twitch's own "Continue Playing Audio in the Background" with its audio-only stream and media notification. Changes only the default, Never in Twitch: a choice made in Twitch's settings still wins. |  |
+| Block client ads | Declines ads handled by Twitch's native client ad eligibility check using its existing not eligible result. Does not remove ads stitched into streams by the server or guarantee ad-free playback. |  |
+| Block cookie notice | Hides Twitch's automatic cookie consent notice without accepting it or changing saved vendor consent. Manual consent settings stay available. Use Disable analytics to block tracking. |  |
+| Block display ads | Blocks the ad requests that Block client ads doesn't cover: stream display ads (squeezeback and lower third), audio ads, multi-format ad pods, the Following headliner, feed display and video ads and brand surveys, in both the native and React Native parts of the app. Each request gets the failure or no-ad answer Twitch already handles. Sponsorship and paid-promotion labels are kept. Ads stitched into the stream by the server still play. |  |
+| Change app name | Changes the name shown under Twitch's launcher icon and in Android's settings. | • App name |
+| Chat overlay | Adds a switch that scrolls live chat messages right to left across the top of the video in landscape (danmaku), as plain white text with the sender's name. Off until turned on in Lurk settings, with choices for speed and number of lines. Native live channels only: not React Native chat, VODs or chat replay. The overlay never takes touches. |  |
+| Chat timestamps | Shows the time each live chat message was sent in front of it, the way Twitch already shows it on chat history, in 24-hour or 12-hour format. Whispers are unchanged. |  |
+| Clean share links | Removes known Twitch attribution and campaign parameters from shared links and copied share text. Keeps timestamps, clip IDs, unknown parameters and fragments. Covers native and React Native sharing. |  |
+| Clone app | Installs Twitch under another package name alongside the original, with separate sign-in and settings. Amazon sign-in and verified app links may not work after re-signing. | • Package name |
+| Default startup tab | Adds a choice of the screen Twitch opens on instead of Home: Browse, Following or Activity. Links and notifications still open what they point to. |  |
+| Default video quality | Starts playback at the selected rendition when available, with Source as the default. Saved player choices, including Auto, take priority. Unavailable renditions use Twitch's fallback. | • Default rendition |
+| Disable analytics | Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK consent, enables Branch's limited tracking mode, blocks Crashlytics uploads, Nielsen audience pings and Sprig surveys, and prevents Sentry initialization. Watch progress, viewing statistics and rewards may stop updating. Restart Twitch after changing this setting. Playback requests still run. |  |
+| Disable autoplay | Stops the next recommended video and React Native feed clip from playing automatically, and defaults feed previews to Never. Manual Play and saved feed preview choices keep working. | • Feed previews<br>• Next video |
+| Fix notifications | Lets the patched app register for push notifications. Firebase only accepts Twitch's original package name and signing certificate, and refuses the re-signed app, so its registration requests send the original ones. |  |
+| Fix stuck start screen | Opens Twitch when its start screen is still waiting after 5 seconds. Twitch waits for Branch's link lookup before it routes, and when that never answers, it stays on a blank start screen until it's closed, unpatched Twitch included. |  |
+| Hide Bits tipping | Hides chat Bits buttons, Bits purchase cards, the cheering tray and one-tap Bits controls. Keeps normal chat and Bits messages sent by other viewers. |  |
+| Hide Clips | Hides the Clips discovery tab on Home and the Clips tab on native channel profiles. Shared clip links still open. |  |
+| Hide Home sections | Hides Stories on Home and, each with its own switch, the Continue watching, offline channels and recommended channels sections of Following. |  |
+| Hide chat highlights | Hides the Hype Train, Bits and gift leaderboards, other viewers' sub and gift messages and gift banners, pinned cheers and watch-streak pop-ups, each with its own switch. Celebrations can be hidden too. Other chat messages are unchanged. |  |
+| Hide mature content warning | Skips the content warning on streams, videos and clips with mature content labels, as if you had chosen Start Watching. Age, region, guardian and account restrictions still apply. Off by default. |  |
+| Hide player buttons | Hides the player's Clip, Cast and Share buttons, each with its own switch. Cast stays visible by default. Other ways to clip and share, such as the channel page, are unchanged. |  |
+| Hide subscription upsells | Hides Subscribe and Gift a Sub prompts, Turbo promotions and the native Turbo signup/startup offer. Keeps the existing subscribed indicator and legitimate account entitlements. |  |
+| Lurk icon | Replaces Twitch's launcher icon with Lurk artwork, including Android's themed icon. |  |
+| Mute stitched ads | While an ad break that Twitch's server stitched into a stream plays, mutes the player and covers the video with black, then restores both when the stream returns. Works in the native and React Native players. The ad still plays and the break isn't shorter. |  |
+| Normal latency | Adds a setting that turns off the player's low-latency mode for live streams: a few seconds more delay to the broadcaster, for fewer rebuffers on a weak connection. Off until turned on in Lurk settings. |  |
+| Player gestures | Sets the skip interval of the video (VOD) rewind and forward buttons and the media notification, and adds brightness (left) and volume (right) swipes on the video in landscape. Twitch's -10/+30 seconds stay until you choose another interval in Lurk settings; swipes start off. |  |
+| Playlist proxy | Sends live stream playlist requests to a proxy server you set in this patch's options, for example one that returns playlists without stitched ads. The proxy receives each request in full, including your signed playback token, which identifies your account: only use a proxy you trust. An http:// proxy gets an exception from Twitch's HTTPS-only rule for its host alone, and the token then travels unencrypted. Does nothing while the proxy URL is empty. Videos and clips are not proxied. | • Proxy URL |
+| Refresh stream | Long-press the player's settings gear, or the middle of the video, to reload a stuck stream through Twitch's own Retry: a new access token and playlist for live streams, the same position for videos. Covers Twitch's native players. |  |
+| Remove tracking permissions | Removes advertising ID and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
+| Show deleted messages | Keeps the text of chat messages that moderators delete, or remove with a timeout or ban, struck through and dimmed instead of Twitch's "message deleted" placeholder. A second switch keeps the messages when a moderator clears the whole chat. |  |
+| Show video stats | Adds the video stats button Twitch shows only to its staff to the native player: latency to the broadcaster, bitrate, buffer, dropped frames, codecs and server. Everything shown is local to the player. |  |
+| Sleep timer | Pauses playback a chosen time after it last started or resumed, through Twitch's own pause for native, portal and React Native players, and says so in a short notice. Choose the time in Lurk settings; it is off until then. |  |
+| Third-party badges | Adds switches that show FrankerFaceZ and Chatterino badges and pronouns.alejo.io pronouns next to chatters' names in native chat. Each switch is off until turned on in Lurk settings. The badge switches download that service's public list of all badge holders (api.frankerfacez.com, api.chatterino.com) about once an hour and check it on the phone. The pronouns switch sends the username of each chatter whose message you see to pronouns.alejo.io. 7TV badges are not included. |  |
+| Third-party emotes | Adds switches that show 7TV, BetterTTV and FrankerFaceZ emotes in chat, Twitch's chat history and VOD chat replay. Each switch is off until turned on in Lurk settings; when on, it sends the ID of the channel you watch to that service (7tv.io, api.betterttv.net, api.frankerfacez.com) for its emote lists and loads the emote images from its CDN. Not in the emote picker or autocomplete. |  |
+| Use native player | Always opens live channels in Twitch's native player, never the React Native "Ultralight" player a server experiment can switch some users to. Most Lurk playback, chat and ad patches hook the native player. |  |
+| Watch without signing in | Opens Twitch without an account instead of stopping at the Log In / Sign Up screen, using Twitch's own signed-out mode. Streams, videos and chat can be watched; following, chatting and other account actions still ask you to sign in. Signed-in use is unchanged. |  |
+
+</details>
+
 <details open>
 <summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;14 patches</summary>
 <br>
@@ -62,33 +114,6 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 | Lurk icon | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
 | Remove tracking permissions | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
 | Unlock Premium | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
-
-</details>
-
-<details open>
-<summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;13 patches</summary>
-<br>
-
-**🎯 Supported versions:**
-
-| 31.6.0 |
-| :---: |
-
-| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
-|----------|----------------|-----------|
-| Block client ads | Declines ads handled by Twitch's native client ad eligibility check using its existing not eligible result. Does not remove ads stitched into streams by the server or guarantee ad-free playback. |  |
-| Block cookie notice | Hides Twitch's automatic cookie consent notice without accepting it or changing saved vendor consent. Manual consent settings stay available. Use Disable analytics to block tracking. |  |
-| Change app name | Changes the name shown under Twitch's launcher icon and in Android's settings. | • App name |
-| Clean share links | Removes known Twitch attribution and campaign parameters from shared links and copied share text. Keeps timestamps, clip IDs, unknown parameters and fragments. Covers native and React Native sharing. |  |
-| Clone app | Installs Twitch under another package name alongside the original, with separate sign-in and settings. Amazon sign-in and verified app links may not work after re-signing. | • Package name |
-| Default video quality | Starts playback at the selected rendition when available, with Source as the default. Saved player choices, including Auto, take priority. Unavailable renditions use Twitch's fallback. | • Default rendition |
-| Disable analytics | Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK consent, enables Branch's limited tracking mode, blocks Crashlytics uploads and prevents Sentry initialization. Watch progress, viewing statistics and rewards may stop updating. Restart Twitch after changing this setting. Playback requests still run. |  |
-| Disable autoplay | Stops the next recommended video and React Native feed clip from playing automatically, and defaults feed previews to Never. Manual Play and saved feed preview choices keep working. | • Feed previews<br>• Next video |
-| Hide Bits tipping | Hides chat Bits buttons, Bits purchase cards, the cheering tray and one-tap Bits controls. Keeps normal chat and Bits messages sent by other viewers. |  |
-| Hide Clips | Hides the Clips discovery tab on Home and the Clips tab on native channel profiles. Shared clip links still open. |  |
-| Hide subscription upsells | Hides Subscribe and Gift a Sub prompts, Turbo promotions and the native Turbo signup/startup offer. Keeps the existing subscribed indicator and legitimate account entitlements. |  |
-| Lurk icon | Replaces Twitch's launcher icon with Lurk artwork, including Android's themed icon. |  |
-| Remove tracking permissions | Removes advertising ID and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
 
 </details>
 

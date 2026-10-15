@@ -27,6 +27,7 @@ val hideClipsPatch = bytecodePatch(
     dependsOn(twitchSettingsPatch, twitchHermesPatch)
     execute {
         twitchHermes.hideClipDiscoveryTabs()
+        hideNativeHomeClipsTab()
         val routes = ProfileTabRoutesFingerprint.twitchMatch("profile tab routes").method
         val constructor = mutableClassDefBy(routes.definingClass).methods.single { it.name == "<init>" }
         val instructions = constructor.implementation!!.instructions.toList()

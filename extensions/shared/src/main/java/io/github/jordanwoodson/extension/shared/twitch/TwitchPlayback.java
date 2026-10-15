@@ -116,4 +116,24 @@ public final class TwitchPlayback {
             default: return null;
         }
     }
+
+    /**
+     * Twitch's "Continue Playing Audio in the Background" value when none is saved ({@code never} in
+     * Twitch). A choice made in Twitch's settings is saved, so it always wins.
+     */
+    public static String backgroundAudioDefault(String original) {
+        switch (Settings.getInt("background_audio")) {
+            case 1: return "always";
+            case 2: return "headphones_speaker";
+            default: return original;
+        }
+    }
+
+    /**
+     * Whether a live channel may open in the React Native theatre: Twitch's own answer ({@code live}),
+     * or false while the native player is chosen.
+     */
+    public static boolean routeLiveToReactNative(boolean live) {
+        return live && !Settings.isEnabled("native_player");
+    }
 }

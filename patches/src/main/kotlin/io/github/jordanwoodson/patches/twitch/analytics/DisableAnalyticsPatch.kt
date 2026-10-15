@@ -28,7 +28,8 @@ private const val PRIVACY = "Lio/github/jordanwoodson/extension/shared/twitch/Tw
 val disableAnalyticsPatch = bytecodePatch(
     name = "Disable analytics",
     description = "Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK " +
-        "consent, enables Branch's limited tracking mode, blocks Crashlytics uploads and prevents Sentry initialization. Watch progress, viewing statistics and rewards may " +
+        "consent, enables Branch's limited tracking mode, blocks Crashlytics uploads, Nielsen audience pings and Sprig surveys, " +
+        "and prevents Sentry initialization. Watch progress, viewing statistics and rewards may " +
         "stop updating. Restart Twitch after changing this setting. Playback requests still run.",
 ) {
     compatibleWith(COMPATIBILITY_TWITCH)
@@ -169,8 +170,12 @@ val disableAnalyticsPatch = bytecodePatch(
         if (flush.name != "flush") throw PatchException("Twitch: unexpected Spade flush function")
         twitchHermes.returnUndefined(flush, KEY)
 
+        // Nielsen audience measurement and Sprig surveys report outside Spade and the consent model.
+        NielsenPingFingerprint.twitchMatch("Nielsen ping").method.addInstructionsIfEnabled(KEY, "return-void")
+        SprigConfigureFingerprint.twitchMatch("Sprig configuration").method.addInstructionsIfEnabled(KEY, "return-void")
+
         twitchSettings.add(SwitchSetting(KEY, "Disable analytics",
-            "Stops Spade, limits Branch tracking, denies SDK consent, disables Crashlytics uploads and Sentry. Watch progress/rewards may be affected.",
+            "Stops Spade, Nielsen and Sprig, limits Branch tracking, denies SDK consent, disables Crashlytics uploads and Sentry. Watch progress/rewards may be affected.",
             Section.PRIVACY, restart = true))
     }
 }

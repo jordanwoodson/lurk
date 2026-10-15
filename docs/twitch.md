@@ -28,7 +28,8 @@ and web-view JavaScript; native screens alone do not cover every feature.
 
 ## Coverage
 
-The implementation provides 13 public Twitch patches. These are original patches
+The table below covers the 13 Twitch patches that match the Rumble set. The ones added after
+comparing Lurk with other Twitch bundles are in [Patches beyond the Rumble set](#patches-beyond-the-rumble-set). These are original patches
 based on this APK; the Rumble and Kick fingerprints do not apply directly.
 
 | Rumble patch area | Twitch equivalent and boundary |
@@ -47,6 +48,251 @@ based on this APK; the Rumble and Kick fingerprints do not apply directly.
 | Block cookie notice | Hides the automatic notice only. Does not accept consent, change saved consent or disable manual privacy settings. |
 | Block ads | `Block client ads`: takes the existing native client ad-decline path and completes its result. Does not remove ads stitched into streams or cover every RN ad path. |
 | Unlock Premium | No patch. Local Turbo state exists, but no useful equivalent entitlement change was established. Signed playback/account benefits are server controlled. |
+
+## Patches beyond the Rumble set
+
+These were added on 2026-10-15 after comparing Lurk with other Twitch patch bundles and mods at the
+feature level. Each is written from 31.6.0's own code.
+
+### Watch without signing in
+
+31.6.0 still ships Twitch's signed-out browsing mode. It sits behind the Eppo `loggedOutExperiment`,
+which is unassigned by default. Three places decide between the main UI and `LoginActivity`: the
+intent router, `ViewerLandingActivity.onCreate` and the settings screen. All three call the
+experiment's one boolean getter: false while signed in, otherwise whether the device was given a
+variant. The getter's class is found by its variant strings (`variant1` … `variant7`, `no_nudges`).
+With the switch on, a signed-out device counts as in the experiment. The signed-in check runs first,
+so signed-in use doesn't change.
+
+Signed out, requests carry only Twitch's Client-ID and device ID, chat connects as an anonymous
+`justinfan` reader, and following, chatting and other account actions open Twitch's own sign-in
+prompts. Verified on the emulator:
+- with the switch on, launch reaches `ViewerLandingActivity`, Home plays a live stream, a channel's
+  native theatre plays with its chat, and Browse works;
+- with it off, launch returns to `LoginActivity`.
+
+This mode also makes signed-out playback and chat testable on the emulator.
+
+### Fix notifications
+
+Every Morphe-patched APK is re-signed. Firebase Installations checks `X-Android-Package` and
+`X-Android-Cert` against Twitch's API key restrictions, so the re-signed app gets
+`403 Requests from this Android client application … are blocked`. Push registration then never
+completes. Checked against the live endpoint:
+- re-signed certificate: 403;
+- original certificate with `tv.twitch.android.app`: 200;
+- the clone's package name: 403 even with the original certificate.
+
+The patch sets both header values right before the two `addRequestProperty` calls in the
+Installations client. The client is found by its three header strings. It sends the original package
+name and the original certificate's SHA-1 (`8C68C138…9463`, from the pinned certificate).
+
+Verified on the emulator: the clone's `PersistedInstallation` moved from `FisError: BAD CONFIG` to
+status 3 (registered) with auth and refresh tokens, and an FCM token was stored. Delivering a
+notification needs an account.
+
+No client-side sign-in gate depends on the signature:
+- Kasada `Client-Integrity` is attached only when available.
+- Play Integrity "passport attestation" is a delayed background report whose failures are only
+  logged.
+
+### Default startup tab
+
+The bottom bar is Home, Browse, Create, Activity and Profile. Following is not a tab. A plain launch
+reaches the intent router (the method writing `destinationOrdinal`, with `intent_router`) with the
+`Default` destination. The patch replaces only `Default`, with `Browse`, `Following` or
+`NotificationCenter` looked up by name in the same enum. Links keep their destination.
+
+Changing the bar's own default tab is not an option: the navigation host requires Home as the start
+destination (`Must use NavGraphFragment resolver for start destination`). Verified on the emulator:
+Browse opens at launch.
+
+### Trackers in Disable analytics
+
+31.6.0 has no Bugsnag, Facebook SDK, SafetyNet or Amazon APS. Disable analytics now also:
+- turns Nielsen's server-to-server ping into a no-op. That is the method calling
+  `NielsenS2SService.firePing`, a GET to `imrworldwide.com` with the advertising ID;
+- skips `UserLeap.configure(Context, String)`, so Sprig surveys and tracking never get an
+  environment. Every public `Sprig` method has zero spare registers, so the facade can't be guarded
+  directly.
+
+A blanket "disable Google Play services" switch is deliberately not offered. It would break push,
+Google and FIDO sign-in, Cast and billing.
+
+### Background audio and Show video stats
+
+Twitch already has "Continue Playing Audio in the Background" (Always, Headphones/Speaker, Never),
+with its own audio-only switch, `TwitchPlaybackService` foreground notification and media session.
+Its default is Never. Every theatre reads the setting through one getter, and the patch rewrites that
+getter's `"never"` fallback. A saved choice still wins. Verified on the emulator: leaving a live
+stream with Home keeps the media session `PLAYING`, with an active media `AudioTrack` and Twitch's
+transport notification.
+
+The native player's stats panel (latency, bitrate, buffer, dropped frames, codecs, node, cluster)
+is gated by one getter: staff account plus a debug preference. The getter is found by
+`showVideoDebugPanel` and a `SharedPreferences.getBoolean` call, and the switch returns true from it.
+Verified on the emulator: an (i) button appears in the overlay and opens the panel. Twitch's staff
+debug menu is not exposed. Faking staff status would change experiment targeting and expose
+network-altering tools.
+
+### Use native player
+
+Live channels open in the React Native "Ultralight" theatre only when
+`RNTheatreRouteDecisionKt.rnTheatreRouteDecision` returns `Route`. That needs the Eppo flag
+`android-ultralight`, which is off by default and server-controlled. Most Lurk playback, chat and
+ad patches hook the native theatre. The method has no spare registers, so while the switch is on its
+`isLiveChannel` parameter goes through `TwitchPlayback.routeLiveToReactNative` and reads false.
+Twitch answers `RefuseNotLiveChannel`. Its two callers (`TwitchRNTheatreLauncher`,
+`TwitchRNHostNavigationModule.routeChannelOpen`) treat every refusal the same way and open the native
+theatre. VODs and clips are always native.
+
+### Fix stuck start screen
+
+On the emulator, stock Twitch stalled on its blank `LandingActivity` in about 1 of 4 cold starts: 2 of
+8 stock runs, and the same rate with Lurk's patches. `LandingActivity` routes only when two RxJava
+subjects have both emitted: Branch's app-open result and the install-referrer properties. When
+Branch's session callback never fires, the activity stays up with an idle main thread until the app
+is closed.
+
+The patch makes the routing method (the one logging `parse_launcher_intent`) run once per activity.
+`onCreate` schedules a 5-second fallback that calls it if the activity is still up and hasn't routed,
+and a late Branch answer is then ignored. With the patch, 16 cold starts gave 0 stalls; the fallback
+fired twice.
+
+Implementing this exposed a patcher pitfall. A non-range `invoke-static { p0, v0 }` in a method whose
+`p0` maps above v15 (here v30) is dropped from the output without an error or warning. Injected
+calls therefore use `/range` or low registers, and a scan of the patched DEX lists every extension
+method that app code calls (`~/scratch/morphe/twitch-gap/scripts/ext_calls.py`).
+
+### Player: sleep timer, refresh, gestures and latency
+
+The player patches hook IVS `CorePlayerImpl` (the SDK's names are kept) and Twitch's own control
+paths. Calls into obfuscated Twitch methods go through empty extension stubs whose bodies the patch
+fills in.
+
+*Sleep timer* re-arms on every `play()`. It pauses through the Guest Star pause-all registry (native
+and portal) and through `TwitchMediaSessionModule`/`FeedPlayerRegistry` (React Native), so background
+audio can be resumed from its notification.
+
+*Refresh stream* calls the error screen's Retry, `N1(0, true)`. For live that fetches a new token and
+playlist; a VOD keeps its position. It's triggered by a long press on the settings gear of the live
+(`player_control_overlay`) and VOD/clip (`player_control_overlay_widget`) overlays, or a long press on
+the middle of the video.
+
+*Player gestures*:
+- change the three VOD skip constants, and swap Twitch's "10"/"30" icons for arrow-only copies made
+  at patch time;
+- add brightness and volume swipes through `DraggableConstraintLayout`/`ConstraintTheatreContainerView`,
+  landscape only, leaving the middle fifth for drag-to-minimize.
+
+*Normal latency* sets `setLiveLowLatencyEnabled(false)` before native loads and overrides the React
+Native and portal calls. On the emulator, latency rose from about 2 s to 6–7 s.
+
+Verified on the emulator, signed out, in the classic theatre. The React Native, portal and vertical
+theatres are checked statically only.
+
+### Display ads, stitched ads and the playlist proxy
+
+*Block display ads* wraps the four lazy creators of Twitch's `AdEdgeApi` Retrofit service
+(`https://edge.ads.twitch.tv/`) in a proxy. The proxy returns `Result.error(IOException)`, Retrofit's
+own network-failure result, which every native ad caller already treats as "no ad". That covers
+stream display (squeezeback, lower third), audio, multi-format, headliner and feed ads. In React
+Native:
+- requests to `edge.ads.twitch.tv` fail inside `NetworkingModule`;
+- the RN VAST player reports Twitch's `noAd` error;
+- two equal-length Hermes edits remove RN feed ad slots (`extractAdSlots`) and FeedAd cards
+  (`isEdgeVisible`).
+
+Brand surveys, which replace unfilled feed ads, are dropped. Sponsorship and paid-promotion labels
+are untouched.
+
+*Mute stitched ads* watches each player's EXT-X-DATERANGE cues: the native `sna.h(JSONObject)` handler
+and RN `TwitchIVSPlayerView.handleMetadata`. From `twitch-stitched-ad` until `twitch-stream-source`
+= `live`, it mutes the IVS player through `setMuted` and covers the video in black. Twitch itself mutes
+with the volume, so the user's own mute is untouched. A break also ends on a new stream, a release, or
+a timer set from the ad's duration (capped at 240 s). The ad still plays for its full length.
+
+*Playlist proxy* is opt-in and does nothing without its `proxyUrl` option. It sends live usher requests
+to the configured proxy, and the proxy receives the signed playback token.
+
+`bin/test-twitch-ads` runs these hooks on ART. Signed out, no display or stitched ads were served,
+so real ad delivery is verified only through the probe and the emitted bytecode. The proxy was checked
+end to end with a local test proxy.
+
+### Interface: chat highlights, player buttons, Home and mature labels
+
+Native Home is not React Native: RN Home and the Ultralight theatre run only with `android-ultralight`.
+That includes the signed-out Home. *Hide Clips* therefore also filters the native Home tab provider at
+its three users, keeping Clips when Home opens on a clip.
+
+*Hide chat highlights* covers:
+- the native highlight dispatch, by type ID (Hype Train, gift banners);
+- the chat-notice mapper, by event and subscription kind;
+- the private-callout dispatch (watch streaks);
+- the leaderboard, pinned-cheer and celebration state constructors;
+- in RN, early returns from the matching services, components and `LibraryTmiClient` handlers.
+
+*Hide player buttons* filters the clip button state and live overlay options, every AndroidX
+`MediaRouteButton` (Cast), and the VOD and vertical-theatre share buttons. *Hide Home sections*
+clears the `ShowStoriesShelf` argument and filters the Following page's section list. *Hide mature
+content warning* makes the label-acknowledgement check return true without saving anything; age,
+region, guardian and account gates still apply.
+
+*Hide Bits tipping* now also filters `ConfigureMessageInput(isBitsPickerVisible=)`. The classic chat
+input reads its Bits button and tray from that state, not from the toolbar states.
+
+`bin/test-twitch-highlights` runs the real classes on ART with each switch on and off. Following
+sections, Hype Train and the RN paths are verified only statically.
+
+### Chat
+
+*Anonymous chat* (off by default, restart) logs the native IRC socket in as a `justinfan` guest with
+`PASS listen`, while the rest of the app stays signed in. The credential fields are found through the
+`UserCredentials(nickname=, oauthToken=)` toString. React Native's `chatAuthOptions` returns its guest
+login. The input shows Twitch's log-in restriction relabelled "read only", and the `SendChatMessage`
+mutation returns Twitch's own failure result, so nothing posts under the account.
+
+*Show deleted messages* keeps the text of deleted or timed-out messages, struck through. It covers
+lines already shown and messages that arrive deleted. *Ignore chat clears* treats a `CLEARCHAT`
+without a target user as a no-op, in native and React Native chat; timeouts and bans still apply.
+
+*Chat timestamps* turns on Twitch's own history timestamp for live channel chat, not whispers, with a
+24/12-hour choice. *Auto-claim channel points* (off by default, needs an account) calls the bonus
+chest's own claim action once per claim ID.
+
+`bin/test-twitch-chat <apk>` runs the real classes with each switch on and off. Signed-in IRC login
+and bonus claims are verified only through bytecode and the probe.
+
+### Third-party emotes and badges
+
+Both are opt-in: every switch starts off, and its summary names the hosts it contacts. Emotes hook
+Twitch's own whole-word matcher (`clientParsedEmotes`). They add 7TV, BetterTTV and FrankerFaceZ
+emotes as Twitch emote objects with synthetic `lurk…` IDs, and the central emote URL builder maps
+those IDs to each provider's CDN. Animated emotes use GIF; static ones, or all of them when Twitch's
+animated-emotes setting is off, use PNG.
+
+VOD replay splits its named message tokens. React Native chat gets `emotes=` ranges added to incoming
+IRC frames, and its `ImageSource` maps the same URLs, with no Hermes edit. Lists are fetched per
+channel in the background and cached in memory; if a fetch fails, codes stay as text.
+
+Badges download FrankerFaceZ's and Chatterino's public lists of badge holders and match them on the
+device, so no chatter is looked up. The exception is *pronouns* (`badges_pronouns`, off by default):
+pronouns.alejo.io has no bulk list, so the username of each chatter whose message you see is looked
+up there.
+- Answers, including "none", are cached for an hour, for up to 2000 users.
+- Duplicate lookups are merged, at most 4 requests a second.
+- A chatter's first line can appear before the pronoun is known.
+- Pronouns are drawn as a small text badge.
+
+*Chat overlay* (off by default) scrolls live chat right to left across the top of the video, like
+danmaku. It's fed from the native chat list feeder, found through the `LiveChatMessage(messageId=`
+toString. The overlay is a plain view on `android.R.id.content` that ignores all touches. It attaches
+only in landscape outside picture-in-picture while a video surface covers at least half the width,
+and detaches in portrait, in picture-in-picture, when the video goes away, or after 15 s without
+chat. React Native chat, VODs and chat replay don't pass through that feeder.
+
+Twitch already loads recent chat history on join (native
+`ChatHistory`, RN preload) and replays VOD chat, so a third-party history service isn't used.
 
 ## Implementation evidence
 
@@ -209,10 +455,12 @@ functions and switch targets using the production interface probe's manifest.
 with boundary fixtures. The existing Rumble and Kick Android probes also pass on
 APKs made with the expanded patch bundle.
 
-**Authenticated live/VOD playback, native clip navigation, chat, actual server ad delivery, purchases,
-subscription/member screens and Amazon sign-in remain unverified.** Stock and
-patched Twitch both require Log In or Sign Up, including a direct channel URL;
-no test account/session was available. Bytecode and callback probes establish
+**Signed-in playback and chat, sending messages, actual server ad delivery, purchases,
+subscription/member screens and Amazon sign-in remain unverified.** Stock Twitch
+requires Log In or Sign Up, including for a direct channel URL, and no test account
+was available. Since "Watch without signing in" opens Twitch's own signed-out mode,
+signed-out live playback, the native theatre and read-only chat can be checked on
+the emulator. Bytecode and callback probes establish
 specific local behavior, not complete authenticated end-to-end coverage. The
 app also contains WebView code outside the covered native/RN presentation hooks.
 

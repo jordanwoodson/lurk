@@ -8,6 +8,13 @@ internal object OneChatStateFingerprint : Fingerprint(
     filters = listOf(string("State(isVisible="), string(", isBitsButtonVisible="), string(", isOneTapEnabled=")),
 )
 
+// The classic chat input's configuration: its Bits picker button (party popper next to Emotes) and
+// the Bits selector tray both follow isBitsPickerVisible, separately from the chat toolbar state.
+internal object MessageInputConfigFingerprint : Fingerprint(
+    name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
+    strings = listOf("ConfigureMessageInput(isMessageInputEnabled=", ", isBitsPickerVisible="),
+)
+
 internal object ChatToolbarStateFingerprint : Fingerprint(
     name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
     filters = listOf(string("State(channelInfo="), string(", isBitsButtonVisible="), string(", isBitsSpendingTrayVisibleBasedOnInput=")),

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Execute the patched Twitch ad hooks (Block display ads, Mute stitched ads) on Android.
+# The APK must include both patches. LURK_SERIAL picks the device (default emulator-5580).
+source "$(dirname "$0")/lib/common.sh"
+[[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-twitch-ads <patched.apk>"
+serial=${LURK_SERIAL:-emulator-5580}
+out="$WORK/twitch-ads/art-probe"
+remote=/data/local/tmp/lurk-twitch-ads
+mkdir -p "$out/classes" "$out/dex" "$WORK/tmp"
+export TMPDIR="$WORK/tmp"
+android="$ANDROID_HOME/platforms/android-36/android.jar"
+javac --release 17 -classpath "$android" -d "$out/classes" "$ROOT/tests/twitch/AdsProbe.java"
+# Only the probe enters DEX; every Twitch class and the extension come from the patched APK.
+"$(build_tool d8)" --min-api 30 --lib "$android" --output "$out/dex" "$out/classes/"*.class
+(cd "$out/dex" && jar cf "$out/probe.jar" classes.dex)
+adb -s "$serial" shell mkdir -p "$remote"
+trap 'adb -s "$serial" shell rm -rf "$remote" >/dev/null 2>&1 || true' EXIT
+adb -s "$serial" push "$1" "$remote/app.apk" >/dev/null
+adb -s "$serial" push "$out/probe.jar" "$remote/probe.jar" >/dev/null
+adb -s "$serial" shell "CLASSPATH=$remote/probe.jar:$remote/app.apk app_process /system/bin AdsProbe"
