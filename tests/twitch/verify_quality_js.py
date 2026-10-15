@@ -31,15 +31,17 @@ function run(preference, names, repeat=false) {
     if (repeat) effect();
     return {calls,writes};
 }
-// Stock absent/null preference never chooses a named rendition: negative control.
-assert.deepEqual(run(null,['chunked','720p60']),{calls:[],writes:[]});
-assert.deepEqual(run('chunked',['chunked','720p60'],true),{calls:['chunked'],writes:[]});
-assert.deepEqual(run('720p60',['chunked','720p60']),{calls:['720p60'],writes:[]});
+// Real names: the source rendition carries a suffix. Stock absent/null preference never chooses a
+// named rendition; Lurk's Source choice leaves the row absent, so it behaves the same.
+const names=['1080p60 (source)','720p60','480p'];
+assert.deepEqual(run(null,names),{calls:[],writes:[]});
+assert.deepEqual(run('720p60',names,true),{calls:['720p60'],writes:[]});
 // Twitch accepts p30 and p as the same frame-rate rendition.
-assert.deepEqual(run('720p',['chunked','720p30']),{calls:['720p30'],writes:[]});
-// Missing rendition resets the existing stored preference to Auto, once per player instance.
-assert.deepEqual(run('1080p60',['chunked','720p60'],true),{calls:[],writes:[null]});
-assert.deepEqual(run('chunked',[]),{calls:[],writes:[]});
-console.log('PASS: original RN initial-quality effect: stock negative, Source, explicit rendition, p30 normalization, unavailable Auto fallback, no repeat reset');
+assert.deepEqual(run('720p',['1080p60 (source)','720p30']),{calls:['720p30'],writes:[]});
+// A missing rendition, including a name that is only the source's without its suffix, resets the
+// stored preference to Auto, once per player instance.
+assert.deepEqual(run('1080p60',names,true),{calls:[],writes:[null]});
+assert.deepEqual(run('720p60',[]),{calls:[],writes:[]});
+console.log('PASS: original RN initial-quality effect: stock negative and Source, explicit rendition, p30 normalization, source suffix and unavailable Auto fallback, no repeat reset');
 '''.replace('EFFECT', effect)
 subprocess.run(['node', '-'], input=runner, text=True, check=True)

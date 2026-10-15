@@ -1,3 +1,18 @@
+## [1.6.1-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.6.0...v1.6.1-dev.1) (2026-10-15)
+
+### 🐛 Bug Fixes
+
+* **kick:** start Firebase Analytics switched off on first launch ([e3ca29a](https://github.com/jordanwoodson/lurk-morphe-patches/commit/e3ca29a64fd6e38839eb67f17585a40c678298e8))
+* **rumble:** ignore consent cached before Block cookie notice was on ([56c275c](https://github.com/jordanwoodson/lurk-morphe-patches/commit/56c275cc144f5faaa138f60299931184a7021663))
+* **rumble:** remove Unlock Premium ([12cde49](https://github.com/jordanwoodson/lurk-morphe-patches/commit/12cde49f90300934ac9eeb34a5bd7debb2deab18))
+* save Lurk settings before Restart exits the app ([6bf47e9](https://github.com/jordanwoodson/lurk-morphe-patches/commit/6bf47e9bea1e593010016931efdf84f395c91cd2))
+* **twitch:** make Default video quality pick Source and named renditions ([24f7a14](https://github.com/jordanwoodson/lurk-morphe-patches/commit/24f7a142740e725fb150a868e0bd674843ad572e))
+* **twitch:** stop Crashlytics custom keys while analytics are disabled ([24b57b3](https://github.com/jordanwoodson/lurk-morphe-patches/commit/24b57b31184b0003332e503464b816818b80d25d))
+
+### 🔧 Improvements
+
+* use the embedded Hermes bundle while every switch is at its default ([d24ad18](https://github.com/jordanwoodson/lurk-morphe-patches/commit/d24ad18e781e2fbe02e6d24a9e776c09ec566c55))
+
 ## [1.6.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.5.0...v1.6.0) (2026-10-14)
 
 ### ✨ New Features

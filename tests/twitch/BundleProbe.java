@@ -33,6 +33,15 @@ public final class BundleProbe {
         try (java.io.InputStream input = assets.open(name)) { return input.readAllBytes(); }
     }
 
+    /** A fresh process's load: the private copy's bytes, or the embedded asset's when it uses that. */
+    private static byte[] load(Method prepare, Field prepared, Field defaults, AssetManager assets, byte[] embedded)
+            throws Exception {
+        prepared.set(null, null);
+        defaults.set(null, false);
+        String output = (String) prepare.invoke(null, assets, "assets://index.android.bundle");
+        return output == null ? embedded : Files.readAllBytes(new File(output).toPath());
+    }
+
     public static void main(String[] args) throws Exception {
         File directory = new File(args[1]);
         directory.mkdirs();
@@ -65,26 +74,25 @@ public final class BundleProbe {
         Method prepare = loader.getMethod("prepare", AssetManager.class, String.class);
         Field prepared = loader.getDeclaredField("prepared");
         prepared.setAccessible(true);
+        Field defaults = loader.getDeclaredField("embedded");
+        defaults.setAccessible(true);
         check(prepare.invoke(null, assets, "assets://unrelated.hbc") == null, "Unrelated bundle intercepted");
 
-        // Patch defaults must execute unchanged, and a second load in the process must be stable.
-        String output = (String) prepare.invoke(null, assets, "assets://index.android.bundle");
-        check(output != null, "Loader fell back to embedded defaults");
-        check(Arrays.equals(Files.readAllBytes(new File(output).toPath()), embedded), "Defaults changed bundle bytes");
+        // Patch defaults load the embedded asset as is, without a private copy, and a second load in the
+        // process keeps that snapshot.
+        File stale = new File(directory, "lurk-twitch.hbc");
+        Files.write(stale.toPath(), new byte[]{1});
+        check(prepare.invoke(null, assets, "assets://index.android.bundle") == null, "Defaults made a private copy");
+        check(!stale.exists(), "Defaults left a stale private copy");
         for (int i = 0; i < edits.length(); i++) switches.put(edits.getJSONObject(i).getString("key"), false);
-        prepare.invoke(null, assets, "assets://index.android.bundle");
-        check(Arrays.equals(Files.readAllBytes(new File(output).toPath()), embedded), "Settings changed without restart");
+        check(prepare.invoke(null, assets, "assets://index.android.bundle") == null, "Settings changed without restart");
 
         // Simulate process restart; every edit off must reconstruct the independently hashed stock bundle.
-        prepared.set(null, null);
-        output = (String) prepare.invoke(null, assets, "assets://index.android.bundle");
-        byte[] restored = Files.readAllBytes(new File(output).toPath());
+        byte[] restored = load(prepare, prepared, defaults, assets, embedded);
         check(digest("SHA-256", restored).equals(STOCK), "All-off did not restore the stock bundle");
         for (String key : switches.keySet()) {
             switches.put(key, true);
-            prepared.set(null, null);
-            output = (String) prepare.invoke(null, assets, "assets://index.android.bundle");
-            byte[] selected = Files.readAllBytes(new File(output).toPath());
+            byte[] selected = load(prepare, prepared, defaults, assets, embedded);
             check(!Arrays.equals(selected, restored), "Switch had no effect: " + key);
             check(selected.length == restored.length, "Bundle layout changed");
             byte[] content = Arrays.copyOf(selected, selected.length - 20);

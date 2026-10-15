@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   push:
 
+# Two quick pushes would otherwise run semantic-release on the same branch at once.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Release

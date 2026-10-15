@@ -140,6 +140,18 @@ def verify(stock, patched):
         assert normalized(code, labels) == normalized(original, old_labels)
     for signature in ("sendUnsentReports()V", "log(Ljava/lang/String;)V", "recordException(Ljava/lang/Throwable;)V", "setUserId(Ljava/lang/String;)V"):
         guarded(method(stock, crashlytics, signature), method(patched, crashlytics, signature), "disable_analytics", ["return-void"])
+    # The setCustomKey overloads have no spare register: they stay as they are, and the method they
+    # all hand the key to is guarded instead.
+    key_code, _ = method(stock, crashlytics, "setCustomKey(Ljava/lang/String;Ljava/lang/String;)V")
+    store, = [match for line in key_code if (match := re.fullmatch(
+        r"invoke-virtual \{p0, p1, p2\}, L(\w+);->(\w+)\(Ljava/lang/String;Ljava/lang/String;\)V", line))]
+    for overload in ("Ljava/lang/String;", "Z", "I", "J", "F", "D"):
+        signature = f"setCustomKey(Ljava/lang/String;{overload})V"
+        before, after = method(stock, crashlytics, signature), method(patched, crashlytics, signature)
+        assert normalized(*after) == normalized(*before), signature
+        assert f"L{store[1]};->{store[2]}(Ljava/lang/String;Ljava/lang/String;)V" in " ".join(before[0]), signature
+    signature = f"{store[2]}(Ljava/lang/String;Ljava/lang/String;)V"
+    guarded(method(stock, store[1], signature), method(patched, store[1], signature), "disable_analytics", ["return-void"])
 
     original, original_labels = method(stock, "ls", "g(Lio/reactivex/internal/operators/single/c;)V")
     code, labels = method(patched, "ls", "g(Lio/reactivex/internal/operators/single/c;)V")

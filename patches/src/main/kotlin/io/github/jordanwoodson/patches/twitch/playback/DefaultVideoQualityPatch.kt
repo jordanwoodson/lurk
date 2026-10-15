@@ -9,6 +9,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import io.github.jordanwoodson.patches.twitch.settings.twitchSettings
@@ -55,11 +56,25 @@ val defaultVideoQualityPatch = bytecodePatch(
                 } == true
         }
         // Change only the fallback argument. Saved _live/_vod/_clip values, including Auto and
-        // audio_only, remain under Twitch's control. This also covers the RN migration snapshot.
+        // audio_only, remain under Twitch's control.
         reader.addInstructions(0, """
             invoke-static { p2, p1 }, $PLAYBACK->qualityPreferenceDefault(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
             move-result-object p2
         """)
+
+        // Twitch's source rendition is named like "1080p60 (source)", so neither Source nor a named
+        // choice that is the source would match by name. Resolve the request to the full name first.
+        PlayerQualityByNameFingerprint.twitchMatch("player quality selection by name").method.apply {
+            val player = implementation!!.instructions.first()
+            val field = ((player as? ReferenceInstruction)?.reference as? FieldReference)
+            if (player.opcode != Opcode.IGET_OBJECT || field?.type != "Lcom/amazonaws/ivs/player/MediaPlayer;") {
+                throw PatchException("Twitch: unexpected player quality selection")
+            }
+            addInstructions(1, """
+                invoke-static { p1, v${(player as OneRegisterInstruction).registerA} }, $PLAYBACK->playerQuality(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/String;
+                move-result-object p1
+            """)
+        }
 
         val missing = MissingAsyncStorageValueFingerprint.twitchMatch("missing React Native storage value").method
         val missingCode = missing.implementation!!.instructions.toList()

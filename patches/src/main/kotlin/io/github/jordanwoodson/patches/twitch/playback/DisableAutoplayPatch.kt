@@ -13,6 +13,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import io.github.jordanwoodson.patches.twitch.settings.twitchSettings
 import io.github.jordanwoodson.patches.twitch.settings.twitchSettingsPatch
@@ -83,8 +84,16 @@ val disableAutoplayPatch = bytecodePatch(
         val container = viewCode.single { instruction -> instruction.opcode == Opcode.IGET_OBJECT &&
             ((instruction as ReferenceInstruction).reference as? FieldReference)?.type == "Landroid/widget/LinearLayout;"
         } as TwoRegisterInstruction
+        // RxJava's Disposable and the view delegate's setVisibility helper are R8-renamed; reuse the
+        // references this method already calls.
+        val calls = viewCode.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }.distinct()
+        val dispose = calls.singleOrNull { it.name == "dispose" && it.parameterTypes.isEmpty() && it.returnType == "V" }
+            ?: throw PatchException("Twitch: recommendation countdown no longer disposes its timer")
+        val setVisibility = calls.singleOrNull { it.definingClass == "Ltv/twitch/android/core/mvp/viewdelegate/BaseViewDelegate;" &&
+            it.parameterTypes.map { type -> type.toString() } == listOf("I") && it.returnType == "V" }
+            ?: throw PatchException("Twitch: recommendation countdown visibility changed")
         val timer = viewCode.mapNotNull { (it as? ReferenceInstruction)?.reference as? FieldReference }
-            .filter { it.definingClass == countdown.definingClass && it.type == "Lio/reactivex/disposables/b;" }
+            .filter { it.definingClass == countdown.definingClass && it.type == dispose.definingClass }
             .distinct().single()
         // The title and creator are already bound here. Preserve this branch target by replacing
         // its first instruction; jumping here must not bypass the inserted countdown check.
@@ -99,9 +108,9 @@ val disableAutoplayPatch = bytecodePatch(
             move-result v0
             if-eqz v0, :lurk_countdown_stock
             iget-object v0, p0, $timer
-            invoke-interface { v0 }, Lio/reactivex/disposables/b;->dispose()V
+            invoke-interface { v0 }, $dispose
             const/4 v0, 0x0
-            invoke-virtual { p0, v0 }, Ltv/twitch/android/core/mvp/viewdelegate/BaseViewDelegate;->q(I)V
+            invoke-virtual { p0, v0 }, $setVisibility
             return-void
         """, ExternalLabel("lurk_countdown_stock", countdown.getInstruction(progress.index + 1)))
 

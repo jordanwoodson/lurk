@@ -1,4 +1,4 @@
-# Kick 40.32.1: Rumble patch portability
+# Kick 40.32.1
 
 Static analysis of the supplied APKMirror bundle on 2026-10-14, compared with the 14
 Rumble patches in this repository. **None of the existing patches applies to Kick
@@ -6,9 +6,10 @@ unchanged.** All declare Rumble compatibility; most also fingerprint Rumble Kotl
 classes or Compose UI. Kick uses React Native/Expo, Hermes bytecode and native
 player modules. Several features are good candidates for independent Kick patches.
 
-The assessment below was the starting point. Twelve Kick patches have since been
-implemented; the implementation and validation notes at the end distinguish tested
-behavior from the remaining limitations.
+The assessment below, up to "Workspace result", was the starting point and is kept as
+it was written. Twelve Kick patches have since been implemented; the notes from
+"Implemented patch set" on describe them and separate tested behavior from the
+remaining limitations.
 
 ## Input and analysis
 
@@ -193,16 +194,8 @@ settings activity/registry and launcher shortcut can be reused, initialized from
 `com.kick.mobile.MainApplication.onCreate`. The Rumble Compose settings-row hook
 cannot transfer to React Native. Hermes switches need a native bridge or another
 explicit way to read settings; including the shared extension alone does not provide
-that connection. Patch-time options or Kick's existing preferences can be used first.
-
-Suggested order based on the code inspected:
-
-1. App name, icon and the four tracking permissions; verify merged split resources.
-2. Kick settings integration and Expo update handling, then staged analytics controls.
-3. Preview autoplay and quality defaults, preserving explicit user choices.
-4. Hide KICKs, subscription prompts and Clips, with navigation/layout checks.
-5. Clone validation; link cleaning if a tagged share path is found.
-6. Separate ad-blocking investigation with live playback evidence.
+that connection. (The runtime bundle loader under "Implementation contracts" now
+provides it.)
 
 Do not advertise cookie-notice blocking or premium unlocking for Kick on the evidence
 available here. Recheck all targets when changing the supported version.
@@ -218,9 +211,6 @@ icon overrides in the supplied language/density splits.
 The original assessment checked the 18 documented Hermes function IDs against
 nonempty disassembly entries and covered all 14 Rumble patches. Implementation
 details and validation follow.
-
-`home-lint` ran and reported `~/mobile-uploads`, `~/.cache/jadx`, and a 16.23 GB Docker
-build cache. Those locations were not moved or pruned as part of this analysis.
 
 ## Implemented patch set
 
@@ -260,15 +250,18 @@ The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its functio
 and string tables, requires unique targets and rejects overlapping or unequal-length
 edits. The official Morphe `hermesPatch` performs the actual replacements and footer
 update. A generated manifest records the original/default byte ranges. The native
-bundle loader verifies the embedded hash, chooses ranges from a settings snapshot,
-refreshes SHA-1 and atomically writes an app-private bundle. Disabling every switch
+bundle loader takes a settings snapshot. When every switch is at its patch-time
+default it loads the embedded asset as is and deletes any earlier private copy;
+otherwise it verifies the embedded hash, chooses ranges from the snapshot, refreshes
+SHA-1 and atomically writes an app-private bundle. Disabling every switch
 reconstructs the original bundle byte for byte; reloading in the same process keeps
 the original snapshot. On a manifest/file error it logs and uses embedded defaults.
 
 Verification tools retained in this repository:
 
 - `tests/kick/verify_resources.py`: actual decoded resource/manifest assertions,
-  including signature-protected token sharing and intact internet permission.
+  including signature-protected token sharing, intact internet permission and
+  (`--analytics`) Firebase Analytics starting disabled.
 - `tests/kick/HermesProbe.kt`: actual-bundle parsing, negative controls, uniqueness,
   overlap rejection, preview literals and exact restoration.
 - `tests/kick/test_hermes.py`: independent instruction/branch decoding of emitted
@@ -304,8 +297,11 @@ The visible Hide Clips switch and Restart Kick action were exercised: the proces
 restarted, its private bundle matched the selected bytes exactly, and Browse's Clips
 tab returned. The launcher shortcut points to the non-exported settings activity.
 
-These tests do not establish zero telemetry from the first process instruction:
-Firebase's content provider initializes before the application collection hook.
+These tests do not establish zero telemetry from the first process instruction.
+Firebase's content provider initializes before the application collection hook, so
+Disable analytics also sets the manifest's `firebase_analytics_collection_enabled`
+default to false; Firebase prefers the value the startup hook persists, so the switch
+still turns collection back on.
 Authenticated flows, broadcaster token sharing and every server ad configuration
 need device/account coverage. Do not interpret SDK suppression or static VOD fallback
 validation as verified removal of every video ad.

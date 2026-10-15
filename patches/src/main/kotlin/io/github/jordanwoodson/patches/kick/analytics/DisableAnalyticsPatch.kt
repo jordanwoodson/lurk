@@ -3,6 +3,7 @@ package io.github.jordanwoodson.patches.kick.analytics
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
+import app.morphe.patcher.patch.resourcePatch
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import io.github.jordanwoodson.patches.kick.settings.kickMatch
@@ -14,9 +15,27 @@ import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
 import io.github.jordanwoodson.patches.shared.settings.addInstructionsIfEnabled
 import io.github.jordanwoodson.patches.shared.settings.isEnabled
 import io.github.jordanwoodson.patches.shared.settings.requireLocals
+import org.w3c.dom.Element
 
 private const val KEY = "disable_analytics"
 private const val PRIVACY = "Lio/github/jordanwoodson/extension/shared/kick/KickPrivacy;"
+
+/**
+ * Firebase's content provider starts Analytics before MainApplication.onCreate turns collection off,
+ * so a fresh install would collect from the manifest default until then. The persisted value that
+ * onCreate sets every start wins over this default, so the switch still turns collection back on.
+ */
+private val firebaseStartsDisabledPatch = resourcePatch {
+    execute {
+        document("AndroidManifest.xml").use { doc ->
+            val nodes = doc.getElementsByTagName("meta-data")
+            val enabled = (0 until nodes.length).map { nodes.item(it) as Element }
+                .singleOrNull { it.getAttribute("android:name") == "firebase_analytics_collection_enabled" }
+                ?: throw PatchException("Kick: Firebase Analytics collection default missing")
+            enabled.setAttribute("android:value", "false")
+        }
+    }
+}
 
 @Suppress("unused")
 val disableAnalyticsPatch = bytecodePatch(
@@ -26,7 +45,7 @@ val disableAnalyticsPatch = bytecodePatch(
         "to obtain streams. Restart Kick after changing this setting. This does not remove video ads.",
 ) {
     compatibleWith(COMPATIBILITY_KICK)
-    dependsOn(kickSettingsPatch)
+    dependsOn(kickSettingsPatch, firebaseStartsDisabledPatch)
 
     execute {
         // Resolve the original React Native completion contract, without dispatching an event task.

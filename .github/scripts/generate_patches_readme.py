@@ -38,11 +38,13 @@ with open(json_path, encoding="utf-8") as f:
 
 
 def pkg_icon(name):
-    """The app's round Lurk launcher icon from bin/app-icon, or a package emoji if it has none."""
+    """The app's round Lurk launcher icon from bin/app-icon, else its README preview in assets/
+    (apps whose icon patch recolors the Lurk logo while patching), else a package emoji."""
     slug = re.sub(r"[^a-z0-9]+", "", name.lower())
-    icon = f"patches/src/main/resources/{slug}/icon/mipmap-xxxhdpi/ic_launcher_round.webp"
-    if (readme_path.parent / icon).is_file():
-        return f'<img src="{icon}" width="28" height="28" align="center" alt="">'
+    for icon in (f"patches/src/main/resources/{slug}/icon/mipmap-xxxhdpi/ic_launcher_round.webp",
+                 f"assets/{slug}-icon-round.webp"):
+        if (readme_path.parent / icon).is_file():
+            return f'<img src="{icon}" width="28" height="28" align="center" alt="">'
     return "📦"
 
 # Group patches by package; patches with no compatiblePackages are universal.
@@ -73,11 +75,6 @@ for patch in data["patches"]:
             by_pkg[pkg]["patches"][patch["name"]] = patch
 
 
-def anchor(name):
-    """Convert a patch name to a GitHub-compatible anchor slug."""
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", name.lower())).strip("-")
-
-
 def patches_table(patches):
     """Render a sorted markdown table of patches with name, description, and options."""
     rows = [
@@ -85,7 +82,6 @@ def patches_table(patches):
         "|----------|----------------|-----------|",
     ]
     for p in sorted(patches, key=lambda x: x["name"]):
-        a = anchor(p["name"])
         options = p.get("options") or []
         if options:
             # Show only option titles as a bullet list
@@ -94,7 +90,7 @@ def patches_table(patches):
         else:
             opts_cell = ""
         desc = (p.get("description") or "").replace("\n", "<br>")
-        rows.append(f"| [{p['name']}](#{a}) | {desc} | {opts_cell} |")
+        rows.append(f"| {p['name']} | {desc} | {opts_cell} |")
     return "\n".join(rows)
 
 
@@ -221,9 +217,10 @@ generated  = build_content(expanded=expanded)
 readme = readme.replace("https://morphe.software/add-source?github=xyz-user/xyz-patches", f"https://morphe.software/add-source?github={repo_full}")
 readme = readme.replace("https://github.com/xyz-user/xyz-patches", f"https://github.com/{repo_full}")
 
+# A function replacement, so backslashes in descriptions aren't read as group references.
 new_readme = re.sub(
     rf"{START_PATTERN}.*?{re.escape(END_MARKER)}",
-    f"{actual_start}\n{generated}\n{END_MARKER}",
+    lambda _: f"{actual_start}\n{generated}\n{END_MARKER}",
     readme,
     flags=re.DOTALL,
 )

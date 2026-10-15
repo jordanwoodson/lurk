@@ -1,78 +1,11 @@
 # Rumble 3.21.0
 
-`Unlock Premium` targets `com.rumble.battles` **3.21.0 / versionCode 887**, using the
+The Rumble patches target `com.rumble.battles` **3.21.0 / versionCode 887**, using the
 APKMirror APKM and signing certificate pinned in `rumble/shared/Constants.kt`.
 
-Sign in, or sign out and back in after installing, to fetch a fresh profile. The patch
-overrides the profile's local premium flag; a signed-out session never fetches that
-profile. Server-authorized streams, purchases and subscription metadata are unaffected.
-Live signed-in playback has not been verified with an account.
-
-## Implementation
-
-Inspired by the profile-entry approach in
-[hoomans-morphe-patches](https://github.com/arandomhooman/hoomans-morphe-patches/blob/018277825a611ad61f3a16a70e562291c06f4081/patches/src/main/kotlin/hooman/morphe/patches/rumble/premium/UnlockPremiumPatch.kt),
-which targets 3.14.5. This implementation fingerprints the specific `isPremium:Z`
-field read, method signature and two-instruction getter, requires a unique match,
-and returns `true` after that read while the `unlock_premium` switch is on (see
-[Lurk settings](#lurk-settings)). It does not depend on the obfuscated getter name
-or the assumption that the DTO has only one boolean getter.
-
-The independently traced 3.21.0 path is:
-
-```text
-UserProfile.l() reads isPremium (JSON is_premium)
-  -> we.a.t(...) maps it into lf.h
-  -> lf.h.x() returns the entity's premium flag
-  -> mf.f passes it to yg.d.d1(...)
-  -> session DataStore key isUserPremiumKey
-```
-
-These obfuscated names describe this APK only; they are not patch fingerprints.
-Only the getter's result changes. Nullable `premiumData`, account
-validation, age verification and onboarding retain their original behavior.
-
-## Build and test
-
-With GitHub Packages access configured as described in the workspace README:
-
-```sh
-bin/patch rumble
-bin/emu start
-bash bin/test-rumble ~/scratch/morphe/out/rumble-3.21.0-patched.apk
-```
-
-The probe executes the actual APK's profile getter and mapper on `emulator-5580`
-using free and paid fixtures, including absent subscription metadata. It also checks
-unrelated account state. It does not use a Rumble account or send API requests.
-The test is deliberately pinned to 3.21.0 and must be re-derived for other versions.
-
-To confirm the negative control, the same probe against the original base APK must
-fail with `Profile must report premium when server is_premium=false`:
-
-```sh
-bash bin/test-rumble ~/scratch/morphe/rumble/3.21.0/base.apk
-```
-
-## Validation on 2026-10-14
-
-- Stock APK: the expected assertion fails. Patched APK: free and paid fixtures pass.
-- Morphe Desktop 1.18.1 applies the patch, rebuilds and signs successfully.
-- The signed APK installs and cold-launches to Rumble's sign-in screen on Android 16.
-- All six output DEX files pass `dexdump` and D8; APK manifest, signature and alignment
-  verification pass. The optional cross-DEX verifier reports the same 42 missing
-  optional SDK/reference issues on both stock and patched APKs, with no added issues.
-- The workspace Gradle build was blocked by HTTP 401 from GitHub Packages with both
-  configured credentials. The tested `.mpp` was compiled against the patcher API in
-  the existing Morphe Desktop JAR, using the installed Kotlin compiler and Android D8.
-  It contains both JVM classes and Android DEX. The local reproduction script is
-  `~/scratch/morphe/build-rumble/build.py`; normal Gradle build validation remains pending
-  working `read:packages` credentials.
-
-Artifacts are in `~/scratch/morphe/out/`: `rumble-3.21.0.mpp`,
-`rumble-3.21.0-patched.apk` and the Morphe result JSON. Build and verification logs
-are in `~/scratch/morphe/build-rumble/`; the launch screenshot is in
-`~/scratch/morphe/shots/rumble-premium-launch.png`.
+Lurk had an Unlock Premium patch up to 1.6.0. Ad-free playback and hidden Premium prompts are what
+Block ads and Hide Premium upsells do; beyond those, it only let premium-only videos and live-gated
+streams start without a subscription. That is a paywall bypass, not a privacy patch, so it was removed.
 
 ## Lurk icon
 
@@ -85,8 +18,8 @@ adds a themed (monochrome) layer. It fails if any of the files is missing in a n
 Regenerate the resources after changing the artwork with
 `bin/app-icon rumble <artwork.png>`.
 
-Validated on 2026-10-14 with a local build: Morphe Desktop 1.18.1 applies `Lurk icon` and
-`Unlock Premium` to 3.21.0; the launcher and the Android 16 splash screen show the new icon and the
+Validated on 2026-10-14 with a local build: Morphe Desktop 1.18.1 applies `Lurk icon` to 3.21.0;
+the launcher and the Android 16 splash screen show the new icon and the
 app cold-launches to its home feed.
 
 ## Block cookie notice
@@ -109,6 +42,15 @@ AppsFlyer is never initialized, and Firebase Analytics, Firebase Performance and
 automatic event logging stay off.
 Settings > Data Consent no longer opens anything.
 
+Rumble also keeps the last decision in `consent_cache.json` and applies it at startup without Ketch, so
+consent recorded while the switch was off, or before the patch was included, would still start the
+trackers on every launch. While the switch is on, the cached model's `hasDecision` getter returns `false`
+(found as the class whose `toString` starts `CachedConsent(hasDecision=`; it is the only `()Z` there).
+Startup then hands every tracker an empty purpose set, as on a fresh install: Firebase Analytics,
+Crashlytics, Performance and Facebook switch their persisted collection off again, and AppsFlyer and
+Airship are never started. The cached consent strings still go into ad requests, which Block ads stops.
+Turning the switch off uses the cached consent again.
+
 Validated on 2026-10-14 on the Android 16 emulator, fresh data each time, location resolved by Ketch as
 US-MO:
 
@@ -118,8 +60,7 @@ US-MO:
 - Patched (`Block cookie notice` only): launch, signed-out home feed, background/resume and Settings >
   Data Consent make no Ketch requests and no crashes. No `consent_cache.json`, no AppsFlyer
   `first_launch`, Firebase consent `G100` with measurement disabled.
-- Morphe Desktop 1.18.1 applies it together with `Unlock Premium`. The bundle was built with the local
-  fallback described above, because Gradle still can't reach GitHub Packages.
+- The bundle was built with a local fallback build, because Gradle still can't reach GitHub Packages.
 
 The visible banner itself wasn't reproduced, since no notice is shown at that location; the patch doesn't
 depend on jurisdiction, because both entry points that can display one are disabled.
@@ -147,7 +88,6 @@ choices.
 | Hide tipping and Rants | `hide_tipping` | when the data is loaded again |
 | Default video quality (a choice; "Rumble's default" is 0) | `video_quality` | at the next video |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
-| Unlock Premium | `unlock_premium` | after signing in again |
 
 Resource patches (Lurk icon, Remove tracking permissions, Clone app, Change app name) change the
 APK itself, so they aren't listed.
@@ -183,8 +123,7 @@ and Change app name applied (Gradle still can't reach GitHub Packages):
   app, so changes taking effect mid-session weren't checked separately.
 - Keep watch progress is disabled while Disable analytics is off. The quality picker, Reset to
   defaults and dark mode (including switching while the screen is open) work.
-- `bin/test-rumble` passes on the patched APK. A build with only Clean share links and Clone app
-  shows just that switch and works under `com.rumble.battles.lurk`.
+- A build with only Clean share links and Clone app shows just that switch and works under `com.rumble.battles.lurk`.
 
 ## Finding code in 3.21.0
 
@@ -268,7 +207,7 @@ It also removes the AppsFlyer referrer `<queries>` entries.
 - Live chat's Premium gift list (`LiveChatConfig.giftList`) is null.
 
 The Premium tag on premium-only videos and the comment/chat paywalls stay, since they describe content.
-Premium status itself isn't touched; that's Unlock Premium's job.
+Premium status itself isn't touched.
 
 ## Hide tipping and Rants
 
@@ -338,7 +277,8 @@ So the patch is a guard in case the server or a later version starts adding tags
 ## Validation on 2026-10-14 (new patches)
 
 All built with the local fallback (Gradle still gets 401 from GitHub Packages) against Morphe Desktop
-1.18.1. All 14 Rumble patches apply together to 3.21.0.
+1.18.1. All 14 Rumble patches at the time, including the since-removed Unlock Premium, apply together
+to 3.21.0.
 
 Network was checked on the Android 16 emulator through a logging CONNECT proxy (the emulator's global
 `http_proxy`). Each build ran the same walk-through: fresh install, signed out, Home, a live video for 40 s,

@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.6.0",
+  "version": "1.6.1-dev.1",
   "patches": [
     {
       "name": "Block ads",
@@ -60,7 +60,7 @@
     },
     {
       "name": "Block cookie notice",
-      "description": "Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Push notifications stop too, since Rumble only starts its push service (Airship) with consent. Settings > Data Consent no longer opens.",
+      "description": "Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded, and ignores consent recorded earlier. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Push notifications stop too, since Rumble only starts its push service (Airship) with consent. Settings > Data Consent no longer opens.",
       "default": true,
       "category": null,
       "compatiblePackages": [
@@ -1226,34 +1226,6 @@
           "targets": [
             {
               "version": "31.6.0",
-              "versionCodes": null,
-              "isExperimental": false,
-              "minSdk": null,
-              "description": null
-            }
-          ]
-        }
-      ],
-      "options": []
-    },
-    {
-      "name": "Unlock Premium",
-      "description": "Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization.",
-      "default": true,
-      "category": null,
-      "compatiblePackages": [
-        {
-          "packageName": "com.rumble.battles",
-          "name": "Rumble",
-          "description": null,
-          "apkFileType": "APKM",
-          "appIconColor": "#85C742",
-          "signatures": [
-            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
-          ],
-          "targets": [
-            {
-              "version": "3.21.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,

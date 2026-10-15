@@ -15,7 +15,8 @@ private const val KEY = "block_cookie_notice"
 val blockCookieNoticePatch = bytecodePatch(
     name = "Block cookie notice",
     description = "Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no " +
-        "consent is recorded. Rumble then keeps the analytics and ad tracking it gates on consent switched off. " +
+        "consent is recorded, and ignores consent recorded earlier. Rumble then keeps the analytics and ad " +
+        "tracking it gates on consent switched off. " +
         "Push notifications stop too, since Rumble only starts its push service (Airship) with consent. " +
         "Settings > Data Consent no longer opens.",
 ) {
@@ -42,6 +43,19 @@ val blockCookieNoticePatch = bytecodePatch(
                 """,
             )
         }
+
+        // Consent recorded while the switch was off (or before this patch was included) is cached and
+        // would still start the trackers on every launch. Report no cached decision while it is on.
+        val cached = CachedConsentHasDecisionFingerprint.matchAllOrNull()?.singleOrNull()
+            ?: throw PatchException("Rumble: expected exactly one cached consent decision getter. " +
+                "This patch targets 3.21.0; recheck the consent cache before updating compatibility.")
+        cached.method.addInstructionsIfEnabled(
+            KEY,
+            """
+                const/4 v0, 0x0
+                return v0
+            """,
+        )
 
         rumbleSettings.add(
             SwitchSetting(
