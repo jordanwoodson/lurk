@@ -1,9 +1,36 @@
 package io.github.jordanwoodson.patches.twitch.player
 
 import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.anyInstruction
+import app.morphe.patcher.fieldAccess
+import app.morphe.patcher.literal
+import app.morphe.patcher.methodCall
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.resourceLiteral
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
+
+private const val IVS_PLAYER = "Lcom/amazonaws/ivs/player/CorePlayerImpl;"
+private const val DRAGGABLE = "Ltv/twitch/android/shared/ui/elements/draggable/"
+
+// IVS's only MediaPlayer, used by every native, portal and React Native player. The SDK keeps its names.
+internal object IvsPlayFingerprint : Fingerprint(
+    definingClass = IVS_PLAYER, name = "play", returnType = "V", parameters = emptyList(),
+)
+
+internal object IvsPauseFingerprint : Fingerprint(
+    definingClass = IVS_PLAYER, name = "pause", returnType = "V", parameters = emptyList(),
+)
+
+internal object IvsReleaseFingerprint : Fingerprint(
+    definingClass = IVS_PLAYER, name = "release", returnType = "V", parameters = emptyList(),
+)
+
+// The base class of the native player presenters (live, VOD, clips, vertical): its property delegates
+// keep their Kotlin names.
+internal object PlayerPresenterFingerprint : Fingerprint(
+    name = "<clinit>", strings = listOf("playerStateAndEventDisposable", "followStatusDisposable"),
+)
 
 // The Create Clip button's state, shared by the live overlay, the VOD/clip overlay and vertical theatre.
 internal object ClipButtonStateFingerprint : Fingerprint(
