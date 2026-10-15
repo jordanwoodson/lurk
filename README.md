@@ -36,9 +36,9 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 ## 🩹 Patches list
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.6.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.6.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;39 patches total
+> **[v1.6.1-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.6.1-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;38 patches total
 <details open>
-<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;14 patches</summary>
+<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;13 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -48,25 +48,24 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Block ads](#block-ads) | Removes video ads (before and during videos and live streams) and the ads in feeds and under videos, signed in or not. The app never requests them, so it never sends the ad server your advertising ID, and no ad or Boosted video impressions or clicks are reported. |  |
-| [Block cookie notice](#block-cookie-notice) | Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Push notifications stop too, since Rumble only starts its push service (Airship) with consent. Settings > Data Consent no longer opens. |  |
-| [Change app name](#change-app-name) | Changes the name shown under Rumble's launcher icon and in Android's settings. | • App name |
-| [Clean share links](#clean-share-links) | Removes everything after the ? from Rumble links before they are shared, so tracking tags such as e9s (where you found the video) can't go out with them. Rumble 3.21.0 shares clean links; this keeps them clean if the server starts adding tags. |  |
-| [Clone app](#clone-app) | Installs Rumble under another package name, so it sits alongside the original app with its own sign-in and settings. Use "Change app name" to tell the two apart in the launcher. | • Package name |
-| [Default video quality](#default-video-quality) | Starts videos at the chosen quality, or the closest one available, instead of 480p. Once you pick a quality in the player, Rumble keeps using that one. Live streams stay on Auto. | • Quality |
-| [Disable analytics](#disable-analytics) | Stops Rumble's own analytics, which it sends whatever the consent setting: clicks, impressions, searches, watch progress and player state, with your user ID, username, advertising ID and AppsFlyer ID, to e.rumble.com and its debug log. Signed-in watch history may stop updating unless watch progress is kept. | • Keep watch progress |
-| [Disable autoplay](#disable-autoplay) | Stops Rumble from playing the next video when one ends, and from playing muted previews in feeds, including the featured video on Home. Only the defaults change: Settings > Playback can turn either back on. | • Next video<br>• Feed previews |
-| [Hide Premium upsells](#hide-premium-upsells) | Hides Rumble Premium promotions: the sheet that opens over videos, the Upgrade Now banner on Home and My Feed, the special offer on the account screen, the downloads pitch and Premium gifts in live chat. Premium-only videos still say so. |  |
-| [Hide Shorts](#hide-shorts) | Removes Shorts from the bottom bar, Home, My Feed, channel pages, categories and search. Shorts links still open. |  |
-| [Hide tipping and Rants](#hide-tipping-and-rants) | Hides the Tip buttons on channels, videos and Shorts, Rants (paid live chat messages) and paying with Rumble Wallet. Rants other viewers send still show. |  |
-| [Lurk icon](#lurk-icon) | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
-| [Remove tracking permissions](#remove-tracking-permissions) | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
-| [Unlock Premium](#unlock-premium) | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
+| Block ads | Removes video ads (before and during videos and live streams) and the ads in feeds and under videos, signed in or not. The app never requests them, so it never sends the ad server your advertising ID, and no ad or Boosted video impressions or clicks are reported. |  |
+| Block cookie notice | Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded, and ignores consent recorded earlier. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Push notifications stop too, since Rumble only starts its push service (Airship) with consent. Settings > Data Consent no longer opens. |  |
+| Change app name | Changes the name shown under Rumble's launcher icon and in Android's settings. | • App name |
+| Clean share links | Removes everything after the ? from Rumble links before they are shared, so tracking tags such as e9s (where you found the video) can't go out with them. Rumble 3.21.0 shares clean links; this keeps them clean if the server starts adding tags. |  |
+| Clone app | Installs Rumble under another package name, so it sits alongside the original app with its own sign-in and settings. Use "Change app name" to tell the two apart in the launcher. | • Package name |
+| Default video quality | Starts videos at the chosen quality, or the closest one available, instead of 480p. Once you pick a quality in the player, Rumble keeps using that one. Live streams stay on Auto. | • Quality |
+| Disable analytics | Stops Rumble's own analytics, which it sends whatever the consent setting: clicks, impressions, searches, watch progress and player state, with your user ID, username, advertising ID and AppsFlyer ID, to e.rumble.com and its debug log. Signed-in watch history may stop updating unless watch progress is kept. | • Keep watch progress |
+| Disable autoplay | Stops Rumble from playing the next video when one ends, and from playing muted previews in feeds, including the featured video on Home. Only the defaults change: Settings > Playback can turn either back on. | • Next video<br>• Feed previews |
+| Hide Premium upsells | Hides Rumble Premium promotions: the sheet that opens over videos, the Upgrade Now banner on Home and My Feed, the special offer on the account screen, the downloads pitch and Premium gifts in live chat. Premium-only videos still say so. |  |
+| Hide Shorts | Removes Shorts from the bottom bar, Home, My Feed, channel pages, categories and search. Shorts links still open. |  |
+| Hide tipping and Rants | Hides the Tip buttons on channels, videos and Shorts, Rants (paid live chat messages) and paying with Rumble Wallet. Rants other viewers send still show. |  |
+| Lurk icon | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
+| Remove tracking permissions | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
 
 </details>
 
 <details open>
-<summary>📦&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;13 patches</summary>
+<summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;13 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -76,24 +75,24 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Block client ads](#block-client-ads) | Declines ads handled by Twitch's native client ad eligibility check using its existing not eligible result. Does not remove ads stitched into streams by the server or guarantee ad-free playback. |  |
-| [Block cookie notice](#block-cookie-notice) | Hides Twitch's automatic cookie consent notice without accepting it or changing saved vendor consent. Manual consent settings stay available. Use Disable analytics to block tracking. |  |
-| [Change app name](#change-app-name) | Changes the name shown under Twitch's launcher icon and in Android's settings. | • App name |
-| [Clean share links](#clean-share-links) | Removes known Twitch attribution and campaign parameters from shared links and copied share text. Keeps timestamps, clip IDs, unknown parameters and fragments. Covers native and React Native sharing. |  |
-| [Clone app](#clone-app) | Installs Twitch under another package name alongside the original, with separate sign-in and settings. Amazon sign-in and verified app links may not work after re-signing. | • Package name |
-| [Default video quality](#default-video-quality) | Starts playback at the selected rendition when available, with Source as the default. Saved player choices, including Auto, take priority. Unavailable renditions use Twitch's fallback. | • Default rendition |
-| [Disable analytics](#disable-analytics) | Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK consent, enables Branch's limited tracking mode, blocks Crashlytics uploads and prevents Sentry initialization. Watch progress, viewing statistics and rewards may stop updating. Restart Twitch after changing this setting. Playback requests still run. |  |
-| [Disable autoplay](#disable-autoplay) | Stops the next recommended video and React Native feed clip from playing automatically, and defaults feed previews to Never. Manual Play and saved feed preview choices keep working. | • Feed previews<br>• Next video |
-| [Hide Bits tipping](#hide-bits-tipping) | Hides chat Bits buttons, Bits purchase cards, the cheering tray and one-tap Bits controls. Keeps normal chat and Bits messages sent by other viewers. |  |
-| [Hide Clips](#hide-clips) | Hides the Clips discovery tab on Home and the Clips tab on native channel profiles. Shared clip links still open. |  |
-| [Hide subscription upsells](#hide-subscription-upsells) | Hides Subscribe and Gift a Sub prompts, Turbo promotions and the native Turbo signup/startup offer. Keeps the existing subscribed indicator and legitimate account entitlements. |  |
-| [Lurk icon](#lurk-icon) | Replaces Twitch's launcher icon with Lurk artwork, including Android's themed icon. |  |
-| [Remove tracking permissions](#remove-tracking-permissions) | Removes advertising ID and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
+| Block client ads | Declines ads handled by Twitch's native client ad eligibility check using its existing not eligible result. Does not remove ads stitched into streams by the server or guarantee ad-free playback. |  |
+| Block cookie notice | Hides Twitch's automatic cookie consent notice without accepting it or changing saved vendor consent. Manual consent settings stay available. Use Disable analytics to block tracking. |  |
+| Change app name | Changes the name shown under Twitch's launcher icon and in Android's settings. | • App name |
+| Clean share links | Removes known Twitch attribution and campaign parameters from shared links and copied share text. Keeps timestamps, clip IDs, unknown parameters and fragments. Covers native and React Native sharing. |  |
+| Clone app | Installs Twitch under another package name alongside the original, with separate sign-in and settings. Amazon sign-in and verified app links may not work after re-signing. | • Package name |
+| Default video quality | Starts playback at the selected rendition when available, with Source as the default. Saved player choices, including Auto, take priority. Unavailable renditions use Twitch's fallback. | • Default rendition |
+| Disable analytics | Stops Twitch's native and React Native Spade event uploads, denies local analytics SDK consent, enables Branch's limited tracking mode, blocks Crashlytics uploads and prevents Sentry initialization. Watch progress, viewing statistics and rewards may stop updating. Restart Twitch after changing this setting. Playback requests still run. |  |
+| Disable autoplay | Stops the next recommended video and React Native feed clip from playing automatically, and defaults feed previews to Never. Manual Play and saved feed preview choices keep working. | • Feed previews<br>• Next video |
+| Hide Bits tipping | Hides chat Bits buttons, Bits purchase cards, the cheering tray and one-tap Bits controls. Keeps normal chat and Bits messages sent by other viewers. |  |
+| Hide Clips | Hides the Clips discovery tab on Home and the Clips tab on native channel profiles. Shared clip links still open. |  |
+| Hide subscription upsells | Hides Subscribe and Gift a Sub prompts, Turbo promotions and the native Turbo signup/startup offer. Keeps the existing subscribed indicator and legitimate account entitlements. |  |
+| Lurk icon | Replaces Twitch's launcher icon with Lurk artwork, including Android's themed icon. |  |
+| Remove tracking permissions | Removes advertising ID and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
 
 </details>
 
 <details open>
-<summary>📦&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;12 patches</summary>
+<summary><img src="assets/kick-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;12 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -103,18 +102,18 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 
 | 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
 |----------|----------------|-----------|
-| [Bypass VOD ad sessions](#bypass-vod-ad-sessions) | Experimental: uses the original VOD URL instead of requesting a separate ad-session manifest. Does not remove ads stitched into live streams. Enable in Lurk settings after patching. |  |
-| [Change app name](#change-app-name) | Changes Kick's name in the launcher and Android settings. | • App name |
-| [Clean share links](#clean-share-links) | Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean. |  |
-| [Clone app](#clone-app) | Installs Kick under another package name alongside the original, with separate sign-in and settings. Sharing sign-in with Kick's broadcaster app may not work after re-signing. | • Package name |
-| [Default video quality](#default-video-quality) | Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling. | • Default quality ceiling |
-| [Disable analytics](#disable-analytics) | Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads. |  |
-| [Disable autoplay](#disable-autoplay) | Starts Kick's feed previews switched off. Existing preferences and Kick's own autoplay switch keep working. Does not change intentionally opened streams. |  |
-| [Hide Clips](#hide-clips) | Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open. |  |
-| [Hide KICKs tipping](#hide-kicks-tipping) | Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt. |  |
-| [Hide subscription upsells](#hide-subscription-upsells) | Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator. |  |
-| [Lurk icon](#lurk-icon) | Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon. |  |
-| [Remove tracking permissions](#remove-tracking-permissions) | Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
+| Bypass VOD ad sessions | Experimental: uses the original VOD URL instead of requesting a separate ad-session manifest. Does not remove ads stitched into live streams. Enable in Lurk settings after patching. |  |
+| Change app name | Changes Kick's name in the launcher and Android settings. | • App name |
+| Clean share links | Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean. |  |
+| Clone app | Installs Kick under another package name alongside the original, with separate sign-in and settings. Sharing sign-in with Kick's broadcaster app may not work after re-signing. | • Package name |
+| Default video quality | Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling. | • Default quality ceiling |
+| Disable analytics | Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads. |  |
+| Disable autoplay | Starts Kick's feed previews switched off. Existing preferences and Kick's own autoplay switch keep working. Does not change intentionally opened streams. |  |
+| Hide Clips | Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open. |  |
+| Hide KICKs tipping | Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt. |  |
+| Hide subscription upsells | Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator. |  |
+| Lurk icon | Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon. |  |
+| Remove tracking permissions | Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
 
 </details>
 
