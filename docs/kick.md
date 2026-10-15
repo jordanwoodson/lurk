@@ -1,4 +1,4 @@
-# Kick 40.32.1: Rumble patch portability
+# Kick 40.32.1
 
 Static analysis of the supplied APKMirror bundle on 2026-10-14, compared with the 14
 Rumble patches in this repository. **None of the existing patches applies to Kick
@@ -6,9 +6,10 @@ unchanged.** All declare Rumble compatibility; most also fingerprint Rumble Kotl
 classes or Compose UI. Kick uses React Native/Expo, Hermes bytecode and native
 player modules. Several features are good candidates for independent Kick patches.
 
-The assessment below was the starting point. Twelve Kick patches have since been
-implemented; the implementation and validation notes at the end distinguish tested
-behavior from the remaining limitations.
+The assessment below, up to "Workspace result", was the starting point and is kept as
+it was written. Twelve Kick patches have since been implemented; the notes from
+"Implemented patch set" on describe them and separate tested behavior from the
+remaining limitations.
 
 ## Input and analysis
 
@@ -193,16 +194,8 @@ settings activity/registry and launcher shortcut can be reused, initialized from
 `com.kick.mobile.MainApplication.onCreate`. The Rumble Compose settings-row hook
 cannot transfer to React Native. Hermes switches need a native bridge or another
 explicit way to read settings; including the shared extension alone does not provide
-that connection. Patch-time options or Kick's existing preferences can be used first.
-
-Suggested order based on the code inspected:
-
-1. App name, icon and the four tracking permissions; verify merged split resources.
-2. Kick settings integration and Expo update handling, then staged analytics controls.
-3. Preview autoplay and quality defaults, preserving explicit user choices.
-4. Hide KICKs, subscription prompts and Clips, with navigation/layout checks.
-5. Clone validation; link cleaning if a tagged share path is found.
-6. Separate ad-blocking investigation with live playback evidence.
+that connection. (The runtime bundle loader under "Implementation contracts" now
+provides it.)
 
 Do not advertise cookie-notice blocking or premium unlocking for Kick on the evidence
 available here. Recheck all targets when changing the supported version.
@@ -218,9 +211,6 @@ icon overrides in the supplied language/density splits.
 The original assessment checked the 18 documented Hermes function IDs against
 nonempty disassembly entries and covered all 14 Rumble patches. Implementation
 details and validation follow.
-
-`home-lint` ran and reported `~/mobile-uploads`, `~/.cache/jadx`, and a 16.23 GB Docker
-build cache. Those locations were not moved or pruned as part of this analysis.
 
 ## Implemented patch set
 
