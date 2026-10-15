@@ -128,6 +128,53 @@ internal class HermesBundle(input: ByteArray) {
         add(function, key, 0, function.body.copyOfRange(0, length), replacement, true)
     }
 
+    /**
+     * Returns null (or undefined) as the function's first instruction, for components and services that
+     * render or subscribe nothing then, and for class methods whose result is discarded. Covers any
+     * prologue made of the instructions below, such as `LoadThisNS` + `GetById` in class methods,
+     * which [returnNull] and [returnUndefined] don't accept. Every call returns before any hook or
+     * branch, so React hook order stays the same for the process (edits are restart-gated).
+     */
+    fun returnAtEntry(functionName: String, key: String, undefined: Boolean = false, defaultEnabled: Boolean = true) {
+        val function = function(functionName)
+        ensure(function.flags and 0x18 == 0, "$functionName has exception/debug metadata")
+        val body = function.body
+        var length = 0
+        while (length < 4) {
+            ensure(length < body.size, "$functionName is too short")
+            length += PROLOGUE_LENGTHS[body[length].toInt() and 255]
+                ?: fail("$functionName has an unexpected prologue instruction at $length")
+        }
+        val register = function.numberRegisters + function.nonPointerRegisters
+        ensure(register in 0..255 && register < function.frameSize, "$functionName has no general register")
+        val replacement = ByteArray(length)
+        byteArrayOf(if (undefined) 0x93.toByte() else 0x94.toByte(), register.toByte(), 0x76, register.toByte())
+            .copyInto(replacement)
+        // Unreachable (0) pads through the last replaced instruction boundary, after Ret.
+        add(function, key, 0, body.copyOfRange(0, length), replacement, defaultEnabled)
+    }
+
+    /**
+     * Turns the function's single read of [property] (GetById) into `false` in the same register, so
+     * a prop such as `onShare` or `hasBoards` reads as false while every other prop and hook stays.
+     */
+    fun falseProperty(functionName: String, property: String, key: String, defaultEnabled: Boolean = true) {
+        val function = function(functionName)
+        val id = stringId(property)
+        ensure(id in 0..65535, "$property needs a larger Hermes instruction")
+        val matches = (0..function.body.size - 6).filter { offset ->
+            (function.body[offset].toInt() and 255) == 0x45 &&
+                (function.body[offset + 4].toInt() and 255) == (id and 255) &&
+                (function.body[offset + 5].toInt() and 255) == (id ushr 8)
+        }
+        val offset = matches.singleOrNull() ?: fail("expected one $property read in $functionName")
+        val register = function.body[offset + 1]
+        ensure((register.toInt() and 255) >= function.numberRegisters + function.nonPointerRegisters,
+            "$property result has no general register")
+        replace(function, key, function.body.copyOfRange(offset, offset + 6),
+            byteArrayOf(0x96.toByte(), register, 0x96.toByte(), register, 0x96.toByte(), register), defaultEnabled)
+    }
+
     fun replace(functionName: String, key: String, before: ByteArray, after: ByteArray,
                 defaultEnabled: Boolean = true) = replace(function(functionName), key, before, after, defaultEnabled)
 
@@ -204,6 +251,18 @@ internal class HermesBundle(input: ByteArray) {
 
     companion object {
         const val SOURCE_SHA256 = "50e73cce33e67272f9eb9a38b8d8e6f1ecd06ceccf4b88cc9dbc091743493fc9"
+
+        /** Byte lengths of the v98 instructions accepted in a replaced prologue (BytecodeList.def). */
+        private val PROLOGUE_LENGTHS = mapOf(
+            0x34 to 3, // GetParentEnvironment
+            0x3b to 4, // LoadFromEnvironment
+            0x40 to 3, // CreateFunctionEnvironment
+            0x41 to 6, // CreateTopLevelEnvironment
+            0x44 to 5, // GetByIdShort
+            0x45 to 6, // GetById
+            0x89 to 3, // LoadParam
+            0x99 to 2, // LoadThisNS
+        )
     }
 }
 
