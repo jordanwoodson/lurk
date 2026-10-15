@@ -67,6 +67,71 @@ internal object PlayerLongPressFingerprint : Fingerprint(
     custom = { _, classDef -> classDef.superclass == "Landroid/view/GestureDetector\$SimpleOnGestureListener;" },
 )
 
+// The classic VOD overlay's rewind and forward buttons: -10 and +30 seconds, sent on touch down.
+internal object VodSeekTouchFingerprint : Fingerprint(
+    name = "onTouch", returnType = "Z", parameters = listOf("Landroid/view/View;", "Landroid/view/MotionEvent;"),
+    filters = listOf(
+        literal(-10),
+        methodCall(definingClass = "Ljava/lang/Integer;", name = "valueOf"),
+        literal(30),
+        methodCall(definingClass = "Ljava/lang/Integer;", name = "valueOf"),
+    ),
+)
+
+// The view holding those buttons (play_pause_fast_seek_view).
+internal object VodSeekViewFingerprint : Fingerprint(
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.CONSTRUCTOR),
+    filters = listOf(
+        resourceLiteral(ResourceType.ID, "seek_rewind_button"),
+        resourceLiteral(ResourceType.ID, "seek_rewind_amount_text_view"),
+        resourceLiteral(ResourceType.ID, "seek_forward_button"),
+    ),
+)
+
+// The vertical VOD theatre's Compose skip buttons: 10 and 30 seconds with their talkback and icon.
+internal object VerticalVodSeekFingerprint : Fingerprint(
+    returnType = "V",
+    filters = listOf(
+        resourceLiteral(ResourceType.STRING, "rewind_10_vod_talkback"),
+        resourceLiteral(ResourceType.DRAWABLE, "skip_backwards_10"),
+        resourceLiteral(ResourceType.STRING, "forward_30_vod_talkback"),
+        resourceLiteral(ResourceType.DRAWABLE, "skip_forward_30"),
+    ),
+)
+
+// The media notification and session's VOD seeks, in milliseconds, tagged with the seek's origin.
+internal object MediaSeekBackFingerprint : Fingerprint(
+    returnType = "V", parameters = emptyList(),
+    filters = listOf(literal(-10000), fieldAccess(name = "BACK_BUTTON", opcode = Opcode.SGET_OBJECT)),
+)
+
+internal object MediaSeekForwardFingerprint : Fingerprint(
+    returnType = "V", parameters = emptyList(),
+    filters = listOf(literal(30000), fieldAccess(name = "FORWARD_BUTTON", opcode = Opcode.SGET_OBJECT)),
+)
+
+// Every use of an icon that draws Twitch's 10 or 30: the overlay, Compose and notification buttons.
+internal object SeekIconFingerprint : Fingerprint(
+    filters = listOf(anyInstruction(
+        resourceLiteral(ResourceType.DRAWABLE, "ic_rewind_10"),
+        resourceLiteral(ResourceType.DRAWABLE, "ic_forward_30"),
+        resourceLiteral(ResourceType.DRAWABLE, "skip_backwards_10"),
+        resourceLiteral(ResourceType.DRAWABLE, "skip_forward_30"),
+    )),
+)
+
+// The theatre root of every player screen (classic, vertical, portal, React Native). Both classes are
+// named in layout XML, so they keep their names, and these are framework overrides.
+internal object TheatreInterceptFingerprint : Fingerprint(
+    definingClass = "${DRAGGABLE}DraggableConstraintLayout;", name = "onInterceptTouchEvent",
+    returnType = "Z", parameters = listOf("Landroid/view/MotionEvent;"),
+)
+
+internal object TheatreTouchFingerprint : Fingerprint(
+    definingClass = "${DRAGGABLE}ConstraintTheatreContainerView;", name = "onTouchEvent",
+    returnType = "Z", parameters = listOf("Landroid/view/MotionEvent;"),
+)
+
 // The Create Clip button's state, shared by the live overlay, the VOD/clip overlay and vertical theatre.
 internal object ClipButtonStateFingerprint : Fingerprint(
     name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
