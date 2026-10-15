@@ -56,11 +56,23 @@ internal class ChoiceSetting(
     default: String,
     val choices: List<Pair<String, String>>,
     restart: Boolean = false,
-) : Setting(key, title, summary, section, default, null, restart) {
+    parent: String? = null,
+) : Setting(key, title, summary, section, default, parent, restart) {
     init {
         require(choices.any { it.second == default }) { "$key: default $default is not a choice" }
     }
 }
+
+/** Free text, such as a comma-separated list, typed into a dialog. The extension reads it with Settings.getText. */
+internal class TextSetting(
+    key: String,
+    title: String,
+    summary: String,
+    section: Section,
+    default: String = "",
+    parent: String? = null,
+    restart: Boolean = false,
+) : Setting(key, title, summary, section, default, parent, restart)
 
 /**
  * The settings an app's patches register, written into the extension as JSON when the app's settings
@@ -85,7 +97,11 @@ internal class SettingsScreen(private val app: String) {
         val entries = ordered.joinToString(",") { setting ->
             val fields = mutableListOf(
                 "key" to setting.key.json(),
-                "type" to (if (setting is ChoiceSetting) "choice" else "switch").json(),
+                "type" to when (setting) {
+                    is ChoiceSetting -> "choice"
+                    is TextSetting -> "text"
+                    is SwitchSetting -> "switch"
+                }.json(),
                 "title" to setting.title.json(),
                 "summary" to setting.summary.json(),
                 "section" to setting.section.title.json(),

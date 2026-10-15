@@ -212,6 +212,28 @@ and RN `TwitchIVSPlayerView.handleMetadata`. From `twitch-stitched-ad` until `tw
 with the volume, so the user's own mute is untouched. A break also ends on a new stream, a release, or
 a timer set from the ad's duration (capped at 240 s). The ad still plays for its full length.
 
+*Avoid stitched ads* (on by default) is based on measurements taken on 2026-10-15, signed out, with
+the app's Client-ID:
+- A commercial reaches every full-quality session that's open when it starts, whatever the player
+  type or platform (mobile_player, popout, embed, site, frontpage; android, web, ios).
+- Sessions opened during a commercial get join-in ads within seconds.
+- Android `picture-by-picture` and `autoplay` sessions got none, but stop at 360p.
+- Only two commercials were observed in about 2.5 hours, so this rests on a small sample.
+
+No full-quality player type avoids breaks, so the patch doesn't change the player type. Instead it
+hooks IVS's Java HTTP client (`OkHttpClient.execute` for the request URL, `ByteBufferConsumer.consume`
+for the body), which every Twitch player uses. When a media playlist's next segments are ads:
+- it serves the playlist of an anonymous picture-by-picture session instead, renumbered by program
+  date-time and marked as a discontinuity, so the player doesn't reload;
+- it checks the stream's own playlist on each refresh and switches back once that is live again,
+  without the old ad cues;
+- a break past 4 minutes, an unreadable playlist or a backup that stops answering ends the switch;
+- without a backup, Mute stitched ads applies.
+
+`bin/test-twitch-ad-backup` runs the hooked consumer on ART against live Twitch playlists. A test
+build with a faked break went 1080p → 360p → 1080p without a reload. No real commercial was caught
+in the app.
+
 *Playlist proxy* is opt-in and does nothing without its `proxyUrl` option. It sends live usher requests
 to the configured proxy, and the proxy receives the signed playback token.
 
@@ -263,6 +285,23 @@ chest's own claim action once per claim ID.
 `bin/test-twitch-chat <apk>` runs the real classes with each switch on and off. Signed-in IRC login
 and bonus claims are verified only through bytecode and the probe.
 
+*Chat keywords* highlights native chat lines that mention you (your signed-in login) or contain one
+of your highlight words, with a tinted row and an optional vibration. It hides lines with blocked
+words or from blocked users. The word and user lists are Lurk's first text settings: a `TextSetting`
+in the registry JSON, edited in a dialog on the settings screen. Words match as whole words in any
+case. Blocked live messages are dropped at the chat list feeder, before the Chat overlay sees them.
+History and VOD replay lines are marked by the shared line builder (`ChatMessageSpanGroup`) and
+collapsed by the row binders.
+
+*Chat appearance* sets:
+- chat text size;
+- alternating row shading, numbered by arrival and skipping hidden lines;
+- plain /me messages;
+- the landscape chat column's width (the theatre guideline) and background opacity.
+
+React Native chat is not covered. `bin/test-twitch-chat-style` checks both patches on ART, including
+mentions with a fake signed-in account.
+
 ### Third-party emotes and badges
 
 Both are opt-in: every switch starts off, and its summary names the hosts it contacts. Emotes hook
@@ -293,6 +332,60 @@ chat. React Native chat, VODs and chat replay don't pass through that feeder.
 
 Twitch already loads recent chat history on join (native
 `ChatHistory`, RN preload) and replays VOD chat, so a third-party history service isn't used.
+
+### VOD chapters
+
+*VOD chapters* (on by default) adds a Chapters button next to the rotate button in the native VOD
+player's overlay. It reads the video's `moments(momentRequestType: VIDEO_CHAPTER_MARKERS)` (position,
+duration, game) from gql.twitch.tv with the app's Client-ID only, since chapters are public. This
+runs on a background thread, results are cached per video, and they're shown in a list. Tapping a row
+seeks through Twitch's own VOD seek.
+
+Feed previews also load VOD presenters, so the button finds its video through its own overlay: the
+presenter whose visible player view lies under it (captured in the base presenter's view binding),
+mapped to the video it loaded. `VodModel.getId()` carries a `v` prefix that GQL rejects, so the
+prefix is stripped. Verified on the emulator: the dialog listed a VOD's three chapters, and tapping
+the second seeked to 26:29.
+
+### Tablet layout, navigation bar position and Force ExoPlayer
+
+*Tablet layout* makes Twitch read its tablet resources as true. `isTablet` switches the form factor
+to Tablet, so Home and the player rotate and the player shows chat beside the video in landscape.
+`is_tablet` only affects the cast dialogs. `following_drawer_use_sidebar` gives the navigation rail,
+in landscape only unless "Navigation rail in portrait" is on: signed in, Twitch opens its 320 dp
+Following sidebar next to the rail, which would leave almost no room in portrait.
+
+*Navigation bar position* inflates a copy of the main layout with the bar anchored at the top and
+hands the gesture-bar inset to the screen, or hides the bar's labels.
+
+*Force ExoPlayer* sets `PlayerConfiguration.forceExoPlayer` for HLS content. Live channels and
+videos then play on Twitch's dormant ExoPlayer 2 backend, which still sends `player_backend=Exo2` to
+usher; Twitch itself only uses it for MP4 feed and story items. Clips and encrypted streams stay on
+IVS. Lurk's IVS hooks (Normal latency, Mute stitched ads, video stats, quality names) don't apply to
+ExoPlayer. `androidx.media3` in the APK is the React Native transparent-video view, not playback.
+
+All three were verified on the emulator signed out. The Following sidebar is checked only
+statically.
+
+### Declined
+
+These features appear in other Twitch bundles and mods but are deliberately not built:
+
+- **Twitch debug mode** (ReVanced): 31.6.0's debug menu (`debug_app_actions`, RN `canReachDevTools`)
+  is staff-gated, and release builds fold the debug-build check to false. Reaching it means passing
+  the app off as a staff account, or bypassing the staff gate on a menu whose tools change experiment
+  assignments, GQL and Spade endpoints, latency and ad behaviour on Twitch's service. *Show video
+  stats* covers the debug view viewers use, the player stats panel.
+- **Disable Google Play services** (PurpleTV): Play services carries push (see *Fix notifications*),
+  Google and FIDO sign-in, Cast, Play Integrity attestation and billing. A blanket switch would break
+  them; the analytics SDKs that use it are blocked individually instead.
+- **VOD unlock / VODHunter** (PurpleTV: sub-only and deleted VODs): not implemented. Building the
+  sub-only part was stopped by the assistant's safety checks, so it was left out. Recovering deleted
+  VODs doesn't work in any case: for broadcasts whose VODs are gone, every VOD CDN host answered 403
+  for the computed playlist path, so the segments are removed.
+- **Third-party recent chat history** (PurpleTV, Xtra: recent-messages.robotty.de): Twitch already
+  loads its own recent messages on join (native `ChatHistory`, the RN preload), and VODs replay their
+  chat. A third-party source would duplicate lines and send each joined channel to another service.
 
 ## Implementation evidence
 

@@ -19,6 +19,7 @@ import io.github.jordanwoodson.extension.shared.Logger;
 final class Registry {
     static final String SWITCH = "switch";
     static final String CHOICE = "choice";
+    static final String TEXT = "text";
 
     /** The bundle name, "Lurk". */
     final String name;
@@ -37,7 +38,7 @@ final class Registry {
         final String section;
         /** The switch this one only matters under, or null. */
         final String parent;
-        /** "true"/"false" for a switch, a choice's value otherwise. */
+        /** "true"/"false" for a switch, a choice's value or a text otherwise. */
         final String defaultValue;
         /** Whether the app has to restart before a change applies. */
         final boolean restart;

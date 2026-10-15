@@ -3,12 +3,14 @@ package io.github.jordanwoodson.patches.twitch.chat
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.checkCast
 import app.morphe.patcher.fieldAccess
+import app.morphe.patcher.literal
 import app.morphe.patcher.methodCall
 import app.morphe.patcher.newInstance
 import app.morphe.patcher.resource.ResourceType
 import app.morphe.patcher.resourceLiteral
 import app.morphe.patcher.string
 import com.android.tools.smali.dexlib2.AccessFlags
+import com.android.tools.smali.dexlib2.Opcode
 
 private const val EVENT_DISPATCHER = "Ltv/twitch/android/core/mvp/viewdelegate/EventDispatcher;"
 private const val RESTRICTIONS = "Ltv/twitch/android/shared/messageinput"
@@ -112,4 +114,80 @@ internal fun pointsUpdateFingerprint(presenter: String) = Fingerprint(
     name = "invoke", returnType = "Ljava/lang/Object;", parameters = listOf("Ljava/lang/Object;"),
     filters = listOf(checkCast(POINTS_MODEL)),
     custom = { _, classDef -> classDef.fields.count { it.type == presenter } == 1 },
+)
+
+// Chat keywords and Chat appearance.
+
+// A live chat line's render model: id, type, tags, badges, color, sender, tokens, time, flags, ...
+internal object LiveChatLineFingerprint : Fingerprint(
+    name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
+    strings = listOf("LiveChatMessage(messageId=", ", sender=", ", messageTokens="),
+)
+
+// The spans of one native chat line, in the order they are shown.
+internal object ChatLineSpansFingerprint : Fingerprint(
+    name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
+    strings = listOf("ChatMessageSpanGroup(timestampSpan=", ", senderSpan=", ", messageSpan="),
+)
+
+// A chat line's sender: user ID, login and display name.
+internal object ChatLineSenderFingerprint : Fingerprint(
+    name = "toString", returnType = "Ljava/lang/String;", parameters = emptyList(),
+    strings = listOf("ChatMessageUser(userId=", ", username=", ", displayName="),
+)
+
+// Builds one native chat line (live chat, chat history, VOD chat replay) from its sender, tokens, style and
+// flags. It is in the class that makes the chat time formatter, and builds the "<message deleted>" placeholder.
+internal object ChatLineBuilderFingerprint : Fingerprint(
+    classFingerprint = ChatLineFormatterFingerprint,
+    accessFlags = listOf(AccessFlags.PUBLIC, AccessFlags.STATIC),
+    filters = listOf(resourceLiteral(ResourceType.STRING, "chat_message_deleted")),
+)
+
+// Binds a native chat line to its row: text style, padding, text, and the background of a selected line.
+internal object ChatRowBinderFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("L", "Z"),
+    filters = listOf(
+        resourceLiteral(ResourceType.STYLE, "ChatMessageView"),
+        methodCall(definingClass = "Landroid/widget/TextView;", name = "setText"),
+        resourceLiteral(ResourceType.COLOR, "selected_message_color"),
+    ),
+)
+
+// Binds a VOD chat replay line to its row: text, overflow button, and a pressed or transparent background.
+internal object ReplayRowBinderFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("L"),
+    filters = listOf(
+        methodCall(definingClass = "Landroid/widget/TextView;", name = "setText", parameters = listOf("Ljava/lang/CharSequence;")),
+        resourceLiteral(ResourceType.STRING, "chomment_overflow_username"),
+        methodCall(definingClass = "Landroid/view/View;", name = "setBackgroundColor", parameters = listOf("I")),
+    ),
+)
+
+// The landscape chat panel's layout, which switches it between letterbox and overlay mode.
+internal object LandscapeChatLayoutFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("Z"),
+    filters = listOf(resourceLiteral(ResourceType.STRING, "transition_landscape_chat_overlay_mode_show")),
+)
+
+// Sizes the landscape chat panel: 20% of the screen's long side on tablets, 30% on phones.
+internal object LandscapeChatWidthFingerprint : Fingerprint(
+    classFingerprint = LandscapeChatLayoutFingerprint,
+    returnType = "V", parameters = emptyList(),
+    filters = listOf(
+        literal(20),
+        literal(30),
+        methodCall(parameters = listOf("I", "Landroid/view/View;"), returnType = "V", opcode = Opcode.INVOKE_STATIC),
+    ),
+)
+
+// Lays out the native theatre. In landscape the chat column starts at a guideline: 70% of the width, 80% on
+// tablets (the one-chat overlay is placed after).
+internal object TheatreLayoutFingerprint : Fingerprint(
+    returnType = "V", parameters = listOf("L"),
+    filters = listOf(
+        literal(0.8f),
+        literal(0.7f),
+        resourceLiteral(ResourceType.ID, "one_chat_overlay_container"),
+    ),
 )

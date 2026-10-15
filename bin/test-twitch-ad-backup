@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Execute Avoid stitched ads on Android: the patched IVS body consumer and its extension, on generated
+# playlists and on a live channel's real playlists (signed out, a few requests to Twitch).
+# The APK must include the patch. LURK_SERIAL picks the device (default emulator-5580).
+source "$(dirname "$0")/lib/common.sh"
+[[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-twitch-ad-backup <patched.apk>"
+serial=${LURK_SERIAL:-emulator-5580}
+out="$WORK/twitch-ads/ad-backup-probe"
+remote=/data/local/tmp/lurk-twitch-ad-backup
+mkdir -p "$out/classes" "$out/dex" "$WORK/tmp"
+export TMPDIR="$WORK/tmp"
+android="$ANDROID_HOME/platforms/android-36/android.jar"
+javac --release 17 -classpath "$android" -d "$out/classes" "$ROOT/tests/twitch/AdBackupProbe.java"
+# Only the probe enters DEX; every Twitch class and the extension come from the patched APK.
+"$(build_tool d8)" --min-api 30 --lib "$android" --output "$out/dex" "$out/classes/"*.class
+(cd "$out/dex" && jar cf "$out/probe.jar" classes.dex)
+adb -s "$serial" shell mkdir -p "$remote"
+trap 'adb -s "$serial" shell rm -rf "$remote" >/dev/null 2>&1 || true' EXIT
+adb -s "$serial" push "$1" "$remote/app.apk" >/dev/null
+adb -s "$serial" push "$out/probe.jar" "$remote/probe.jar" >/dev/null
+adb -s "$serial" shell "CLASSPATH=$remote/probe.jar:$remote/app.apk app_process /system/bin AdBackupProbe"
