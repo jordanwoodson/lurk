@@ -63,7 +63,8 @@ forced on and explicit event reporting suppressed. That mode permits some link
 requests; the patch does not claim zero Branch traffic. Sentry's three startup
 providers and explicit initialization are guarded. Crashlytics' automatic collection
 arbiter and both collection setters are disabled, along with explicit report-send,
-log, exception and user-data methods. Its fatal handler may still retain local crash
+log, exception and user-ID methods. The `setCustomKey` overloads have no spare register,
+so the internal method they all call is guarded instead. Its fatal handler may still retain local crash
 files. Firebase's initialization provider and messaging remain intact. No
 Firebase Analytics implementation was found in this APK.
 

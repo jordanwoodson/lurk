@@ -9,6 +9,7 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import com.android.tools.smali.dexlib2.iface.reference.StringReference
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
@@ -140,14 +141,24 @@ val disableAnalyticsPatch = bytecodePatch(
         mutableClassDefBy(crashlytics).methods.filter { it.returnType == "V" &&
             it.name in setOf("sendUnsentReports", "log", "recordException", "setUserId", "setCustomKey", "setCustomKeys") &&
             it.implementation != null }.forEach { method ->
-            // Some optimized overloads have no locals. Reuse the first argument for the lookup
-            // only on early return: the off path requires the original argument, so use the helper
-            // only when a safe local exists; the overloads without locals simply delegate or throw.
+            // Some optimized overloads have no locals for the switch lookup: setCustomKeys only
+            // throws, and every setCustomKey overload hands its key to the method guarded below.
             val locals = method.implementation!!.registerCount - 1 - method.parameterTypes.sumOf {
                 if (it.toString() in setOf("J", "D")) 2 else 1
             }
             if (locals >= 1) method.addInstructionsIfEnabled(KEY, "return-void")
         }
+        val stringPair = listOf("Ljava/lang/String;", "Ljava/lang/String;")
+        val setCustomKey = mutableClassDefBy(crashlytics).methods.single {
+            it.name == "setCustomKey" && it.parameterTypes.map { type -> type.toString() } == stringPair
+        }
+        val storeKey = setCustomKey.implementation!!.instructions.mapNotNull {
+            (it as? ReferenceInstruction)?.reference as? MethodReference
+        }.singleOrNull { it.returnType == "V" && it.parameterTypes.map { type -> type.toString() } == stringPair }
+            ?: throw PatchException("Twitch: Crashlytics custom key storage changed")
+        mutableClassDefBy(storeKey.definingClass).methods.single {
+            it.name == storeKey.name && it.returnType == "V" && it.parameterTypes.map { type -> type.toString() } == stringPair
+        }.addInstructionsIfEnabled(KEY, "return-void")
 
         // Synchronous reporter methods return undefined; the reporter object and its page/session
         // APIs stay available. Identify anonymous/shared names by unique actual instruction anchors.
