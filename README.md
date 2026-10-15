@@ -148,6 +148,7 @@ gh auth refresh -h github.com -s read:packages
 | `extensions/shared/` | Java code injected into patched apps (`extensions/shared.mpe`). Add `extensions/<app>/` when an app needs its own. |
 | `assets/icon.png` | The Lurk icon at full size (1254 px). `patches-bundle.png` is a 512 px copy: Manager shows it for this source, and the README header uses it. |
 | `assets/<app>-icon.png` | An app's Lurk launcher artwork, flattened to its two colors. `bin/app-icon` turns it into `patches/src/main/resources/<app>/icon/` (adaptive icon, vector logo, legacy `.webp`), which the app's icon patch copies in. The patches list shows the round legacy icon next to the app. |
+| `assets/<app>-icon-round.webp` | The patches list icon for apps whose icon patch recolors Rumble's Lurk logo while patching instead of shipping its own (`twitch`, `kick`). |
 | `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
 | `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
 | `~/scratch/morphe/` | Decompiled code, patched APKs, the test emulator, reference repos. Regenerable. |
