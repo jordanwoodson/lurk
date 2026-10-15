@@ -37,6 +37,11 @@ def main():
                 public View(int id){this.id=id;} public int getId(){return id;}
                 public android.content.res.Resources getResources(){return new android.content.res.Resources();}
                 public void setVisibility(int value){visibility=value;} public int getVisibility(){return visibility;} }''',
+            'com/amazonaws/ivs/player/Quality.java': '''package com.amazonaws.ivs.player;
+                public class Quality { private final String name; public Quality(String name){this.name=name;}
+                public String getName(){return name;} }''',
+            'com/amazonaws/ivs/player/Player.java': '''package com.amazonaws.ivs.player;
+                public interface Player { java.util.Set<Quality> getQualities(); }''',
             'android/view/ViewGroup.java': '''package android.view;
                 public class ViewGroup extends View { private final View[] children;
                 public ViewGroup(int id,View... children){super(id);this.children=children;}

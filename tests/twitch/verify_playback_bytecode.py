@@ -27,6 +27,10 @@ def unique(all_methods, predicate):
     assert len(matches) == 1, [(m[0], m[1]) for m in matches]
     return matches[0]
 
+# ClipQuality strings (no frame rates, no 160p) for each live/VOD value.
+CLIP_QUALITIES = {'chunked': 'source', '1080p60': '1080', '1080p': '1080', '720p60': '720', '720p': '720',
+                  '480p': '480', '360p': '360', '160p': '240'}
+
 def execute_reader(method, arguments, saved, enabled=True, quality='chunked'):
     """Only the straight-line instruction set of the two real getters, fail closed on new code."""
     registers = {'p0': object(), **arguments}
@@ -57,7 +61,7 @@ def execute_reader(method, arguments, saved, enabled=True, quality='chunked'):
             elif target.startswith(PLAYBACK + '->qualityDefault('):
                 result = args[0] if quality is None else quality
             elif target.startswith(PLAYBACK + '->qualityPreferenceDefault('):
-                result = args[0] if quality is None else 'source' if quality == 'chunked' and args[1] == '_clip' else quality
+                result = args[0] if quality is None else CLIP_QUALITIES[quality] if args[1] == '_clip' else quality
             elif target.startswith(PLAYBACK + '->autoplayDefault('):
                 result = 'never' if enabled else args[0]
             elif target.endswith('(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;'):
@@ -185,6 +189,20 @@ def main():
         assert execute_reader(patched_quality, args, {}, quality=None) == args['p2']
         for saved in ['auto', '720p60', 'audio_only']:
             assert execute_reader(patched_quality, args, {'video_quality' + suffix: saved}) == saved
+    for value, clip in CLIP_QUALITIES.items():
+        assert execute_reader(patched_quality, {'p1': '_clip', 'p2': '480p'}, {}, quality=value) == clip
+        assert execute_reader(patched_quality, {'p1': '_live', 'p2': 'auto'}, {}, quality=value) == value
+    # The player's select-by-name resolves the request first, while the player register is loaded.
+    selection = unique(patched, lambda m: PLAYBACK + '->playerQuality(' in m[2])
+    body = [line.strip() for line in selection[2].splitlines()
+            if line.strip() and not line.strip().startswith(('.', '#', ':'))]
+    assert re.fullmatch(r'iget-object v0, p0, L[^;]+;->\w+:Lcom/amazonaws/ivs/player/MediaPlayer;', body[0]), body[0]
+    assert body[1] == ('invoke-static {p1, v0}, ' + PLAYBACK +
+                       '->playerQuality(Ljava/lang/String;Ljava/lang/Object;)Ljava/lang/String;'), body[1]
+    assert body[2] == 'move-result-object p1', body[2]
+    stock_body = [line.strip() for line in unique(stock, lambda m: m[:2] == selection[:2])[2].splitlines()
+                  if line.strip() and not line.strip().startswith(('.', '#', ':'))]
+    assert body[:1] + body[3:] == stock_body, 'player quality selection changed beyond the request'
     assert sum(PLAYBACK + '->qualityDefault(' in m[2] for m in patched) == 1, 'audio restore default'
     assert sum(PLAYBACK + '->qualityPreferenceDefault(' in m[2] for m in patched) == 1, 'content-type preference default'
     missing = unique(patched, lambda m: PLAYBACK + '->storageQualityDefault(' in m[2])

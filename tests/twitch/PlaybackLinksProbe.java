@@ -1,16 +1,27 @@
 import android.content.Intent;
+import com.amazonaws.ivs.player.Player;
+import com.amazonaws.ivs.player.Quality;
 import android.view.View;
 import android.view.ViewGroup;
 import io.github.jordanwoodson.extension.shared.twitch.TwitchPlayback;
 import io.github.jordanwoodson.extension.shared.twitch.TwitchLinks;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public final class PlaybackLinksProbe {
     private static int checks;
     private static void equal(Object expected, Object actual) {
         checks++;
         if (!Objects.equals(expected, actual)) throw new AssertionError("expected=" + expected + "; actual=" + actual);
+    }
+    private static Player player(String... names) {
+        Set<Quality> qualities = new LinkedHashSet<>();
+        for (String name : names) qualities.add(new Quality(name));
+        return new Player() {
+            @Override public Set<Quality> getQualities() { return qualities; }
+        };
     }
     public static void main(String[] args) {
         equal("never", TwitchPlayback.autoplayDefault(""));
@@ -35,15 +46,33 @@ public final class PlaybackLinksProbe {
         equal("chunked", TwitchPlayback.qualityPreferenceDefault("auto", "_live"));
         equal("chunked", TwitchPlayback.qualityPreferenceDefault("auto", "_vod"));
         equal("source", TwitchPlayback.qualityPreferenceDefault("480", "_clip"));
-        equal("\"chunked\"", TwitchPlayback.storageQualityDefault("preferred-video-quality"));
+        // React Native matches exact names; the source's name varies, so Source leaves the row absent.
+        equal(null, TwitchPlayback.storageQualityDefault("preferred-video-quality"));
         equal(null, TwitchPlayback.storageQualityDefault("another-setting"));
+        // The native player matches IVS names; the source rendition is named like "1080p60 (source)".
+        Player stream = player("1080p60 (source)", "720p60", "480p");
+        equal("1080p60 (source)", TwitchPlayback.playerQuality("chunked", stream));
+        equal("1080p60 (source)", TwitchPlayback.playerQuality("1080p60", stream));
+        equal("720p60", TwitchPlayback.playerQuality("720p60", stream));
+        equal("480P", TwitchPlayback.playerQuality("480P", stream));
+        equal("auto", TwitchPlayback.playerQuality("auto", stream));
+        equal("1080p", TwitchPlayback.playerQuality("1080p", stream));
+        equal("chunked", TwitchPlayback.playerQuality("chunked", player()));
+        equal("chunked", TwitchPlayback.playerQuality("chunked", player("720p60", "480p")));
+        equal("chunked", TwitchPlayback.playerQuality("chunked", new Object()));
+        equal(null, TwitchPlayback.playerQuality(null, stream));
         Settings.quality = 72060;
         equal("720p60", TwitchPlayback.qualityDefault("auto"));
         equal("\"720p60\"", TwitchPlayback.storageQualityDefault("preferred-video-quality"));
+        equal("720", TwitchPlayback.qualityPreferenceDefault("auto", "_clip"));
+        equal("720p60", TwitchPlayback.playerQuality("720p60", player("1080p60 (source)", "720p60")));
+        equal("720p60 (source)", TwitchPlayback.playerQuality("720p60", player("720p60 (source)", "480p")));
         Settings.quality = 480;
         equal("480p", TwitchPlayback.qualityDefault("480p"));
         Settings.quality = 0;
         equal("auto", TwitchPlayback.qualityDefault("auto"));
+        equal("chunked", TwitchPlayback.playerQuality("chunked", stream));
+        equal("1080p60", TwitchPlayback.playerQuality("1080p60", stream));
         equal("480", TwitchPlayback.qualityPreferenceDefault("480", "_clip"));
         equal("chunked", TwitchPlayback.qualityPreferenceDefault("chunked", "_clip"));
         equal("480p", TwitchPlayback.qualityDefault("480p"));
@@ -54,6 +83,9 @@ public final class PlaybackLinksProbe {
             Settings.quality = code;
             String expected = code > 10000 ? (code / 100) + "p60" : code + "p";
             equal(expected, TwitchPlayback.qualityDefault("auto"));
+            // ClipQuality has no frame rates and no 160p; Twitch picks the closest one a clip has.
+            String clip = code == 160 ? "240" : String.valueOf(code > 10000 ? code / 100 : code);
+            equal(clip, TwitchPlayback.qualityPreferenceDefault("auto", "_clip"));
         }
         equal(null, TwitchLinks.cleanShareText(null));
         equal("Watch https://www.twitch.tv/videos/123?t=42s&clip=id#time", TwitchLinks.cleanShareText(

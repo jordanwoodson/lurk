@@ -87,11 +87,24 @@ for the RN clip-advance preference, so Lurk's next-video switch controls that pa
 
 Quality defaults affect missing native live/VOD/clip preferences, the last-used
 video fallback after audio-only playback, and an absent RN `preferred-video-quality`
-storage row. They never replace saved values. Source maps to `chunked` for live/VOD
-and `source` for native clips. RN shares one exact rendition name across content
-types; if that name is unavailable, its existing effect resets to Auto. Named
-resolutions likewise require an exact match, including frame rate. This is not a
-nearest-resolution selector and does not force a bandwidth minimum.
+storage row. They never replace saved values.
+
+The native player (live, VOD, vertical video) selects a rendition by its exact IVS
+name, and Twitch names the source rendition like `1080p60 (source)`. Lurk's Source
+choice is stored as `chunked`, the source's HLS group ID, which is never a name. While
+a default is chosen, a hook at the start of the player's select-by-name resolves
+`chunked`, or a named choice that is the source (`1080p60` for `1080p60 (source)`), to
+the full name; exact names and Auto pass through. Requests made before the qualities
+load are retried by Twitch through the same method. Native clips use `ClipQuality`
+strings without frame rates (`source`, `1080`, `720`, `480`, `360`; 160p maps to the
+smallest clip quality, `240`), and Twitch picks the closest one a clip has.
+
+RN shares one exact rendition name across content types (after mapping `p30` to `p`);
+if that name is unavailable, its existing effect resets to Auto and saves that. Source
+has no fixed name, so it leaves the RN row absent and RN players start on Auto. Named
+resolutions require an exact match, including frame rate, apart from the source suffix
+on native players. This is not a nearest-resolution selector and does not force a
+bandwidth minimum.
 
 Sharing hooks cover six native/RN intent-producing methods and three clipboard
 boundaries. They clean only `EXTRA_TEXT` among intent string extras and preserve
