@@ -35,13 +35,12 @@ val thirdPartyEmotesPatch = bytecodePatch(
         "and loads the emote images from its CDN. Not in the emote picker or autocomplete.",
 ) {
     compatibleWith(COMPATIBILITY_TWITCH)
-    dependsOn(twitchSettingsPatch)
+    dependsOn(twitchSettingsPatch, chatImageSizePatch)
     execute {
         hookLiveMatcher()
         hookReplayTokens()
         hookEmoteUrl()
         hookEmoteClick()
-        hookWideEmotes()
         hookReactNative()
         ChatConnectFingerprint.twitchMatch("chat connect").method.apply {
             val channel = parameterRegister(1)
@@ -221,49 +220,6 @@ private fun BytecodePatchContext.hookReactNative() {
         addInstructions(0, """
             invoke-static/range { v$uri .. v$uri }, $EMOTES->url(Ljava/lang/String;)Ljava/lang/String;
             move-result-object v$uri
-        """)
-    }
-}
-
-/**
- * Chat images: Twitch fits each emote in a square, so wide third-party emotes would shrink. Before the
- * image loads, a known wide emote gets its width and is sized by height instead.
- */
-private fun BytecodePatchContext.hookWideEmotes() {
-    val match = ChatImageLoaderFingerprint.twitchMatch("chat image loader")
-    match.method.apply {
-        val instructions = implementation!!.instructions
-        val call = match.instructionMatches.first().index
-        val result = instructions[call + 1]
-        if (result.opcode != Opcode.MOVE_RESULT) throw PatchException("Twitch: height constraint not kept")
-        val constrained = (result as OneRegisterInstruction).registerA
-        val store = call + 2
-        if (instructions[store].opcode != Opcode.IPUT_BOOLEAN || (instructions[store] as TwoRegisterInstruction).registerA != constrained) {
-            throw PatchException("Twitch: height constraint isn't stored right away")
-        }
-        // The placeholder drawable: the register the loop casts to the placeholder class, whose String field
-        // (the image URL) it later reads.
-        val urlRead = (store until instructions.size).firstOrNull { i ->
-            instructions[i].opcode == Opcode.IGET_OBJECT &&
-                ((instructions[i] as ReferenceInstruction).reference as FieldReference).type == "Ljava/lang/String;"
-        } ?: throw PatchException("Twitch: chat image loader doesn't read a URL")
-        val urlField = (instructions[urlRead] as ReferenceInstruction).reference as FieldReference
-        val placeholder = (instructions[urlRead] as TwoRegisterInstruction).registerB
-        val cast = (call downTo 0).firstOrNull { i ->
-            instructions[i].opcode == Opcode.CHECK_CAST &&
-                ((instructions[i] as ReferenceInstruction).reference as TypeReference).type == urlField.definingClass
-        } ?: throw PatchException("Twitch: chat image loader doesn't cast its placeholder")
-        if ((instructions[cast] as OneRegisterInstruction).registerA != placeholder) {
-            throw PatchException("Twitch: placeholder register changed")
-        }
-        requireKept(cast, store, placeholder, "chat image placeholder")
-        requireNotBranchTarget(store, "height constraint store")
-        val scratch = freeRegister(store, listOf(constrained, placeholder), "chat image loader")
-        if (constrained > 15 || placeholder > 15) throw PatchException("Twitch: chat image registers out of range")
-        addInstructions(store, """
-            iget-object v$scratch, v$placeholder, $urlField
-            invoke-static { v$constrained, v$placeholder, v$scratch }, $EMOTES->sizeEmote(ZLandroid/graphics/drawable/Drawable;Ljava/lang/String;)Z
-            move-result v$constrained
         """)
     }
 }

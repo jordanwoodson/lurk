@@ -69,6 +69,8 @@ public final class TwitchEmotes {
     private static final Set<String> LOADING = ConcurrentHashMap.newKeySet();
     /** tag + provider emote ID -> width / height, for emotes that aren't square. */
     private static final ConcurrentHashMap<String, Float> RATIOS = new ConcurrentHashMap<>();
+    /** Exact image URL (for instance a generated badge's data URI) -> width / height. */
+    private static final ConcurrentHashMap<String, Float> URL_RATIOS = new ConcurrentHashMap<>();
     /** Bumped whenever a list changes, so cached views are rebuilt. */
     private static final AtomicInteger GENERATION = new AtomicInteger();
     private static final ConcurrentHashMap<String, Resolved> RESOLVED = new ConcurrentHashMap<>();
@@ -796,7 +798,9 @@ public final class TwitchEmotes {
     static Float ratio(String url) {
         char tag;
         int start;
-        if (url.startsWith(CDN_7TV)) {
+        if (url.startsWith("data:")) {
+            return URL_RATIOS.get(url);
+        } else if (url.startsWith(CDN_7TV)) {
             tag = '7';
             start = CDN_7TV.length();
         } else if (url.startsWith(CDN_BTTV)) {
@@ -810,6 +814,12 @@ public final class TwitchEmotes {
         }
         int end = url.indexOf('/', start);
         return end < 0 ? null : RATIOS.get(tag + url.substring(start, end));
+    }
+
+    /** Marks a chat image Lurk generated as wide, so chat sizes it by height (see {@link #sizeEmote}). */
+    static void registerWide(String url, float ratio) {
+        if (URL_RATIOS.size() > 256) URL_RATIOS.clear();
+        URL_RATIOS.put(url, ratio);
     }
 
     // ---------------------------------------------------------------------------------------------

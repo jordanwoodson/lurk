@@ -24,9 +24,10 @@ import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
 /**
- * Third-party chat badges (FrankerFaceZ, Chatterino) on native chat lines. Each provider is opt-in and
- * publishes one list of all its badge holders, which is downloaded in the background, kept in memory for
- * an hour and looked up locally, so no chatter is ever looked up individually.
+ * Third-party chat badges (FrankerFaceZ, Chatterino) and pronouns (pronouns.alejo.io) on native chat lines,
+ * each opt-in. FrankerFaceZ and Chatterino publish one list of all their badge holders, which is downloaded in
+ * the background, kept in memory for an hour and looked up locally. Pronouns need a lookup per chatter; see
+ * {@link TwitchPronouns}.
  */
 @SuppressWarnings({"unused", "rawtypes", "unchecked"})
 public final class TwitchBadges {
@@ -42,8 +43,13 @@ public final class TwitchBadges {
     private static final Provider FFZ = new Provider("FrankerFaceZ");
     private static final Provider CHATTERINO = new Provider("Chatterino");
 
+    static final String KEY_PRONOUNS = "badges_pronouns";
+
+    private static final Map<String, Badge> PRONOUN_MODELS = new java.util.concurrent.ConcurrentHashMap<>();
     private static volatile Field userIdField;
     private static volatile Class<?> userClass;
+    private static volatile Field loginField;
+    private static volatile Class<?> loginClass;
     private static volatile Constructor<?> badgeConstructor;
 
     private TwitchBadges() {
@@ -59,14 +65,23 @@ public final class TwitchBadges {
         try {
             boolean ffz = Settings.isEnabled(KEY_FFZ);
             boolean chatterino = Settings.isEnabled(KEY_CHATTERINO);
-            if (!ffz && !chatterino) return badges;
+            boolean pronouns = Settings.isEnabled(KEY_PRONOUNS);
+            if (!ffz && !chatterino && !pronouns) return badges;
             if (ffz) FFZ.ensure(TwitchBadges::loadFfz);
             if (chatterino) CHATTERINO.ensure(TwitchBadges::loadChatterino);
-            int id = userId(user);
-            if (id <= 0) return badges;
             List out = null;
-            if (ffz) out = add(out, badges, FFZ.badges, id, badgeClass);
-            if (chatterino) out = add(out, badges, CHATTERINO.badges, id, badgeClass);
+            int id = ffz || chatterino ? userId(user) : 0;
+            if (id > 0) {
+                if (ffz) out = add(out, badges, FFZ.badges, id, badgeClass);
+                if (chatterino) out = add(out, badges, CHATTERINO.badges, id, badgeClass);
+            }
+            if (pronouns) {
+                String[] pronoun = TwitchPronouns.badge(login(user));
+                if (pronoun != null) {
+                    if (out == null) out = new ArrayList(badges);
+                    out.add(pronounModel(pronoun[0], pronoun[1], badgeClass));
+                }
+            }
             return out == null ? badges : out;
         } catch (ReflectiveOperationException | RuntimeException e) {
             Logger.d("badges: failed: " + e);
@@ -82,6 +97,41 @@ public final class TwitchBadges {
             out.add(badge.model(badgeClass));
         }
         return out;
+    }
+
+    private static Object pronounModel(String label, String image, Class<?> badgeClass) throws ReflectiveOperationException {
+        Badge badge = PRONOUN_MODELS.get(label);
+        if (badge == null || !badge.url.equals(image)) {
+            badge = new Badge(label, image, new int[0]);
+            PRONOUN_MODELS.put(label, badge);
+        }
+        return badge.model(badgeClass);
+    }
+
+    /**
+     * The sender's login (username). Its field is found from the sender's toString, "...username=<login>,
+     * displayName=...", once a sender makes that unambiguous.
+     */
+    private static String login(Object user) throws ReflectiveOperationException {
+        Field field = loginField;
+        if (field == null || loginClass != user.getClass()) {
+            String described = user.toString();
+            Field found = null;
+            for (Field candidate : user.getClass().getDeclaredFields()) {
+                if (candidate.getType() != String.class) continue;
+                candidate.setAccessible(true);
+                Object value = candidate.get(user);
+                if (value instanceof String && !((String) value).isEmpty() && described.contains("username=" + value + ",")) {
+                    if (found != null) return (String) value; // Same as the display name: right this time, ambiguous later.
+                    found = candidate;
+                }
+            }
+            if (found == null) return null;
+            loginClass = user.getClass();
+            loginField = field = found;
+        }
+        Object login = field.get(user);
+        return login instanceof String ? (String) login : null;
     }
 
     private static int userId(Object user) throws ReflectiveOperationException {

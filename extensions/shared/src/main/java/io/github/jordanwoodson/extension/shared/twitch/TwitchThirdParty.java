@@ -66,7 +66,13 @@ final class TwitchThirdParty {
      * 404 (a channel the service doesn't know), and throws on any other failure.
      */
     static <T> T getJson(String url, JsonParser<T> parser, T notFound) throws IOException {
+        return getJson(url, parser, notFound, READ_TIMEOUT_MS);
+    }
+
+    /** {@link #getJson(String, JsonParser, Object)} with its own read timeout, for small, frequent requests. */
+    static <T> T getJson(String url, JsonParser<T> parser, T notFound, int readTimeoutMs) throws IOException {
         HttpURLConnection connection = open(url, "application/json");
+        connection.setReadTimeout(readTimeoutMs);
         try {
             int status = connection.getResponseCode();
             if (status == HttpURLConnection.HTTP_NOT_FOUND) return notFound;
