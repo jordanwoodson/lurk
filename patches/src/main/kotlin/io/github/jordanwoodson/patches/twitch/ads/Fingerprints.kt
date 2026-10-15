@@ -2,6 +2,7 @@ package io.github.jordanwoodson.patches.twitch.ads
 
 import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.checkCast
+import app.morphe.patcher.methodCall
 import app.morphe.patcher.string
 
 internal const val ADS = "Lio/github/jordanwoodson/extension/shared/twitch/TwitchAds;"
@@ -91,4 +92,23 @@ internal object RnPreloadFingerprint : Fingerprint(
 
 internal object ProxyTemplateFingerprint : Fingerprint(
     definingClass = ADS, name = "proxyTemplate", returnType = "Ljava/lang/String;", parameters = emptyList(),
+)
+
+internal const val BACKUP_STREAM = "Lio/github/jordanwoodson/extension/shared/twitch/TwitchBackupStream;"
+internal const val IVS_REQUEST = "Lcom/amazonaws/ivs/net/Request;"
+internal const val IVS_BODY_CONSUMER = "Lcom/amazonaws/ivs/net/ByteBufferConsumer;"
+internal const val IVS_BODY_PROVIDER = "Lcom/amazonaws/ivs/net/ByteBufferConsumer\$Provider;"
+
+// IVS (every Twitch player) sends each request, playlists included, through its Java HTTP client. This is
+// the OkHttp one, which IVS picks when OkHttp is in the app; it reads the URL from the request once.
+internal object IvsHttpRequestFingerprint : Fingerprint(
+    definingClass = "Lcom/amazonaws/ivs/net/OkHttpClient;", name = "execute", returnType = "V",
+    parameters = listOf(IVS_REQUEST, "Lcom/amazonaws/ivs/net/ResponseCallback;"),
+    filters = listOf(methodCall(definingClass = IVS_REQUEST, name = "getUrl")),
+)
+
+// The OkHttp client's response body consumer, which hands the body to the player in buffers.
+internal object IvsBodyConsumerFingerprint : Fingerprint(
+    definingClass = IVS_BODY_CONSUMER, name = "consume", returnType = "V",
+    parameters = listOf("Lcom/amazonaws/ivs/net/ReadCallback;"),
 )
