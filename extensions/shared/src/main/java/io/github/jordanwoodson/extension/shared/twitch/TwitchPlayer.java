@@ -154,6 +154,129 @@ public final class TwitchPlayer {
     }
 
     // ---------------------------------------------------------------------------------------------
+    // Refresh stream
+
+    private static final class Attached {
+        final WeakReference<View> view;
+        final long order;
+
+        Attached(View view, long order) {
+            this.view = new WeakReference<>(view);
+            this.order = order;
+        }
+    }
+
+    /** Native player presenters and the player view each one last attached. Main thread. */
+    private static final Map<Object, Attached> PLAYER_VIEWS = new WeakHashMap<>();
+    private static long attachOrder;
+
+    /** Injection point: a native player presenter attaching its player view. */
+    public static void playerView(Object presenter, View view) {
+        if (presenter == null || view == null) return;
+        synchronized (PLAYER_VIEWS) {
+            PLAYER_VIEWS.put(presenter, new Attached(view, ++attachOrder));
+        }
+    }
+
+    /** Injection point: the classic player's settings gear, once it is found. Long-press reloads. */
+    public static void bindRefresh(View gear) {
+        if (gear == null) return;
+        gear.setOnLongClickListener(view -> {
+            if (!Settings.isEnabled("refresh_stream")) return false;
+            int[] location = new int[2];
+            view.getLocationOnScreen(location);
+            Object presenter = presenterAt(view, location[0] + view.getWidth() / 2f,
+                    location[1] + view.getHeight() / 2f, true);
+            if (presenter == null) {
+                Logger.d("refresh: no player for this gear");
+                return false;
+            }
+            refresh(presenter, view);
+            return true;
+        });
+    }
+
+    /**
+     * Injection point: the native player's long press, which Twitch emits but ignores. Reloads when it
+     * is in the middle of the video, away from the edges where hands rest.
+     */
+    public static void videoLongPress(MotionEvent event) {
+        try {
+            if (event == null || !Settings.isEnabled("refresh_stream") || !Settings.isEnabled("refresh_stream_video")) {
+                return;
+            }
+            float x = event.getRawX();
+            float y = event.getRawY();
+            Object presenter = presenterAt(null, x, y, false);
+            if (presenter == null) return;
+            View view = viewOf(presenter);
+            if (view == null) return;
+            int[] location = new int[2];
+            view.getLocationOnScreen(location);
+            float relative = (x - location[0]) / Math.max(1, view.getWidth());
+            if (relative < 0.2f || relative > 0.8f) return;
+            refresh(presenter, view);
+        } catch (Throwable t) {
+            Logger.d("refresh: " + t);
+        }
+    }
+
+    private static View viewOf(Object presenter) {
+        synchronized (PLAYER_VIEWS) {
+            Attached attached = PLAYER_VIEWS.get(presenter);
+            return attached == null ? null : attached.view.get();
+        }
+    }
+
+    /**
+     * The presenter whose shown player view contains the screen point, most recently attached first.
+     * With {@code sameWindow}, one in the anchor's window that doesn't contain it is the fallback.
+     */
+    private static Object presenterAt(View anchor, float x, float y, boolean sameWindow) {
+        Object best = null;
+        Object fallback = null;
+        long bestOrder = -1;
+        long fallbackOrder = -1;
+        int[] location = new int[2];
+        synchronized (PLAYER_VIEWS) {
+            for (Map.Entry<Object, Attached> entry : PLAYER_VIEWS.entrySet()) {
+                View view = entry.getValue().view.get();
+                long order = entry.getValue().order;
+                if (view == null || !view.isShown() || view.getWidth() == 0) continue;
+                if (anchor != null && view.getRootView() != anchor.getRootView()) continue;
+                view.getLocationOnScreen(location);
+                boolean contains = x >= location[0] && x < location[0] + view.getWidth()
+                        && y >= location[1] && y < location[1] + view.getHeight();
+                if (contains && order > bestOrder) {
+                    best = entry.getKey();
+                    bestOrder = order;
+                } else if (!contains && sameWindow && order > fallbackOrder) {
+                    fallback = entry.getKey();
+                    fallbackOrder = order;
+                }
+            }
+        }
+        return best != null ? best : fallback;
+    }
+
+    private static void refresh(Object presenter, View feedback) {
+        try {
+            // Exactly what the error screen's Retry does: a new access token and playlist (live), or the
+            // same position with a new token (VOD).
+            retryPlayer(presenter, 0, true);
+            feedback.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+            toast("Refreshing stream");
+            Logger.d("refresh: " + presenter.getClass().getName());
+        } catch (Throwable t) {
+            Logger.d("refresh: " + t);
+        }
+    }
+
+    /** Replaced at patch time: the player presenter's Retry, called as Twitch's error screen calls it. */
+    private static void retryPlayer(Object presenter, Integer position, boolean newToken) {
+    }
+
+    // ---------------------------------------------------------------------------------------------
 
     private static Window window(View view) {
         Activity activity = activity(view.getContext());
