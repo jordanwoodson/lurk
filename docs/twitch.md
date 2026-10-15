@@ -276,7 +276,22 @@ IRC frames, and its `ImageSource` maps the same URLs, with no Hermes edit. Lists
 channel in the background and cached in memory; if a fetch fails, codes stay as text.
 
 Badges download FrankerFaceZ's and Chatterino's public lists of badge holders and match them on the
-device, so no chatter is looked up. Twitch already loads recent chat history on join (native
+device, so no chatter is looked up. The exception is *pronouns* (`badges_pronouns`, off by default):
+pronouns.alejo.io has no bulk list, so the username of each chatter whose message you see is looked
+up there.
+- Answers, including "none", are cached for an hour, for up to 2000 users.
+- Duplicate lookups are merged, at most 4 requests a second.
+- A chatter's first line can appear before the pronoun is known.
+- Pronouns are drawn as a small text badge.
+
+*Chat overlay* (off by default) scrolls live chat right to left across the top of the video, like
+danmaku. It's fed from the native chat list feeder, found through the `LiveChatMessage(messageId=`
+toString. The overlay is a plain view on `android.R.id.content` that ignores all touches. It attaches
+only in landscape outside picture-in-picture while a video surface covers at least half the width,
+and detaches in portrait, in picture-in-picture, when the video goes away, or after 15 s without
+chat. React Native chat, VODs and chat replay don't pass through that feeder.
+
+Twitch already loads recent chat history on join (native
 `ChatHistory`, RN preload) and replays VOD chat, so a third-party history service isn't used.
 
 ## Implementation evidence
