@@ -294,6 +294,22 @@ chat. React Native chat, VODs and chat replay don't pass through that feeder.
 Twitch already loads recent chat history on join (native
 `ChatHistory`, RN preload) and replays VOD chat, so a third-party history service isn't used.
 
+### Declined
+
+These features appear in other Twitch bundles and mods but are deliberately not built:
+
+- **Twitch debug mode** (ReVanced): 31.6.0's debug menu (`debug_app_actions`, RN `canReachDevTools`)
+  is staff-gated, and release builds fold the debug-build check to false. Reaching it means passing
+  the app off as a staff account, or bypassing the staff gate on a menu whose tools change experiment
+  assignments, GQL and Spade endpoints, latency and ad behaviour on Twitch's service. *Show video
+  stats* covers the debug view viewers use, the player stats panel.
+- **Disable Google Play services** (PurpleTV): Play services carries push (see *Fix notifications*),
+  Google and FIDO sign-in, Cast, Play Integrity attestation and billing. A blanket switch would break
+  them; the analytics SDKs that use it are blocked individually instead.
+- **Third-party recent chat history** (PurpleTV, Xtra: recent-messages.robotty.de): Twitch already
+  loads its own recent messages on join (native `ChatHistory`, the RN preload), and VODs replay their
+  chat. A third-party source would duplicate lines and send each joined channel to another service.
+
 ## Implementation evidence
 
 ### Privacy and client ads
