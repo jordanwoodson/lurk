@@ -129,11 +129,6 @@ public final class TwitchPlayback {
         }
     }
 
-    /** Whether the native player offers its video stats panel, which Twitch shows only to staff. */
-    public static boolean showVideoStats() {
-        return Settings.isEnabled("video_stats");
-    }
-
     /**
      * Whether a live channel may open in the React Native theatre: Twitch's own answer ({@code live}),
      * or false while the native player is chosen.
