@@ -16,7 +16,8 @@ val lurkIconPatch = resourcePatch(
         val loader = object {}.javaClass.classLoader
         val foreground = loader.getResourceAsStream("rumble/icon/drawable/ic_launcher_foreground.xml")
             ?.bufferedReader()?.use { it.readText() }
-            ?: throw PatchException("Bundled Lurk artwork missing")
+            ?.takeIf { "#89DA44" in it }
+            ?: throw PatchException("Bundled Lurk artwork missing, or its logo is no longer #89DA44")
         get("res/drawable/lurk_launcher_foreground.xml").apply {
             parentFile.mkdirs()
             writeText(foreground.replace("#89DA44", "#9146FF"))

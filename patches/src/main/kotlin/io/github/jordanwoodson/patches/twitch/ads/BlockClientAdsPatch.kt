@@ -8,6 +8,7 @@ import app.morphe.patcher.util.smali.ExternalLabel
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
 import io.github.jordanwoodson.patches.shared.settings.isEnabled
@@ -38,13 +39,19 @@ val blockClientAdsPatch = bytecodePatch(
         if (start < 2 || instructions[start - 1].opcode != Opcode.CHECK_CAST || instructions[start - 2].opcode != Opcode.CHECK_CAST) {
             throw PatchException("Twitch: ad eligibility synthetic branch changed")
         }
+        // The emitter's onSuccess, as the other cases call it (R8 renames both class and method).
+        val emitter = method.parameterTypes.single().toString()
+        val onSuccess = instructions.mapNotNull { (it as? ReferenceInstruction)?.reference as? MethodReference }
+            .filter { it.definingClass == emitter && it.returnType == "V" &&
+                it.parameterTypes.map { type -> type.toString() } == listOf("Ljava/lang/Object;") }
+            .distinct().singleOrNull() ?: throw PatchException("Twitch: ad eligibility emitter changed")
         method.addInstructionsWithLabels(start, """
             ${isEnabled("block_client_ads", "v0")}
             if-eqz v0, :lurk_ads_off
             sget-object v0, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
             new-instance v2, Ltv/twitch/android/util/Optional;
             invoke-direct { v2, v0 }, Ltv/twitch/android/util/Optional;-><init>(Ljava/lang/Object;)V
-            invoke-virtual { p1, v2 }, Lio/reactivex/internal/operators/single/c;->b(Ljava/lang/Object;)V
+            invoke-virtual { p1, v2 }, $onSuccess
             return-void
         """, ExternalLabel("lurk_ads_off", method.getInstruction(start)))
         twitchSettings.add(SwitchSetting("block_client_ads", "Block client ads",
