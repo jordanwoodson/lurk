@@ -1,6 +1,9 @@
 package io.github.jordanwoodson.patches.twitch.vod
 
+import app.morphe.patcher.Fingerprint
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
+import app.morphe.patcher.fieldAccess
+import app.morphe.patcher.methodCall
 import app.morphe.patcher.patch.PatchException
 import app.morphe.patcher.patch.bytecodePatch
 import app.morphe.patcher.patch.resourcePatch
@@ -8,17 +11,22 @@ import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
 import io.github.jordanwoodson.patches.twitch.player.VodPlayerOverlayFingerprint
+import io.github.jordanwoodson.patches.twitch.player.parameterRegister
+import io.github.jordanwoodson.patches.twitch.player.playerPresenterClass
 import io.github.jordanwoodson.patches.twitch.player.requireNoBranchTo
+import io.github.jordanwoodson.patches.twitch.player.requireUnwritten
 import io.github.jordanwoodson.patches.twitch.settings.twitchSettings
 import io.github.jordanwoodson.patches.twitch.settings.twitchSettingsPatch
 import io.github.jordanwoodson.patches.twitch.shared.Constants.COMPATIBILITY_TWITCH
 import io.github.jordanwoodson.patches.twitch.shared.twitchMatch
 
 private const val VOD_MODEL = "Ltv/twitch/android/models/videos/VodModel;"
+private const val VIEW_DELEGATE = "Ltv/twitch/android/core/mvp/viewdelegate/BaseViewDelegate;"
 
 /** Lurk's Chapters icon: Twitch's own list glyph copied under a new name, tinted white at runtime. */
 private val chaptersIconPatch = resourcePatch {
@@ -56,6 +64,32 @@ val vodChaptersPatch = bytecodePatch(
         } ?: throw PatchException("Twitch: the VOD load method changed")
         load.requireNoBranchTo(0, "the VOD load method")
         load.addInstructions(0, "invoke-static { p0, p1 }, $VOD->vodLoaded(Ljava/lang/Object;Ljava/lang/Object;)V")
+
+        // Every native player presenter (live, VOD, clip) attaching its player view, so a tapped overlay
+        // resolves to the presenter under it rather than to a preloaded neighbour. The VOD presenter is
+        // one of these (it extends the base presenter that declares this method).
+        val base = playerPresenterClass()
+        if (!generateSequence(presenter.superclass) { type -> classDefByOrNull(type)?.superclass }
+                .any { it == base.type }) {
+            throw PatchException("Twitch: the VOD presenter no longer extends the player presenter")
+        }
+        Fingerprint(
+            definingClass = base.type, returnType = "V", parameters = listOf("L"),
+            filters = listOf(
+                fieldAccess(definingClass = VIEW_DELEGATE, type = "Landroid/view/View;", opcode = Opcode.IGET_OBJECT),
+                methodCall(definingClass = "Landroid/view/View;", name = "addOnLayoutChangeListener"),
+            ),
+        ).twitchMatch("player view attach").let { attach ->
+            val read = attach.instructionMatches.first()
+            val view = (read.instruction as TwoRegisterInstruction).registerA
+            val self = attach.method.parameterRegister(0)
+            attach.method.requireUnwritten(self, read.index, "player presenter")
+            attach.method.requireNoBranchTo(read.index + 1, "player view attach")
+            // A non-range invoke above v15 is dropped silently, so refuse rather than lose the call.
+            if (self > 15 || view > 15) throw PatchException("Twitch: player view attach registers are too high")
+            attach.method.addInstructions(read.index + 1,
+                "invoke-static { v$self, v$view }, $VOD->playerView(Ljava/lang/Object;Landroid/view/View;)V")
+        }
 
         // Seek exactly as Twitch does, through the presenter's own interface method.
         vodBridge("seekVod", """
