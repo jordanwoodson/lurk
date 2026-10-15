@@ -1,6 +1,7 @@
 package io.github.jordanwoodson.patches.twitch.chat
 
 import app.morphe.patcher.Fingerprint
+import app.morphe.patcher.checkCast
 import app.morphe.patcher.fieldAccess
 import app.morphe.patcher.methodCall
 import app.morphe.patcher.newInstance
@@ -11,6 +12,7 @@ import com.android.tools.smali.dexlib2.AccessFlags
 
 private const val EVENT_DISPATCHER = "Ltv/twitch/android/core/mvp/viewdelegate/EventDispatcher;"
 private const val RESTRICTIONS = "Ltv/twitch/android/shared/messageinput"
+internal const val POINTS_MODEL = "Ltv/twitch/android/models/communitypoints/CommunityPointsModel;"
 
 // Chat timestamps.
 
@@ -93,4 +95,21 @@ internal fun sendChatMessageFingerprint(mutation: String) = Fingerprint(
     returnType = "Ljava/lang/Object;",
     parameters = listOf("Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;", "L"),
     filters = listOf(newInstance(mutation)),
+)
+
+// Auto-claim channel points.
+
+// The presenter behind the channel points button in chat. It holds the claim action.
+internal object PointsButtonPresenterFingerprint : Fingerprint(
+    name = "<init>", returnType = "V",
+    strings = listOf(
+        "processStateUpdate(Ltv/twitch/android/shared/community/points/presenters/CommunityPointsButtonStateProvider\$State;",
+    ),
+)
+
+/** The presenter's subscriber for points updates: a lambda holding the presenter that receives the model. */
+internal fun pointsUpdateFingerprint(presenter: String) = Fingerprint(
+    name = "invoke", returnType = "Ljava/lang/Object;", parameters = listOf("Ljava/lang/Object;"),
+    filters = listOf(checkCast(POINTS_MODEL)),
+    custom = { _, classDef -> classDef.fields.count { it.type == presenter } == 1 },
 )

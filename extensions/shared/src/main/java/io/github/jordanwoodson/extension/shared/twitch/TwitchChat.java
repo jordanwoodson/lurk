@@ -8,6 +8,10 @@ import android.text.style.CharacterStyle;
 import android.text.style.UpdateAppearance;
 import java.lang.reflect.Field;
 import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
@@ -19,10 +23,17 @@ public final class TwitchChat {
     static final String IGNORE_CLEARS = "chat_ignore_clears";
     static final String TIMESTAMPS = "chat_timestamps";
     static final String TIMESTAMP_FORMAT = "chat_timestamp_format";
+    static final String AUTO_CLAIM = "chat_auto_claim";
 
     private static volatile Boolean anonymous;
     private static String guestNick;
     private static volatile Field sourceField;
+    private static final Set<String> claimed = Collections.newSetFromMap(new LinkedHashMap<String, Boolean>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+            return size() > 64;
+        }
+    });
 
     private TwitchChat() { }
 
@@ -149,5 +160,17 @@ public final class TwitchChat {
         } catch (ReflectiveOperationException | RuntimeException e) {
             return null;
         }
+    }
+
+    // Channel points.
+
+    /** Injection point: whether to claim the bonus {@code claimId} now. True once per claim, while switched on. */
+    public static boolean autoClaim(String claimId) {
+        if (claimId == null || claimId.isEmpty() || !Settings.isEnabled(AUTO_CLAIM)) return false;
+        synchronized (claimed) {
+            if (!claimed.add(claimId)) return false;
+        }
+        Logger.d("chat: claiming a channel points bonus");
+        return true;
     }
 }
