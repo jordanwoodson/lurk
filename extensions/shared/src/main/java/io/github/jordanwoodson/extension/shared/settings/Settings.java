@@ -66,6 +66,12 @@ public final class Settings {
         }
     }
 
+    /** The text typed for the text setting {@code key}, or its patch-time default (usually empty). Never null. */
+    public static String getText(String key) {
+        String text = getString(key);
+        return text == null ? "" : text;
+    }
+
     /**
      * Injection point. A {@code kotlin.jvm.functions.Function0} that opens the settings screen, for use as
      * a Compose onClick. Made through a proxy, since the extension doesn't compile against Kotlin.

@@ -9,12 +9,14 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
+import android.text.InputType;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
@@ -171,9 +173,14 @@ public final class SettingsActivity extends Activity {
                     screen.addPreference(section);
                     sections.put(entry.section, section);
                 }
-                Preference preference = Registry.CHOICE.equals(entry.type)
-                        ? choice(context, entry)
-                        : toggle(context, entry);
+                Preference preference;
+                if (Registry.CHOICE.equals(entry.type)) {
+                    preference = choice(context, entry);
+                } else if (Registry.TEXT.equals(entry.type)) {
+                    preference = text(context, entry);
+                } else {
+                    preference = toggle(context, entry);
+                }
                 section.addPreference(preference);
                 if (entry.parent != null) preference.setDependency(entry.parent);
             }
@@ -218,14 +225,50 @@ public final class SettingsActivity extends Activity {
             preference.setEntryValues(entry.choiceValues);
             String value = Settings.getString(entry.key);
             preference.setValue(value);
-            preference.setSummary(summary(entry, entry.choiceLabel(value)));
+            preference.setSummary(listSummary(summary(entry, entry.choiceLabel(value))));
             preference.setOnPreferenceChangeListener((changed, picked) -> {
                 Settings.putString(entry.key, (String) picked);
-                changed.setSummary(summary(entry, entry.choiceLabel((String) picked)));
+                changed.setSummary(listSummary(summary(entry, entry.choiceLabel((String) picked))));
                 if (entry.restart) showRestart();
                 return true;
             });
             return preference;
+        }
+
+        /** ListPreference passes its summary through String.format, so a literal % (as in "85%") is doubled. */
+        private static String listSummary(String summary) {
+            return summary.replace("%", "%%");
+        }
+
+        /** Free text, edited in a dialog. Saved trimmed; an empty text is a valid value. */
+        private EditTextPreference text(Context context, Registry.Entry entry) {
+            EditTextPreference preference = new EditTextPreference(context);
+            preference.setKey(entry.key);
+            preference.setPersistent(false);
+            preference.setTitle(entry.title);
+            preference.setDialogTitle(entry.title);
+            if (!entry.summary.isEmpty()) preference.setDialogMessage(entry.summary);
+            preference.getEditText().setInputType(InputType.TYPE_CLASS_TEXT
+                    | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+            String value = Settings.getText(entry.key);
+            preference.setText(value);
+            preference.setSummary(summary(entry, textLabel(value)));
+            preference.setOnPreferenceChangeListener((changed, typed) -> {
+                String text = typed == null ? "" : typed.toString().trim();
+                Settings.putString(entry.key, text);
+                ((EditTextPreference) changed).setText(text);
+                changed.setSummary(summary(entry, textLabel(text)));
+                if (entry.restart) showRestart();
+                // Already saved trimmed above; false keeps the preference from storing the untrimmed text.
+                return false;
+            });
+            return preference;
+        }
+
+        private static String textLabel(String value) {
+            if (value.isEmpty()) return "Not set";
+            String line = value.replace('\n', ' ');
+            return line.length() > 80 ? line.substring(0, 79) + "\u2026" : line;
         }
 
         private static String summary(Registry.Entry entry, String value) {
