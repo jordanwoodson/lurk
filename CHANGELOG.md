@@ -1,3 +1,17 @@
+## [1.9.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.8.0...v1.9.0) (2026-10-15)
+
+### 🐛 Bug Fixes
+
+* **twitch:** resolve VOD chapters from the tapped overlay ([3b8f2b6](https://github.com/jordanwoodson/lurk-morphe-patches/commit/3b8f2b607aec58b6f7ac8e375c094bdfca46be2e))
+
+### ✨ New Features
+
+* **settings:** add text settings ([11c4ef9](https://github.com/jordanwoodson/lurk-morphe-patches/commit/11c4ef97350eb7ca648306ae06fb6cb50bd4b81f))
+* **twitch:** add Avoid stitched ads ([b0b7ae8](https://github.com/jordanwoodson/lurk-morphe-patches/commit/b0b7ae88f227cef9d0bf01ad013e158218028bd6))
+* **twitch:** add Chat keywords and Chat appearance ([3252854](https://github.com/jordanwoodson/lurk-morphe-patches/commit/3252854559478a3f9aab2fd260f771f9cdd0b527))
+* **twitch:** add Tablet layout, Navigation bar position and Force ExoPlayer ([9f35954](https://github.com/jordanwoodson/lurk-morphe-patches/commit/9f35954b1812e24fea3082b19f27cae88abf73f9))
+* **twitch:** add VOD chapters patch ([fb2d642](https://github.com/jordanwoodson/lurk-morphe-patches/commit/fb2d6421a81da5c5eae68d9c8df2d6dd408775f9))
+
 ## [1.9.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.8.0...v1.9.0-dev.1) (2026-10-15)
 
 ### 🐛 Bug Fixes
