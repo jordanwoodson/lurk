@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.6.1...v1.7.0) (2026-10-15)
+
+### ✨ New Features
+
+* **rumble:** restore Unlock Premium ([ecdc369](https://github.com/jordanwoodson/lurk-morphe-patches/commit/ecdc36968d93c5911523de259d4b44ee58894d2c))
+
 ## [1.7.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.6.1...v1.7.0-dev.1) (2026-10-15)
 
 ### ✨ New Features
