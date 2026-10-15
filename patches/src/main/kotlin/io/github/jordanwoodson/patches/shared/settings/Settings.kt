@@ -17,6 +17,7 @@ internal enum class Section(val title: String) {
     PRIVACY("Privacy"),
     INTERFACE("Interface"),
     PLAYBACK("Playback"),
+    CHAT("Chat"),
     PREMIUM("Premium"),
 }
 
