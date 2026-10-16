@@ -1,3 +1,11 @@
+## [1.10.0-dev.2](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.1...v1.10.0-dev.2) (2026-10-16)
+
+### ✨ New Features
+
+* **rumble:** chat timestamps ([c7e10dd](https://github.com/jordanwoodson/lurk-morphe-patches/commit/c7e10dda2988b30b0f784aead47495994bc3490e))
+* **rumble:** hide chat clutter ([ef46df7](https://github.com/jordanwoodson/lurk-morphe-patches/commit/ef46df77696ebe4a347c33e5dcffd425930276f5))
+* **rumble:** show deleted messages ([7b3ac02](https://github.com/jordanwoodson/lurk-morphe-patches/commit/7b3ac024e87ec4a8bba2496d4e15b114ba24f0b2))
+
 ## [1.10.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.9.0...v1.10.0-dev.1) (2026-10-16)
 
 ### ✨ New Features

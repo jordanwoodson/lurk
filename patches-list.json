@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.10.0-dev.1",
+  "version": "1.10.0-dev.2",
   "patches": [
     {
       "name": "Anonymous chat",
@@ -504,6 +504,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Chat timestamps",
+      "description": "Shows the time each live chat message was sent in front of the sender's name. On by default. Turn it off in Lurk settings > Chat.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -1432,6 +1460,34 @@
       "options": []
     },
     {
+      "name": "Hide chat clutter",
+      "description": "Hides pinned messages, raid and gift notices and sponsor reads in live chat, each with its own switch, and optionally chat badges or the whole chat. Starts off. Turn them on in Lurk settings > Chat.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Hide chat highlights",
       "description": "Hides the Hype Train, Bits and gift leaderboards, other viewers' sub and gift messages and gift banners, pinned cheers and watch-streak pop-ups, each with its own switch. Celebrations can be hidden too. Other chat messages are unchanged.",
       "default": false,
@@ -1935,6 +1991,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Show deleted messages",
+      "description": "Shows the text of live chat messages that moderators remove, or that Rumble hides because the sender was muted, after Rumble's \"Message was removed by moderator\" label. On by default. Turn it off in Lurk settings > Chat.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,

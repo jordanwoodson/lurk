@@ -64,7 +64,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;73 patches total
+> **[v1.10.0-dev.2](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.2)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;76 patches total
 <details open>
 <summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;45 patches</summary>
 <br>
@@ -125,7 +125,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 </details>
 
 <details open>
-<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;16 patches</summary>
+<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;19 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -139,6 +139,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Block cookie notice | Stops Rumble's Ketch consent SDK from loading, so the cookie notice never appears and no consent is recorded, and ignores consent recorded earlier. Rumble then keeps the analytics and ad tracking it gates on consent switched off. Push notifications stop too, since Rumble only starts its push service (Airship) with consent. Settings > Data Consent no longer opens. |  |
 | Block update prompts | Stops the "update required" screen and the "new version available" dialog that Rumble turns on remotely, so a patched version keeps working when Rumble raises its minimum version. Update by patching a newer version. On by default. Turn it off in Lurk settings > Interface. |  |
 | Change app name | Changes the name shown under Rumble's launcher icon and in Android's settings. | • App name |
+| Chat timestamps | Shows the time each live chat message was sent in front of the sender's name. On by default. Turn it off in Lurk settings > Chat. |  |
 | Clean share links | Removes everything after the ? from Rumble links before they are shared, so tracking tags such as e9s (where you found the video) can't go out with them. Rumble 3.21.0 shares clean links; this keeps them clean if the server starts adding tags. |  |
 | Clone app | Installs Rumble under another package name, so it sits alongside the original app with its own sign-in and settings. Use "Change app name" to tell the two apart in the launcher. | • Package name |
 | Default video quality | Starts videos at the chosen quality, or the closest one available, instead of 480p. Once you pick a quality in the player, Rumble keeps using that one. Starting live streams at it too, and a lower cap on mobile data, are separate settings that start off. On by default. Change it in Lurk settings > Playback. | • Quality<br>• Live streams too<br>• On mobile data |
@@ -146,9 +147,11 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Disable autoplay | Stops Rumble from playing the next video when one ends, and from playing muted previews in feeds, including the featured video on Home. Only the defaults change: Settings > Playback can turn either back on. | • Next video<br>• Feed previews |
 | Hide Premium upsells | Hides Rumble Premium promotions: the sheet that opens over videos, the Upgrade Now banner on Home and My Feed, the special offer on the account screen, the downloads pitch and Premium gifts in live chat. Premium-only videos still say so. |  |
 | Hide Shorts | Removes Shorts from the bottom bar, Home, My Feed, channel pages, categories and search. Shorts links still open. |  |
+| Hide chat clutter | Hides pinned messages, raid and gift notices and sponsor reads in live chat, each with its own switch, and optionally chat badges or the whole chat. Starts off. Turn them on in Lurk settings > Chat. |  |
 | Hide tipping and Rants | Hides the Tip buttons on channels, videos and Shorts, Rants (paid live chat messages) and paying with Rumble Wallet. Rants other viewers send still show. |  |
 | Lurk icon | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
 | Remove tracking permissions | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
+| Show deleted messages | Shows the text of live chat messages that moderators remove, or that Rumble hides because the sender was muted, after Rumble's "Message was removed by moderator" label. On by default. Turn it off in Lurk settings > Chat. |  |
 | Show exact counts | Shows view, like, comment, follower and "watching now" counts in full (12,345 instead of 12K). Starts off. Turn it on in Lurk settings > Interface. |  |
 | Unlock Premium | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
 
