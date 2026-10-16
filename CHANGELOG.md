@@ -1,3 +1,9 @@
+## [1.10.0-dev.3](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.2...v1.10.0-dev.3) (2026-10-16)
+
+### ✨ New Features
+
+* **rumble:** chat keywords ([5c6ebeb](https://github.com/jordanwoodson/lurk-morphe-patches/commit/5c6ebeb4b104f5d1c8b2d0e72caace4b42d026a2))
+
 ## [1.10.0-dev.2](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.1...v1.10.0-dev.2) (2026-10-16)
 
 ### ✨ New Features
