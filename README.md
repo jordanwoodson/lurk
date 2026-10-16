@@ -64,7 +64,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;87 patches total
+> **[v1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;88 patches total
 <details open>
 <summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;45 patches</summary>
 <br>
@@ -125,7 +125,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 </details>
 
 <details open>
-<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;30 patches</summary>
+<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;31 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -158,6 +158,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Keep playing during other sounds | Choose whether Rumble pauses when another app plays sound: always (Rumble's behavior), only for longer interruptions, or never. Calls still pause playback. Starts off. Choose it in Lurk settings > Playback. |  |
 | Keep screen on while paused | Keeps the screen on while a video is paused in the player, as it is during playback. When the video ends or you leave the player, the screen can turn off again. Starts off. Turn it on in Lurk settings > Playback. |  |
 | Lurk icon | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
+| Refresh stream | When a video or live stream fails, tap the error screen to reload it at the same point. On by default. Turn it off in Lurk settings > Playback. |  |
 | Remember playback speed | Keeps the playback speed you last picked for every video, including after Rumble restarts, instead of going back to 1x. Live streams without rewind still play at 1x. Starts off. Turn it on in Lurk settings > Playback. |  |
 | Remove tracking permissions | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
 | Resume videos when signed out | Starts videos where you left off when you aren't signed in, from the positions Rumble already keeps on the phone. Signed in, Rumble's own watch progress is unchanged. On by default. Turn it off in Lurk settings > Playback. |  |

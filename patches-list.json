@@ -2115,6 +2115,34 @@
     },
     {
       "name": "Refresh stream",
+      "description": "When a video or live stream fails, tap the error screen to reload it at the same point. On by default. Turn it off in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Refresh stream",
       "description": "Long-press the player's settings gear, or the middle of the video, to reload a stuck stream through Twitch's own Retry: a new access token and playlist for live streams, the same position for videos. Covers Twitch's native players.",
       "default": true,
       "category": null,
