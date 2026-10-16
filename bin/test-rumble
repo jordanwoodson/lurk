@@ -19,13 +19,12 @@ else
     probes=()
     for f in "$ROOT"/tests/rumble/*Probe.java; do probes+=("$(basename "$f" .java)"); done
 fi
-sources=()
 for probe in "${probes[@]}"; do
     [[ -f "$ROOT/tests/rumble/$probe.java" ]] || die "no tests/rumble/$probe.java"
-    sources+=("$ROOT/tests/rumble/$probe.java")
 done
 
-javac --release 11 -d "$out/classes" "${sources[@]}"
+# Probes compile against the Android SDK (org.json); the app's classes are only reached by reflection.
+javac --release 11 -classpath "$ANDROID_HOME/platforms/android-36/android.jar" -d "$out/classes" "$ROOT"/tests/rumble/*.java
 "$(build_tool d8)" --min-api 26 --output "$out/dex" $(find "$out/classes" -name '*.class')
 (cd "$out/dex" && jar cf "$out/probe.jar" classes.dex)
 
