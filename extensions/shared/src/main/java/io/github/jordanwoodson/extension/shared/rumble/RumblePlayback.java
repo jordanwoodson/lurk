@@ -1,19 +1,35 @@
 package io.github.jordanwoodson.extension.shared.rumble;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.media.AudioManager;
+import android.os.SystemClock;
+import android.view.KeyEvent;
+
 import java.util.List;
 
+import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.Network;
+import io.github.jordanwoodson.extension.shared.SleepTimer;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
 /**
- * Playback settings for Rumble: the quality a video starts at. With a setting off, each hook returns
- * Rumble's own value.
+ * Playback settings for Rumble: start quality, signed-out resume, remembered speed, audio focus and the
+ * sleep timer. With a setting off, each hook returns Rumble's own value.
  */
 @SuppressWarnings("unused")
 public final class RumblePlayback {
     static final String QUALITY = "video_quality";
     static final String LIVE = "video_quality_live";
     static final String MOBILE = "video_quality_mobile";
+    static final String REMEMBER_SPEED = "remember_speed";
+    static final String AUDIO_FOCUS = "audio_focus";
+
+    /** Lurk's own state for Rumble (not user choices, which are in the settings file). */
+    private static final String STATE = "lurk_rumble";
+    private static final String SPEED = "speed";
+    /** The remembered speed while there is no Context to keep it in (probes). */
+    private static volatile String speedInMemory;
 
     private RumblePlayback() {
     }
@@ -102,6 +118,100 @@ public final class RumblePlayback {
      */
     public static long signedOutPosition(long local) {
         return Settings.isEnabled("resume_signed_out") && local > 0 ? local : 0;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Remember playback speed
+
+    /** Injection point: a speed picked in the player (a constant of Rumble's speed enum). */
+    public static void onSpeedPicked(Enum<?> speed) {
+        if (speed == null || !Settings.isEnabled(REMEMBER_SPEED)) return;
+        speedInMemory = speed.name();
+        SharedPreferences state = state();
+        if (state != null) state.edit().putString(SPEED, speed.name()).apply();
+    }
+
+    /**
+     * Injection point: the speed a player starts at. Returns the speed last picked while the switch is on,
+     * or null for Rumble's own (1x after a restart). {@code normal} is the enum's 1x constant.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static Enum<?> rememberedSpeed(Enum<?> normal) {
+        if (normal == null || !Settings.isEnabled(REMEMBER_SPEED)) return null;
+        SharedPreferences state = state();
+        String name = state != null ? state.getString(SPEED, null) : speedInMemory;
+        if (name == null) return null;
+        try {
+            return Enum.valueOf((Class) normal.getDeclaringClass(), name);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static SharedPreferences state() {
+        Context context = Settings.appContext();
+        return context == null ? null : context.getSharedPreferences(STATE, Context.MODE_PRIVATE);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Keep playing during other sounds
+
+    /**
+     * Injection point: the start of the player service's audio focus listener. True ignores the loss, so
+     * playback goes on: for short interruptions (choice 1) or any (choice 2). Calls always pause.
+     */
+    public static boolean ignoreFocusLoss(int change) {
+        if (change >= 0) return false;
+        int choice = Settings.getInt(AUDIO_FOCUS);
+        if (choice <= 0) return false;
+        if (inCall()) return false;
+        if (choice == 1) {
+            return change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+                    || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK;
+        }
+        return true;
+    }
+
+    private static boolean inCall() {
+        try {
+            Context context = Settings.appContext();
+            AudioManager audio = context == null ? null : context.getSystemService(AudioManager.class);
+            if (audio == null) return false;
+            int mode = audio.getMode();
+            return mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION
+                    || mode == AudioManager.MODE_RINGTONE;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Sleep timer
+
+    private static volatile boolean pauseActionSet;
+
+    /** Injection point: the player service's listener seeing playback start or stop. */
+    public static void onPlayingChanged(Object listener, boolean playing) {
+        if (!pauseActionSet) {
+            pauseActionSet = true;
+            SleepTimer.setPauseAction(RumblePlayback::pauseByMediaKey);
+        }
+        if (playing) SleepTimer.onPlay(listener);
+        else SleepTimer.onStop(listener);
+    }
+
+    /** Pauses through Rumble's media session, as a headset's pause button would, including in the background. */
+    static void pauseByMediaKey() {
+        Context context = Settings.appContext();
+        AudioManager audio = context == null ? null : context.getSystemService(AudioManager.class);
+        if (audio == null) {
+            Logger.d("sleep timer: no audio service");
+            return;
+        }
+        long now = SystemClock.uptimeMillis();
+        audio.dispatchMediaKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PAUSE, 0));
+        audio.dispatchMediaKeyEvent(new KeyEvent(now, now, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PAUSE, 0));
+        Logger.d("sleep timer: sent pause");
     }
 
     /** Replaced at patch time: a player video source's height (0 for Auto). */
