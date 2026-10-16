@@ -64,7 +64,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;84 patches total
+> **[v1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;87 patches total
 <details open>
 <summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;45 patches</summary>
 <br>
@@ -125,7 +125,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 </details>
 
 <details open>
-<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;27 patches</summary>
+<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;30 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -143,11 +143,14 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Chat timestamps | Shows the time each live chat message was sent in front of the sender's name. On by default. Turn it off in Lurk settings > Chat. |  |
 | Clean share links | Removes everything after the ? from Rumble links before they are shared, so tracking tags such as e9s (where you found the video) can't go out with them. Rumble 3.21.0 shares clean links; this keeps them clean if the server starts adding tags. |  |
 | Clone app | Installs Rumble under another package name, so it sits alongside the original app with its own sign-in and settings. Use "Change app name" to tell the two apart in the launcher. | • Package name |
+| Default startup tab | Opens Rumble on Home or My Feed every time, instead of the one you last chose. Starts off. Choose a tab in Lurk settings > Interface. |  |
 | Default video quality | Starts videos at the chosen quality, or the closest one available, instead of 480p. Once you pick a quality in the player, Rumble keeps using that one. Starting live streams at it too, and a lower cap on mobile data, are separate settings that start off. On by default. Change it in Lurk settings > Playback. | • Quality<br>• Live streams too<br>• On mobile data |
 | Disable analytics | Stops Rumble's own analytics, which it sends whatever the consent setting: clicks, impressions, searches, watch progress and player state, with your user ID, username, advertising ID and AppsFlyer ID, to e.rumble.com and its debug log. Signed-in watch history may stop updating unless watch progress is kept. | • Keep watch progress |
 | Disable autoplay | Stops Rumble from playing the next video when one ends, and from playing muted previews in feeds, including the featured video on Home. Only the defaults change: Settings > Playback can turn either back on. | • Next video<br>• Feed previews |
 | Don't save searches | Stops Rumble from keeping your searches on the phone and hides the ones it kept, so they no longer show under the search box. Suggestions still come from Rumble's server as you type. On by default. Turn it off in Lurk settings > Privacy. |  |
 | Fill screen | Zooms videos to fill the screen in landscape, cropping the edges instead of showing black bars, on phones taller than 16:9. Starts off. Turn it on in Lurk settings > Playback. |  |
+| Hide Create tab | Removes the Create (camera and upload) button from the bottom bar. Starts off. Turn it on in Lurk settings > Interface. |  |
+| Hide Home sections | Hides Home's categories, creators and playlists rows, each with its own switch, and any section whose title you list in Lurk settings, such as Live or Rumble Originals. Starts off. Turn them on in Lurk settings > Interface. |  |
 | Hide Premium upsells | Hides Rumble Premium promotions: the sheet that opens over videos, the Upgrade Now banner on Home and My Feed, the special offer on the account screen, the downloads pitch and Premium gifts in live chat. Premium-only videos still say so. |  |
 | Hide Shorts | Removes Shorts from the bottom bar, Home, My Feed, channel pages, categories and search. Shorts links still open. |  |
 | Hide chat clutter | Hides pinned messages, raid and gift notices and sponsor reads in live chat, each with its own switch, and optionally chat badges or the whole chat. Starts off. Turn them on in Lurk settings > Chat. |  |
