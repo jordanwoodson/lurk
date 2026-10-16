@@ -1,3 +1,11 @@
+## [1.10.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.9.0...v1.10.0-dev.1) (2026-10-16)
+
+### ✨ New Features
+
+* **rumble:** block update prompts ([febb5e5](https://github.com/jordanwoodson/lurk-morphe-patches/commit/febb5e515c4e2a6432a716b7bc6401918932e38e))
+* **rumble:** default quality for live streams and on mobile data ([80ad265](https://github.com/jordanwoodson/lurk-morphe-patches/commit/80ad265f2b2c0da3fcbe64bef932b394aebd97e1))
+* **rumble:** show exact counts ([b735fcf](https://github.com/jordanwoodson/lurk-morphe-patches/commit/b735fcf4a71902828073b895cb4e4f42432c1b0d))
+
 ## [1.9.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.8.0...v1.9.0) (2026-10-15)
 
 ### 🐛 Bug Fixes

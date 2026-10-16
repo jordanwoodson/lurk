@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.9.0",
+  "version": "1.10.0-dev.1",
   "patches": [
     {
       "name": "Anonymous chat",
@@ -244,6 +244,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Block update prompts",
+      "description": "Stops the \"update required\" screen and the \"new version available\" dialog that Rumble turns on remotely, so a patched version keeps working when Rumble raises its minimum version. Update by patching a newer version. On by default. Turn it off in Lurk settings > Interface.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -788,7 +816,7 @@
     },
     {
       "name": "Default video quality",
-      "description": "Starts videos at the chosen quality, or the closest one available, instead of 480p. Once you pick a quality in the player, Rumble keeps using that one. Live streams stay on Auto.",
+      "description": "Starts videos at the chosen quality, or the closest one available, instead of 480p. Once you pick a quality in the player, Rumble keeps using that one. Starting live streams at it too, and a lower cap on mobile data, are separate settings that start off. On by default. Change it in Lurk settings > Playback.",
       "default": false,
       "category": null,
       "compatiblePackages": [
@@ -816,11 +844,38 @@
         {
           "key": "quality",
           "title": "Quality",
-          "description": "The video height to start with, such as 1080. Can be changed later in Settings > Lurk.",
+          "description": "The video height to start with, such as 1080. Can be changed later in Lurk settings.",
           "required": true,
           "type": "kotlin.String",
           "default": "1080",
           "values": {
+            "2160p": "2160",
+            "1440p": "1440",
+            "1080p": "1080",
+            "720p": "720",
+            "480p": "480",
+            "360p": "360",
+            "240p": "240"
+          }
+        },
+        {
+          "key": "live",
+          "title": "Live streams too",
+          "description": "Start live streams at the default quality instead of Auto. Can be changed later in Lurk settings.",
+          "required": false,
+          "type": "kotlin.Boolean",
+          "default": false,
+          "values": null
+        },
+        {
+          "key": "mobileQuality",
+          "title": "On mobile data",
+          "description": "The highest quality a video starts at on metered networks, or 0 for the same as on Wi-Fi. Can be changed later in Lurk settings.",
+          "required": true,
+          "type": "kotlin.String",
+          "default": "0",
+          "values": {
+            "Same as on Wi-Fi": "0",
             "2160p": "2160",
             "1440p": "1440",
             "1080p": "1080",
@@ -1908,6 +1963,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Show exact counts",
+      "description": "Shows view, like, comment, follower and \"watching now\" counts in full (12,345 instead of 12K). Starts off. Turn it on in Lurk settings > Interface.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
