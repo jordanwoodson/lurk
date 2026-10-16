@@ -174,6 +174,10 @@ choices.
 | Keep playing during other sounds (a choice; "Pause" is 0) | `audio_focus` | at the next interruption |
 | Keep screen on while paused | `keep_screen_on_paused` | at the next pause |
 | Sleep timer (a choice in minutes; "Off" is 0) | `sleep_timer` | when playback next starts |
+| Default startup tab (a choice; "Rumble's choice" is -1) | `startup_tab` | after a restart |
+| Hide Create tab | `hide_create_tab` | after a restart |
+| Hide category rows, Hide creator rows, Hide playlist rows | `home_hide_categories`, `home_hide_creators`, `home_hide_playlists` | when Home loads again |
+| Hide Home sections by title (text) | `home_hide_titles` | when Home loads again |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
 | Unlock Premium | `unlock_premium` | after signing in again |
 
@@ -502,6 +506,33 @@ position on both paths into it. The patch replaces that move with `RumblePlaybac
 returns the local position while `resume_signed_out` is on (its default) and 0 otherwise. Step 4 still
 applies, and signed in nothing changes.
 
+## Interface
+
+### Default startup tab
+
+Rumble remembers whether Home (0) or My Feed (3) was last selected, in SharedPreferences `rumble_prefs`
+key `defaultTabIndexKey`, and `ContentViewModel` opens on it. The helper's getter is found as the
+`()I` method calling `SharedPreferences.getInt` in the class whose constructor names those two strings.
+While `startup_tab` is 0 or 3 it returns that instead; at -1 (its default) Rumble's stored tab is used. The
+bottom bar's tab list is fixed (Home, Shorts, Create, My Feed, Account), and Hide Shorts and Hide Create
+tab keep the positions, so the indexes stay valid.
+
+### Hide Create tab
+
+The bottom bar's tabs are routes: `Discover`, `ShortsScreen`, `CameraGalleryScreen`, `Feeds` and
+`Profile`, Kotlin data objects found by their `toString`. Hide Create tab skips `CameraGalleryScreen`
+the same way Hide Shorts skips `ShortsScreen` (the shared `hideBottomTab`): the entry stays in the list
+and keeps its position.
+
+### Hide Home sections
+
+Home is a list of server sections, `HomeSectionDto(kind, title, ...)`, with kinds `videos`, `shorts`,
+`categories`, `creators`, `playlists`, `ad_block` and `hide`. Most named rows (Editor Picks, Live, News, ...)
+are `videos` sections with server titles; the app hardcodes no slugs. The patch passes the `kind` getter
+through `RumbleInterface.homeSectionKind`, which returns `hide` for a categories, creators or playlists row
+whose switch is on, or a section whose `title` (read by its field name) matches an entry of
+`home_hide_titles`, ignoring case. A `hide` section is neither loaded nor drawn, as Hide Shorts relies on.
+
 ## Player
 
 ### Remember playback speed
@@ -675,3 +706,9 @@ that app code calls every new extension method.
 - **Sleep timer:** checked with a test build that counts minutes as seconds: with "15", Rumble logs "sent
   pause" and its media session goes to PAUSED 15 s after playback starts; Twitch logs "paused 1 native
   players" 15 s after a stream starts.
+- **Default startup tab:** "My Feed" opens Rumble on My Feed after a cold start, "Home" on Home.
+- **Hide Create tab:** the bottom bar shows Home, My Feed and Account (with Hide Shorts); each still opens its
+  own screen.
+- **Hide Home sections:** with creator rows hidden and the titles "Editor Picks, sports", Home loses Editor
+  Picks, Sports and Top Channels and keeps the other twelve sections. No categories or playlists row was on
+  Home during testing.
