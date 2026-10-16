@@ -43,7 +43,10 @@ bash bin/test-rumble ~/scratch/morphe/out/rumble-3.21.0-patched.apk
 ```
 
 `bin/test-rumble` runs every probe in `tests/rumble/`, or only the ones named after the APK
-(`bash bin/test-rumble <apk> PremiumProbe`). `PremiumProbe` executes the actual APK's profile
+(`bash bin/test-rumble <apk> PremiumProbe`). Each probe calls the patched APK's real methods; settings are
+switched by rewriting their defaults in the registry, since there is no Context under `app_process`
+(`ProbeSupport.setting`). `tests/rumble/verify_settings.py <apktool-dir>` checks the settings registry of a
+decoded patched APK: unique keys, valid sections and choices, and the documented defaults. `PremiumProbe` executes the actual APK's profile
 getter and mapper on `emulator-5580` using free and paid fixtures, including absent subscription
 metadata. It also checks unrelated account state. No probe uses a Rumble account or sends API
 requests. The probes are deliberately pinned to 3.21.0 and must be re-derived for other versions.
@@ -754,3 +757,13 @@ that app code calls every new extension method.
 - **Seek interval:** at 30 seconds the forward button moves a VOD about 30 s ahead and the buttons show
   arrows without "15s"; at Rumble's setting it moves about 15 s. Twitch's generated seek icons are
   byte-identical with the shared helper.
+- **All together:** with every Rumble patch except Change app name, 30 patches apply; each new patch also
+  applies on its own (`--exclusive`). All probes pass on the full build, and `verify_extension_calls.py`
+  finds every new hook called from app code. With Manager's default selection, `verify_settings.py` passes
+  and the Lurk screen shows each new setting in its section at its default; a setting that needs a restart
+  shows Restart Rumble. The default build's walk-through (Home, a video, scrolling) connects only to Rumble's
+  hosts, `graph.facebook.com` and Firebase logging, without crashes or verifier errors. The Clone app build
+  installs and runs next to Rumble.
+- **Twitch, after the shared ChatFilter and SleepTimer:** `bin/test-twitch`, `test-twitch-chat`,
+  `test-twitch-chat-style` and `test-twitch-playback` pass, and Twitch's app code patches byte-identically
+  to before.
