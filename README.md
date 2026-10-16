@@ -202,6 +202,7 @@ Check the app's page under [docs/](docs/README.md) first: some things that look 
 documented limits, for example ads Twitch stitches into the stream on the server. Problems inside
 Morphe Manager itself go to [the Morphe project](https://github.com/MorpheApp/morphe-manager/issues).
 Security issues go through [SECURITY.md](SECURITY.md), not the public tracker.
+Questions, setup help and ideas that aren't a bug go to [Discussions](https://github.com/jordanwoodson/lurk-morphe-patches/discussions).
 
 ## Contributing
 

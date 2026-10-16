@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Question or help
+    url: https://github.com/jordanwoodson/lurk-morphe-patches/discussions/categories/q-a
+    about: Not sure it's a bug, or need help getting set up? Ask in Discussions.
   - name: Morphe Manager or Morphe Desktop problem
     url: https://github.com/MorpheApp/morphe-manager/issues
     about: Downloads, installs, crashes in Manager, or patching that fails before Lurk's patches run belong to the Morphe project.
