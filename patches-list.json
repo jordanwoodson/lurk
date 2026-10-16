@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when semantic release (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.10.0-dev.4",
+  "version": "1.10.0-dev.5",
   "patches": [
     {
       "name": "Anonymous chat",
@@ -1236,6 +1236,34 @@
       "options": []
     },
     {
+      "name": "Fill screen",
+      "description": "Zooms videos to fill the screen in landscape, cropping the edges instead of showing black bars, on phones taller than 16:9. Starts off. Turn it on in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Fix notifications",
       "description": "Lets the patched app register for push notifications. Firebase only accepts Twitch's original package name and signing certificate, and refuses the re-signed app, so its registration requests send the original ones.",
       "default": true,
@@ -1712,6 +1740,62 @@
       "options": []
     },
     {
+      "name": "Keep playing during other sounds",
+      "description": "Choose whether Rumble pauses when another app plays sound: always (Rumble's behavior), only for longer interruptions, or never. Calls still pause playback. Starts off. Choose it in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Keep screen on while paused",
+      "description": "Keeps the screen on while a video is paused in the player, as it is during playback. When the video ends or you leave the player, the screen can turn off again. Starts off. Turn it on in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Lurk icon",
       "description": "Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon.",
       "default": true,
@@ -1974,6 +2058,34 @@
       "options": []
     },
     {
+      "name": "Remember playback speed",
+      "description": "Keeps the playback speed you last picked for every video, including after Rumble restarts, instead of going back to 1x. Live streams without rewind still play at 1x. Starts off. Turn it on in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Remove tracking permissions",
       "description": "Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls.",
       "default": true,
@@ -2187,6 +2299,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Sleep timer",
+      "description": "Pauses playback a chosen time after it last started or resumed, including background play and picture-in-picture. Starts off. Choose a time in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,

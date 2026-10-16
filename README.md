@@ -64,7 +64,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0-dev.4](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.4)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;79 patches total
+> **[v1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.5)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;84 patches total
 <details open>
 <summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;45 patches</summary>
 <br>
@@ -125,7 +125,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 </details>
 
 <details open>
-<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;22 patches</summary>
+<summary><img src="patches/src/main/resources/rumble/icon/mipmap-xxxhdpi/ic_launcher_round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Rumble</b>&nbsp;&nbsp;•&nbsp;&nbsp;27 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -147,15 +147,20 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Disable analytics | Stops Rumble's own analytics, which it sends whatever the consent setting: clicks, impressions, searches, watch progress and player state, with your user ID, username, advertising ID and AppsFlyer ID, to e.rumble.com and its debug log. Signed-in watch history may stop updating unless watch progress is kept. | • Keep watch progress |
 | Disable autoplay | Stops Rumble from playing the next video when one ends, and from playing muted previews in feeds, including the featured video on Home. Only the defaults change: Settings > Playback can turn either back on. | • Next video<br>• Feed previews |
 | Don't save searches | Stops Rumble from keeping your searches on the phone and hides the ones it kept, so they no longer show under the search box. Suggestions still come from Rumble's server as you type. On by default. Turn it off in Lurk settings > Privacy. |  |
+| Fill screen | Zooms videos to fill the screen in landscape, cropping the edges instead of showing black bars, on phones taller than 16:9. Starts off. Turn it on in Lurk settings > Playback. |  |
 | Hide Premium upsells | Hides Rumble Premium promotions: the sheet that opens over videos, the Upgrade Now banner on Home and My Feed, the special offer on the account screen, the downloads pitch and Premium gifts in live chat. Premium-only videos still say so. |  |
 | Hide Shorts | Removes Shorts from the bottom bar, Home, My Feed, channel pages, categories and search. Shorts links still open. |  |
 | Hide chat clutter | Hides pinned messages, raid and gift notices and sponsor reads in live chat, each with its own switch, and optionally chat badges or the whole chat. Starts off. Turn them on in Lurk settings > Chat. |  |
 | Hide tipping and Rants | Hides the Tip buttons on channels, videos and Shorts, Rants (paid live chat messages) and paying with Rumble Wallet. Rants other viewers send still show. |  |
+| Keep playing during other sounds | Choose whether Rumble pauses when another app plays sound: always (Rumble's behavior), only for longer interruptions, or never. Calls still pause playback. Starts off. Choose it in Lurk settings > Playback. |  |
+| Keep screen on while paused | Keeps the screen on while a video is paused in the player, as it is during playback. When the video ends or you leave the player, the screen can turn off again. Starts off. Turn it on in Lurk settings > Playback. |  |
 | Lurk icon | Replaces Rumble's launcher icon with the Lurk icon, including the themed icon on Android 13+. |  |
+| Remember playback speed | Keeps the playback speed you last picked for every video, including after Rumble restarts, instead of going back to 1x. Live streams without rewind still play at 1x. Starts off. Turn it on in Lurk settings > Playback. |  |
 | Remove tracking permissions | Removes the advertising ID, ad measurement, install referrer and phone state permissions. Every SDK and Rumble's own requests then get an all-zero advertising ID. |  |
 | Resume videos when signed out | Starts videos where you left off when you aren't signed in, from the positions Rumble already keeps on the phone. Signed in, Rumble's own watch progress is unchanged. On by default. Turn it off in Lurk settings > Playback. |  |
 | Show deleted messages | Shows the text of live chat messages that moderators remove, or that Rumble hides because the sender was muted, after Rumble's "Message was removed by moderator" label. On by default. Turn it off in Lurk settings > Chat. |  |
 | Show exact counts | Shows view, like, comment, follower and "watching now" counts in full (12,345 instead of 12K). Starts off. Turn it on in Lurk settings > Interface. |  |
+| Sleep timer | Pauses playback a chosen time after it last started or resumed, including background play and picture-in-picture. Starts off. Choose a time in Lurk settings > Playback. |  |
 | Unlock Premium | Enables Rumble's local premium state after signing in and refreshing the profile, including ad-free playback and hiding premium upsells. Server-controlled content and subscription benefits still require server authorization. |  |
 
 </details>

@@ -1,3 +1,13 @@
+## [1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.4...v1.10.0-dev.5) (2026-10-16)
+
+### ✨ New Features
+
+* **rumble:** fill screen ([6c44040](https://github.com/jordanwoodson/lurk-morphe-patches/commit/6c4404074c41bbe9d367a8942aae1daea1a02daf))
+* **rumble:** keep playing during other sounds ([2502ded](https://github.com/jordanwoodson/lurk-morphe-patches/commit/2502dedc33213ed4ba922b2063cb4a172e4f7330))
+* **rumble:** keep screen on while paused ([6a0d3fc](https://github.com/jordanwoodson/lurk-morphe-patches/commit/6a0d3fcb7f409e3ff3ab1b4612dcddf2235ac8be))
+* **rumble:** remember playback speed ([11e0db2](https://github.com/jordanwoodson/lurk-morphe-patches/commit/11e0db2465e6a6f3f4c0e8880ae142b22d945f86))
+* **rumble:** sleep timer ([f66e96d](https://github.com/jordanwoodson/lurk-morphe-patches/commit/f66e96d53294417e54c4aa636ca5c9c634d0c15b))
+
 ## [1.10.0-dev.4](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.3...v1.10.0-dev.4) (2026-10-16)
 
 ### ✨ New Features
