@@ -1,3 +1,10 @@
+## [1.10.0-dev.4](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.3...v1.10.0-dev.4) (2026-10-16)
+
+### ✨ New Features
+
+* **rumble:** don't save searches ([5447de7](https://github.com/jordanwoodson/lurk-morphe-patches/commit/5447de7a4a6b4c2bf06917fa121b83692a8662ab))
+* **rumble:** resume videos when signed out ([5efafcd](https://github.com/jordanwoodson/lurk-morphe-patches/commit/5efafcdcf8bd8ca0cad8a528ba1dbef11e0d1506))
+
 ## [1.10.0-dev.3](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.2...v1.10.0-dev.3) (2026-10-16)
 
 ### ✨ New Features
