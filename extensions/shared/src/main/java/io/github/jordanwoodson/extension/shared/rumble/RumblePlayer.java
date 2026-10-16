@@ -5,7 +5,15 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Configuration;
 import android.view.View;
+import android.widget.Toast;
 
+import java.lang.ref.WeakReference;
+import java.lang.reflect.Proxy;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
 /** Player view settings for Rumble. With a setting off, each hook returns Rumble's own value. */
@@ -13,6 +21,7 @@ import io.github.jordanwoodson.extension.shared.settings.Settings;
 public final class RumblePlayer {
     static final String FILL_SCREEN = "fill_screen";
     static final String KEEP_SCREEN_ON = "keep_screen_on_paused";
+    static final String REFRESH = "refresh_stream";
 
     /** Media3's AspectRatioFrameLayout.RESIZE_MODE_FIT and RESIZE_MODE_ZOOM. */
     private static final int FIT = 0;
@@ -64,5 +73,93 @@ public final class RumblePlayer {
         } catch (RuntimeException e) {
             return keep;
         }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Refresh stream
+
+    /** The player each video was last loaded into. */
+    private static final Map<Object, WeakReference<Object>> PLAYERS = Collections.synchronizedMap(new WeakHashMap<>());
+    private static volatile WeakReference<Object> lastPlayer = new WeakReference<>(null);
+    private static Object noQualityCallback;
+
+    /** Injection point: a player loading a video. */
+    public static void onVideoLoaded(Object player, Object video) {
+        if (player == null) return;
+        lastPlayer = new WeakReference<>(player);
+        if (video != null) PLAYERS.put(video, new WeakReference<>(player));
+    }
+
+    /**
+     * Injection point: the start of the player's error panel, with its modifier and video. While Refresh
+     * stream is on, a tap on the panel reloads the video's player.
+     */
+    public static Object refreshable(Object modifier, Object video) {
+        if (modifier == null || !Settings.isEnabled(REFRESH)) return modifier;
+        try {
+            Object onClick = function("kotlin.jvm.functions.Function0", () -> reload(video));
+            Object clickable = clickable(modifier, onClick);
+            return clickable == null ? modifier : clickable;
+        } catch (RuntimeException e) {
+            Logger.d("refresh: " + e);
+            return modifier;
+        }
+    }
+
+    /** Reloads the player of {@code video} at its current position. Main thread. */
+    static void reload(Object video) {
+        WeakReference<Object> reference = video == null ? null : PLAYERS.get(video);
+        Object player = reference == null ? null : reference.get();
+        if (player == null) player = lastPlayer.get();
+        if (player == null) {
+            Logger.d("refresh: no player");
+            return;
+        }
+        try {
+            Context context = Settings.appContext();
+            if (context != null) Toast.makeText(context, "Reloading", Toast.LENGTH_SHORT).show();
+            reloadPlayer(player);
+            Logger.d("refresh: reloaded");
+        } catch (RuntimeException e) {
+            Logger.d("refresh: " + e);
+        }
+    }
+
+    /** Injection point (the player's reload): a quality callback that does nothing, so a reload saves no pick. */
+    public static synchronized Object noQualityCallback() {
+        if (noQualityCallback == null) noQualityCallback = function("kotlin.jvm.functions.Function2", () -> { });
+        return noQualityCallback;
+    }
+
+    /** A Kotlin function object (FunctionN, renamed by R8 but still an interface) that runs {@code body}. */
+    private static Object function(String type, Runnable body) {
+        try {
+            Class<?> function = Class.forName(type, false, RumblePlayer.class.getClassLoader());
+            return Proxy.newProxyInstance(function.getClassLoader(), new Class<?>[]{function},
+                    (proxy, method, args) -> {
+                        switch (method.getName()) {
+                            case "equals":
+                                return args != null && args.length == 1 && proxy == args[0];
+                            case "hashCode":
+                                return System.identityHashCode(proxy);
+                            case "toString":
+                                return "Lurk " + type;
+                            default:
+                                body.run();
+                                return null;
+                        }
+                    });
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Lurk: no " + type + " in this app", e);
+        }
+    }
+
+    /** Replaced at patch time: Compose's Modifier.clickable(onClick) on the given modifier. */
+    private static Object clickable(Object modifier, Object onClick) {
+        return null;
+    }
+
+    /** Replaced at patch time: the player's reload with its current source. */
+    private static void reloadPlayer(Object player) {
     }
 }

@@ -174,6 +174,7 @@ choices.
 | Keep playing during other sounds (a choice; "Pause" is 0) | `audio_focus` | at the next interruption |
 | Keep screen on while paused | `keep_screen_on_paused` | at the next pause |
 | Sleep timer (a choice in minutes; "Off" is 0) | `sleep_timer` | when playback next starts |
+| Refresh stream | `refresh_stream` | when the error panel is drawn again |
 | Default startup tab (a choice; "Rumble's choice" is -1) | `startup_tab` | after a restart |
 | Hide Create tab | `hide_create_tab` | after a restart |
 | Hide category rows, Hide creator rows, Hide playlist rows | `home_hide_categories`, `home_hide_creators`, `home_hide_playlists` | when Home loads again |
@@ -584,8 +585,28 @@ and 4 in `onPlaybackStateChanged`) reports `onIsPlayingChanged` to it. To pause,
 its own pause path, also in the background and in picture-in-picture. Twitch's sleep timer uses the same
 class with Twitch's own pause action.
 
+### Refresh stream
+
+When playback fails, the player draws `MobileErrorView` (Back and Settings; Replay only after the end).
+While `refresh_stream` is on (its default), the panel's modifier gets Compose's `clickable`, resolved from
+the App Info rows as for the Lurk row, and a tap reloads the player at the same point:
+
+- The player's quality switch (found by its `videoSource` null check and `RumblePlayer` log tag) plays a
+  source again, re-prepares and seeks to the current position. The patch adds a public static method to the
+  player class that calls it with the current source; the extension reaches it through a bridged stub,
+  because the player's fields are private.
+- The quality switch also reports the source to Rumble's quality-change callback, which saves it as your
+  pick. The added method swaps that callback for one that does nothing during the call, so a reload saves
+  no quality.
+- The player's load method (the one asking the start-source chooser) records which player loaded which
+  video, so a panel reloads its own player.
+
+Rumble retries network errors itself: with the network cut, live streams and VODs keep buffering for
+minutes without the error panel and resume when the network returns. The panel, and so the reload, is for
+errors the player gives up on.
+
 `PlayerProbe` runs the real speed store with the switch on and off, and the focus and keep-screen-on
-decisions.
+decisions. `RefreshProbe` checks the clickable panel modifier and the silent callback.
 
 ## Live chat
 
@@ -715,3 +736,7 @@ that app code calls every new extension method.
 - **Hide Home sections:** with category and creator rows hidden and the titles "Editor Picks, sports", Home loses Editor
   Picks, Sports and Top Channels and keeps the other twelve sections. No categories or playlists row was on
   Home during testing.
+- **Refresh stream:** cutting the network (Wi-Fi and data off) for four minutes during a live stream, and two
+  and a half during a VOD, left both buffering, with no error panel; both resumed when the network returned.
+  The reload was checked with a test build that triggers it 15 s after a video loads: playback carries on
+  from its position, and Rumble's DataStore gets no quality keys.
