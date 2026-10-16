@@ -1,1 +1,11 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Morphe Manager or Morphe Desktop problem
+    url: https://github.com/MorpheApp/morphe-manager/issues
+    about: Downloads, installs, crashes in Manager, or patching that fails before Lurk's patches run belong to the Morphe project.
+  - name: Patch notes and known limits
+    url: https://github.com/jordanwoodson/lurk-morphe-patches/tree/main/docs
+    about: What each patch hooks, what it can't do and how it was tested. Worth a look before reporting a limit as a bug.
+  - name: Morphe documentation
+    url: https://github.com/MorpheApp/morphe-documentation
+    about: How Manager, patch sources and patching work.

@@ -4,7 +4,7 @@
 # The APK must include the patch. LURK_SERIAL picks the device (default emulator-5580).
 source "$(dirname "$0")/lib/common.sh"
 [[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-twitch-ad-backup <patched.apk>"
-serial=${LURK_SERIAL:-emulator-5580}
+serial=${ANDROID_SERIAL:-emulator-5580}
 out="$WORK/twitch-ads/ad-backup-probe"
 remote=/data/local/tmp/lurk-twitch-ad-backup
 mkdir -p "$out/classes" "$out/dex" "$WORK/tmp"

@@ -1,0 +1,180 @@
+# Development
+
+The workspace side of the repo: building the bundle, getting apps, writing and testing a
+patch, and how releases happen. The rules for contributions are in
+[CONTRIBUTING.md](../CONTRIBUTING.md); the per-app pages next to this one say how each existing
+patch works.
+
+## Setup
+
+```sh
+bin/bootstrap
+```
+
+It checks the JDK (21+) and Android SDK (`ANDROID_HOME`, with platform 36 and build-tools),
+installs jadx, apkeep, hermes-dec and uv through [mise](https://mise.jdx.dev) (`mise.toml`),
+downloads Morphe Desktop and apktool into `tools/` with checksum checks, and checks GitHub
+Packages access. Morphe's Gradle plugin is only published on GitHub Packages, so the build needs
+a token with `read:packages`. `bin/build` borrows the `gh` CLI token; give it the scope once:
+
+```sh
+gh auth refresh -h github.com -s read:packages
+```
+
+(Or put `gpr.user` / `gpr.key` in `~/.gradle/gradle.properties`.)
+
+Everything regenerable (decompiled code, patched APKs, the emulator, logs) goes to
+`$MORPHE_WORK`, default `~/scratch/morphe/`. Set `MORPHE_WORK` to put it somewhere else.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `patches/src/main/kotlin/io/github/jordanwoodson/patches/<app>/` | Patches for one app, one folder per feature with `<Name>Patch.kt` and its `Fingerprints.kt`. `shared/Constants.kt` holds the app's package, target versions and pinned signing cert. |
+| `patches/.../patches/shared/` | Code shared across apps: extension paths, the settings screen builders. |
+| `extensions/shared/` | Java injected into patched apps (`extensions/shared.mpe`): the Lurk settings screen, `Logger` (tag `lurk`), per-app helpers under `twitch/` and `kick/`. Add `extensions/<app>/` when an app needs its own module. |
+| `tests/<app>/` | Output checks and on-device probes, run through `bin/test-<app>*`. See [Testing](#testing). |
+| `docs/<app>.md` | Per-app notes: what each patch hooks, how it was found, how it was tested. |
+| `assets/icon.png` | The Lurk icon at full size (1254 px). `patches-bundle.png` is a 512 px copy: Manager shows it for this source, and the README header uses it. |
+| `assets/<app>-icon.png` | An app's Lurk launcher artwork, flattened to its two colors. `bin/app-icon` turns it into `patches/src/main/resources/<app>/icon/` (adaptive icon, vector logo, legacy `.webp`), which the app's icon patch copies in. |
+| `assets/<app>-icon-round.webp` | The README patch-list icon for apps whose icon patch recolors Rumble's Lurk logo while patching instead of shipping its own (`twitch`, `kick`). |
+| `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
+| `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
+| `$MORPHE_WORK` (`~/scratch/morphe/`) | Decompiled code, patched APKs, the test emulator, reference repos, test output. Regenerable. |
+| `~/.local/share/morphe/` | Morphe Desktop data, including the signing keystore. Keep it: updates only install over a patched app signed with the same key. |
+
+Apps known to the workspace are the folders with a `shared/Constants.kt`: `twitch`, `kick`,
+`rumble`. Add another with `bin/new-app <slug> "<Launcher name>" <package> [0xRRGGBB]`.
+
+## Getting APKs
+
+Only from **APKMirror**, **Google Play** or **Uptodown**. No other mirrors.
+
+- APKMirror or Uptodown: download in a browser, then `bin/apk-add ~/Downloads/<file>`.
+- Google Play: `bin/apk-fetch <app>` (latest version only). It needs a Google account token in
+  `~/.config/apkeep/apkeep.ini`:
+
+  ```ini
+  [google]
+  email = someone@gmail.com
+  aas_token = aas_et/...
+  ```
+
+  Get the AAS token once with `apkeep -e <email> --oauth-token <oauth2_4/...>`, following
+  [apkeep's Google Play guide](https://github.com/EFForg/apkeep/blob/master/USAGE-google-play.md).
+  Use a spare account.
+
+`bin/apk-add` reads the package and version, checks the base APK's signature, and compares the
+signing cert with the one pinned in the app's `Constants.kt`. It pins the cert on an app's first
+APK and refuses a mismatch after that. Files land in `apks/<app>/<version>/`.
+
+All three apps ship on APKMirror as `.apkm` bundles. Kick is React Native: most of its logic is
+Hermes bytecode in `assets/index.android.bundle`. Patch it with `hermesPatch` from
+morphe-patches-library (already a dependency); its native side (dex) patches like any other app.
+
+## Workflow
+
+```sh
+bin/scan rumble          # tracker SDKs (Exodus Privacy signatures) and URL hosts in the app
+bin/decompile rumble     # jadx Java, apktool smali, Hermes disassembly → $MORPHE_WORK/rumble/<version>/
+# write patches under patches/.../rumble/
+bin/patch rumble         # build the bundle, patch the newest stored version → $MORPHE_WORK/out/
+bin/emu start            # headless Android 16 emulator (emulator-5580)
+bin/patch rumble --no-build --install=emulator-5580
+adb -s emulator-5580 logcat -s lurk    # Logger output from patched code
+bin/emu shot             # screenshot → $MORPHE_WORK/shots/
+```
+
+- `bin/app-icon <app> <artwork.png>` regenerates an app's launcher icon from square two-color
+  artwork (a flat logo on a flat background).
+- `bin/patch` passes anything after `--` to Morphe Desktop, for example
+  `bin/patch twitch -- --exclusive -e "Disable analytics"`.
+- `bin/refs` clones Morphe's own repos (patcher docs, patches library, official patches, the
+  template) into `$MORPHE_WORK/refs/` for API reference.
+- `bin/apk-info <file|app>` shows a file's package, version and signing cert, or an app's stored versions.
+
+## Writing a patch
+
+The [Rumble notes](rumble.md) are the gentlest introduction: each Rumble patch, what it changes,
+how it finds its code without obfuscated names, and how it was tested. The
+[Twitch](twitch.md) and [Kick](kick.md) pages cover the native, React Native and Hermes cases.
+
+One folder per feature under the app, with the patch and its fingerprints:
+
+```
+patches/.../patches/rumble/
+  shared/Constants.kt
+  analytics/DisableAnalyticsPatch.kt
+  analytics/Fingerprints.kt
+```
+
+```kotlin
+@Suppress("unused")
+val disableAnalyticsPatch = bytecodePatch(
+    name = "Disable analytics",
+    description = "Stops the app from sending usage analytics.",
+) {
+    compatibleWith(COMPATIBILITY_RUMBLE)
+
+    execute {
+        SomeAnalyticsFingerprint.method.returnEarly()
+    }
+}
+```
+
+Fingerprints match on strings, signatures and instruction patterns rather than class names,
+since R8 renames classes between versions. Each app's `shared/` folder has match helpers
+(`Bytecode.kt`, `Hermes.kt`) that require exactly one match and throw a `PatchException`
+otherwise, so a new app version fails to patch instead of patching the wrong method. See the patcher docs in
+`$MORPHE_WORK/refs/morphe-patcher/docs/` (after `bin/refs`) and the
+[fingerprinting guide](https://github.com/MorpheApp/morphe-patcher/blob/main/docs/2_2_1_fingerprinting.md).
+
+Patches with runtime behavior depend on the app's settings patch and register their switches
+and choices on the app's `SettingsScreen`; the Lurk settings activity in `extensions/shared`
+shows only the settings of the patches that were included. Code that runs inside the app is
+plain Java in `extensions/shared/`, called from injected smali; `Logger.d(...)` (tag `lurk`) is
+the quickest way to confirm a hook fires.
+
+Two things that bite: Morphe silently drops a non-range `invoke-*` whose register is above
+v15 (use `/range` forms and check with `dexdump`), and the extension must not pull the Kotlin
+standard library into the patched app (`extensions/shared/build.gradle.kts` excludes it).
+
+## Testing
+
+There is no CI test suite; the checks need a patched APK, decoded output or a Hermes bundle,
+and for the probes a device. The workspace emulator is `emulator-5580`; every `bin/test-*`
+script uses it unless `ANDROID_SERIAL` names another device, so a connected phone is never
+patched by accident.
+
+```sh
+bin/emu start
+bin/patch twitch --install=emulator-5580
+bash bin/test-twitch "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"       # injected loader and settings
+bash bin/test-twitch-privacy "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"
+```
+
+- `bin/test-<app>` and the other `bin/test-twitch-*` scripts compile a probe from `tests/<app>/`
+  with the Android SDK, push it with the patched APK and run it with `app_process`, so the
+  probe calls the app's real, patched methods on ART. Several accept `--compile-only`.
+- `tests/<app>/verify_*.py` and `test_*.py` are standalone Python scripts: they diff stock and
+  patched apktool output, decode Hermes bundles, or compile an extension helper against small
+  stubs and run it on the JVM. Each docstring gives the usage. They honor `MORPHE_WORK` and
+  `JAVA_HOME`.
+- `bin/decompile <app>` decodes the stock APK; decode a patched one the same way for the Python
+  checks: `java -jar tools/apktool_*.jar d -f -p "$MORPHE_WORK/apktool-framework" -o <dir> <patched.apk>`.
+
+The per-app pages record which checks exist for each patch and what could not be verified
+(signed-in flows, for example). When adding a patch, add a check where there is something
+worth pinning, and say in the pull request what you ran.
+
+## Releasing
+
+- Work on the `dev` branch. Pushing `feat:` or `fix:` commits there makes `release.yml` publish a
+  pre-release; `chore:` commits don't release but still build. Merge `dev` into `main` (no squash)
+  for a stable release; `open_pull_request.yml` keeps a `dev` → `main` PR open for that.
+- Use semantic commit messages: `feat(twitch): ...`, `fix(kick): ...`, `chore: ...`.
+- Don't hand-edit generated files: `patches-list.json`, `patches-bundle.json`, `CHANGELOG.md`, or
+  the patch list in `README.md` (written by `.github/scripts/generate_patches_readme.py`). Don't
+  create releases or tags by hand.
+- When patches are tested on a new app version, update that version in the app's `targets` in
+  `shared/Constants.kt`; Manager links users to the version listed there.

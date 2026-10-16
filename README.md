@@ -15,25 +15,53 @@
 
 <p align="center">
   <a href="https://github.com/jordanwoodson/lurk-morphe-patches/releases/latest"><img src="https://img.shields.io/github/v/release/jordanwoodson/lurk-morphe-patches?label=release&color=39F8AE" alt="Latest release"></a>
+  <a href="https://github.com/jordanwoodson/lurk-morphe-patches/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/jordanwoodson/lurk-morphe-patches/release.yml?branch=main&label=build" alt="Build"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue" alt="License GPL-3.0"></a>
 </p>
 
-Lurk is a set of privacy-focused patches for streaming apps, applied with [Morphe](https://morphe.software):
-Twitch, Kick and Rumble to start, more apps later. This repo is both the patch bundle and the workspace
-for building it. Lurk has no connection to Twitch, Kick, Rumble or the Morphe project.
+<p align="center">
+  <a href="#install">Install</a> &nbsp;•&nbsp;
+  <a href="#lurk-settings">Lurk settings</a> &nbsp;•&nbsp;
+  <a href="#patches">Patches</a> &nbsp;•&nbsp;
+  <a href="#documentation">Documentation</a> &nbsp;•&nbsp;
+  <a href="#reporting-problems">Reporting problems</a> &nbsp;•&nbsp;
+  <a href="#contributing">Contributing</a>
+</p>
 
-### How to use these patches
+Lurk is a set of privacy-focused patches for streaming apps, applied on your phone with
+[Morphe](https://morphe.software): Twitch, Kick and Rumble to start, more apps later. The patches
+stop analytics and tracker SDKs, drop ad and upsell requests, clean shared links, and add the
+quality-of-life features the apps leave out: third-party emotes, chat timestamps, a sleep timer,
+background audio and more. Everything runs locally; nothing goes through a server of ours.
 
-Tap **Add to Morphe** on an Android phone with [Morphe Manager](https://morphe.software) installed; on
-a computer it shows a QR code to scan with the phone. Releases from the `dev` branch are pre-releases:
-turn on pre-releases for this source in Manager to get them.
+Lurk has no connection to Twitch, Kick, Rumble or the Morphe project. The name "Morphe" is used
+only to say what the patches are for (see [NOTICE](NOTICE)).
 
-Patched apps get a **Lurk** settings screen that turns included patches off and on without patching
-again. Long-press the app icon > Lurk settings; Rumble also has Settings > App info > Lurk.
-Kick and Twitch's JavaScript settings require a restart. See the [Kick notes](docs/kick.md) for
-the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage and testing limits.
+## Install
 
-## 🩹 Patches list
+1. Install [Morphe Manager](https://morphe.software) on your Android phone.
+2. Tap **Add to Morphe** above on the phone. On a computer the link shows a QR code to scan with
+   the phone. Manager adds Lurk as a patch source.
+3. In Manager, pick Twitch, Kick or Rumble, download the version Lurk supports (Manager links to
+   APKMirror or Uptodown for it; the versions are listed under [Patches](#patches)), choose the
+   patches you want and patch. Manager installs the result.
+
+Releases from the `dev` branch are pre-releases: turn on pre-releases for this source in Manager
+to get new patches early. Android only installs an update over an app signed with the same key,
+so patch updates with the same Manager install you patched with the first time, or uninstall the
+patched app first.
+
+Patches are written for one version of each app and refuse to apply to others. When an app
+updates, wait for a Lurk release that lists the new version.
+
+## Lurk settings
+
+Patched apps get a **Lurk** settings screen that turns included patches off and on without
+patching again. Long-press the app icon › **Lurk settings**; Rumble also has Settings › App info ›
+Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the screen offers. See the [Kick notes](docs/kick.md) for the experimental VOD option and the
+[Twitch notes](docs/twitch.md) for coverage and testing limits.
+
+## Patches
 
 <!-- PATCHES_START EXPANDED -->
 > **[v1.9.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.9.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;71 patches total
@@ -152,127 +180,43 @@ the experimental VOD option and the [Twitch notes](docs/twitch.md) for coverage 
 
 <!-- PATCHES_END -->
 
-## 🛠️ Workspace
+## Documentation
 
-### Setup
+- [docs/twitch.md](docs/twitch.md), [docs/kick.md](docs/kick.md), [docs/rumble.md](docs/rumble.md):
+  per app, what each patch hooks, what it can't do, what it sends where, and how it was tested.
+- [docs/development.md](docs/development.md): building the bundle, the workspace commands, writing
+  and testing a patch, releasing.
+- [CHANGELOG.md](CHANGELOG.md): what changed in each release.
 
-```sh
-bin/bootstrap
-```
+## Reporting problems
 
-It checks the JDK (21+) and Android SDK, installs jadx, apkeep and hermes-dec through mise
-(`mise.toml`), downloads Morphe Desktop and apktool into `tools/` with checksum checks, and checks
-GitHub Packages access. Morphe's Gradle plugin is only published on GitHub Packages, so the build needs
-a token with `read:packages`. `bin/build` borrows the `gh` CLI token; give it the scope once:
-
-```sh
-gh auth refresh -h github.com -s read:packages
-```
-
-(Or put `gpr.user` / `gpr.key` in `~/.gradle/gradle.properties`.)
-
-### Layout
-
-| Path | What |
-|---|---|
-| `patches/src/main/kotlin/io/github/jordanwoodson/patches/<app>/` | Patches for one app. `shared/Constants.kt` holds its package, target versions and pinned signing cert. |
-| `patches/.../patches/shared/` | Code shared across apps. |
-| `extensions/shared/` | Java code injected into patched apps (`extensions/shared.mpe`). Add `extensions/<app>/` when an app needs its own. |
-| `assets/icon.png` | The Lurk icon at full size (1254 px). `patches-bundle.png` is a 512 px copy: Manager shows it for this source, and the README header uses it. |
-| `assets/<app>-icon.png` | An app's Lurk launcher artwork, flattened to its two colors. `bin/app-icon` turns it into `patches/src/main/resources/<app>/icon/` (adaptive icon, vector logo, legacy `.webp`), which the app's icon patch copies in. The patches list shows the round legacy icon next to the app. |
-| `assets/<app>-icon-round.webp` | The patches list icon for apps whose icon patch recolors Rumble's Lurk logo while patching instead of shipping its own (`twitch`, `kick`). |
-| `apks/<app>/<version>/` | Original APKs, added with `bin/apk-add`. Not committed. |
-| `tools/` | Downloaded jars and the Exodus tracker list. Not committed. |
-| `~/scratch/morphe/` | Decompiled code, patched APKs, the test emulator, reference repos. Regenerable. |
-| `~/.local/share/morphe/` | Morphe Desktop data, including the signing keystore. Keep it: updates only install over a patched app signed with the same key. |
-
-Apps known to the workspace are the folders with a `shared/Constants.kt`: `twitch`, `kick`, `rumble`.
-Add another with `bin/new-app <slug> "<Launcher name>" <package> [0xRRGGBB]`.
-
-### Getting APKs
-
-Only from **APKMirror**, **Google Play** or **Uptodown**. No other mirrors.
-
-- APKMirror or Uptodown: download in a browser, then `bin/apk-add ~/Downloads/<file>`.
-- Google Play: `bin/apk-fetch <app>` (latest version only). It needs a Google account token in
-  `~/.config/apkeep/apkeep.ini`:
-
-  ```ini
-  [google]
-  email = someone@gmail.com
-  aas_token = aas_et/...
-  ```
-
-  Get the AAS token once with `apkeep -e <email> --oauth-token <oauth2_4/...>`, following
-  [apkeep's Google Play guide](https://github.com/EFForg/apkeep/blob/master/USAGE-google-play.md).
-  Use a spare account.
-
-`bin/apk-add` reads the package and version, checks the base APK's signature, and compares the signing
-cert with the one pinned in the app's `Constants.kt`. It pins the cert on an app's first APK and refuses
-a mismatch after that. Files land in `apks/<app>/<version>/`.
-
-All three apps ship on APKMirror as `.apkm` bundles. Kick is React Native: most of its logic is Hermes
-bytecode in `assets/index.android.bundle`. Patch it with `hermesPatch` from morphe-patches-library
-(already a dependency); its native side (dex) patches like any other app.
-
-### Workflow
+Open a [bug report](https://github.com/jordanwoodson/lurk-morphe-patches/issues/new?template=bug_report.yml)
+with the app and its version, the Lurk release, the patches you selected and, for a crash or a
+patch that seems inactive, the output of:
 
 ```sh
-bin/scan rumble          # tracker SDKs (Exodus Privacy signatures) and URL hosts in the app
-bin/decompile rumble     # jadx Java, apktool smali, Hermes disassembly → ~/scratch/morphe/rumble/<version>/
-# write patches under patches/.../rumble/
-bin/patch rumble         # build the bundle, patch the newest stored version → ~/scratch/morphe/out/
-bin/emu start            # headless Android 16 emulator (emulator-5580)
-bin/patch rumble --no-build --install=emulator-5580
-adb -s emulator-5580 logcat -s lurk    # Logger output from patched code
-bin/emu shot             # screenshot → ~/scratch/morphe/shots/
+adb logcat -s lurk AndroidRuntime
 ```
 
-`bin/app-icon <app> <artwork.png>` regenerates an app's launcher icon from square two-color artwork (a flat logo on a flat background).
-`bin/patch` passes anything after `--` to Morphe Desktop, for example
-`bin/patch twitch -- --exclusive -e "Disable analytics"`.
-`bin/refs` clones Morphe's own repos (patcher docs, patches library, official patches) for API reference.
+Check the app's page under [docs/](docs/README.md) first: some things that look like bugs are
+documented limits, for example ads Twitch stitches into the stream on the server. Problems inside
+Morphe Manager itself go to [the Morphe project](https://github.com/MorpheApp/morphe-manager/issues).
+Security issues go through [SECURITY.md](SECURITY.md), not the public tracker.
 
-### Writing a patch
+## Contributing
 
-The [Rumble 3.21.0 notes](docs/rumble.md) cover each Rumble patch: what it changes, how it finds
-its code without obfuscated names, and how it was tested.
+Bug reports, tested patches and notes on how the apps work inside are all welcome.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the rules that matter here: APKs only from APKMirror,
+Google Play or Uptodown; original patches, not ports of other bundles; fingerprints on strings
+and signatures rather than obfuscated names; a Lurk setting for every behavior change; honest
+descriptions. [docs/development.md](docs/development.md) gets you building.
 
-One folder per feature under the app, with the patch and its fingerprints:
+## Disclaimer
 
-```
-patches/.../patches/rumble/
-  shared/Constants.kt
-  analytics/DisableAnalyticsPatch.kt
-  analytics/Fingerprints.kt
-```
+Lurk modifies apps you download yourself. The services' terms may not allow modified clients,
+and a patched app can break when the service changes something on its side. Use it at your own
+risk; the software comes without warranty (see the license).
 
-```kotlin
-@Suppress("unused")
-val disableAnalyticsPatch = bytecodePatch(
-    name = "Disable analytics",
-    description = "Stops the app from sending usage analytics.",
-) {
-    compatibleWith(COMPATIBILITY_RUMBLE)
+## License
 
-    execute {
-        SomeAnalyticsFingerprint.method.returnEarly()
-    }
-}
-```
-
-Fingerprints match on strings, signatures and instruction patterns rather than class names, since R8
-renames classes between versions. See the patcher docs in `~/scratch/morphe/refs/morphe-patcher/docs/`
-(after `bin/refs`) and the [fingerprinting guide](https://github.com/MorpheApp/morphe-patcher/blob/main/docs/2_2_1_fingerprinting.md).
-
-### Releasing
-
-- Work on the `dev` branch. Pushing `feat:` or `fix:` commits there makes `release.yml` publish a
-  pre-release; `chore:` commits don't release. Merge `dev` into `main` (no squash) for a stable release.
-- Use semantic commit messages: `feat:`, `fix:`, `chore:`.
-- Don't hand-edit generated files: `patches-list.json`, `patches-bundle.json`, `CHANGELOG.md`, or the patches
-  list above. Don't create releases by hand.
-
-## 📜 License
-
-GPLv3. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+GPL-3.0. Copyright © 2026 Jordan Woodson. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

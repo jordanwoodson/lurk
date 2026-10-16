@@ -122,6 +122,9 @@ gradle-app.setting
 # Dependency directories
 node_modules/
 
+# Python bytecode from running the scripts under bin/lib and tests/
+__pycache__/
+
 # Ignore IDEA files
 .idea/
 local.properties

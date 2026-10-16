@@ -1,44 +1,42 @@
 name: ⭐ Feature request
-description: Create a detailed request for a new feature.
+description: A new patch, an option on an existing one, or support for another app.
 title: "feat: "
-labels: ["Feature request"]
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        # Feature request
-
-        Before creating a new feature request, please keep the following in mind:
-
-        - **Do not submit a duplicate feature request**: Search for existing feature requests [here](https://github.com/jordanwoodson/lurk-morphe-patches/issues?q=label%3A%22Feature+request%22).
-        - **Review the contribution guidelines**: Make sure your feature request adheres to it. You can find the guidelines [here](https://github.com/jordanwoodson/lurk-morphe-patches/blob/main/CONTRIBUTING.md).
-  - type: textarea
+        Search [existing requests](https://github.com/jordanwoodson/lurk-morphe-patches/issues?q=is%3Aissue+label%3Aenhancement) first.
+        Patches run on the phone only: features that need a server, another service's account, or a change on
+        Twitch's, Kick's or Rumble's side can't be done here.
+  - type: dropdown
+    id: app
     attributes:
-      label: Feature description
-      description: |
-        - Describe your feature in detail
-        - Add images, videos, links, examples, references, etc. if possible
-  - type: textarea
-    attributes:
-      label: Motivation
-      description: |
-        A strong motivation is necessary for a feature request to be considered.
-
-        - Why should this feature be implemented? 
-        - What is the explicit use case?
-        - What are the benefits?
-        - What makes this feature important?
+      label: App
+      options:
+        - Twitch
+        - Kick
+        - Rumble
+        - A new app
+        - Lurk settings screen or workspace
     validations:
       required: true
-  - type: checkboxes
-    id: acknowledgements
+  - type: textarea
+    id: description
     attributes:
-      label: Acknowledgements
-      description: Your feature request will be closed if you don't follow the checklist below.
-      options:
-        - label: I have checked all open and closed feature requests and this is not a duplicate
-          required: true
-        - label: I have chosen an appropriate title.
-          required: true
-        - label: All requested information has been provided properly.
-          required: true
+      label: What it should do
+      description: The behavior you want, and where in the app it lives (screen, button, setting). Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why
+      description: The problem it solves or what it protects. Privacy, ads, upsells and watching comfort are the project's focus.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: Links, prior art, how another client does it. For a new app, its package name and where it is downloadable from (APKMirror, Google Play or Uptodown).
