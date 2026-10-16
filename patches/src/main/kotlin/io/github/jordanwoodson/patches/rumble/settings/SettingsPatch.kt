@@ -20,7 +20,9 @@ import com.android.tools.smali.dexlib2.immutable.ImmutableMethod
 import com.android.tools.smali.dexlib2.immutable.ImmutableMethodParameter
 import com.android.tools.smali.dexlib2.immutable.reference.ImmutableStringReference
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
+import io.github.jordanwoodson.patches.rumble.shared.clickableCall
 import io.github.jordanwoodson.patches.rumble.shared.single
+import io.github.jordanwoodson.patches.rumble.shared.staticRangeCalls
 import io.github.jordanwoodson.patches.shared.SHARED_EXTENSION
 import io.github.jordanwoodson.patches.shared.settings.SETTINGS_CLASS
 import io.github.jordanwoodson.patches.shared.settings.SettingsScreen
@@ -102,10 +104,7 @@ private fun BytecodePatchContext.addLurkRow() {
     val section = match.method
     val instructions = section.implementation!!.instructions.toList()
 
-    val calls = instructions.withIndex().mapNotNull { (index, instruction) ->
-        if (instruction.opcode != Opcode.INVOKE_STATIC_RANGE) return@mapNotNull null
-        index to ((instruction as ReferenceInstruction).reference as MethodReference)
-    }
+    val calls = section.staticRangeCalls()
     fun MethodReference.parameters() = parameterTypes.map { it.toString() }
 
     // (modifier, text, value, showArrow, composer, $changed, $default): Data Consent, Credits, Send Feedback.
@@ -122,15 +121,7 @@ private fun BytecodePatchContext.addLurkRow() {
     val modifier = rowParameters[0]
     val composer = rowParameters[4]
 
-    // Modifier.clickable's default-argument form: (modifier, enabled, onClickLabel, role, interaction,
-    // onClick, mask, marker).
-    val clickable = calls.map { it.second }.filter { method ->
-        val parameters = method.parameters()
-        method.returnType == modifier && parameters.size == 8 && parameters[0] == modifier &&
-            parameters[1] == "Z" && parameters[2] == STRING && parameters[5] == FUNCTION0 &&
-            parameters[6] == "I" && parameters[7] == "Ljava/lang/Object;"
-    }.map { it.toString() }.distinct().singleOrNull()
-        ?: throw PatchException("Rumble: expected one clickable modifier in App Info")
+    val clickable = section.clickableCall(modifier)
     // Modifier (the companion the rows start from).
     val modifierCompanion = instructions.firstNotNullOfOrNull { instruction ->
         if (instruction.opcode != Opcode.SGET_OBJECT) return@firstNotNullOfOrNull null

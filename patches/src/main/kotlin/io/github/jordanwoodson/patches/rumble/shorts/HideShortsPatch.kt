@@ -15,14 +15,13 @@ import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
-import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.reference.TypeReference
 import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
 import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.enumConstant
 import io.github.jordanwoodson.patches.rumble.shared.enumWith
-import io.github.jordanwoodson.patches.rumble.shared.kotlinObject
+import io.github.jordanwoodson.patches.rumble.shared.hideBottomTab
 import io.github.jordanwoodson.patches.rumble.shared.single
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
@@ -42,7 +41,7 @@ val hideShortsPatch = bytecodePatch(
     dependsOn(settingsPatch)
 
     execute {
-        hideShortsTab()
+        hideBottomTab("ShortsScreen", KEY)
 
         // The Shorts row, wherever it appears.
         ShortsListViewFingerprint.single("ShortsListView composable").method.addInstructionsIfEnabled(KEY, "return-void")
@@ -95,50 +94,6 @@ val hideShortsPatch = bytecodePatch(
                 Section.INTERFACE,
                 restart = true,
             ),
-        )
-    }
-}
-
-// The bottom bar draws every tab in a fixed list, and other code refers to tabs by their position in it.
-// So the Shorts entry stays in the list; the loop skips drawing it but still counts it.
-private fun BytecodePatchContext.hideShortsTab() {
-    val shortsRoute = kotlinObject("ShortsScreen").substringBefore("->")
-    val routeType = classDefBy(shortsRoute).superclass
-        ?: throw PatchException("Rumble: ShortsScreen route has no superclass")
-
-    BottomNavigationBarFingerprint.single("bottom navigation bar").method.apply {
-        val instructions = implementation!!.instructions.toList()
-        fun calls(index: Int, method: String) = instructions[index].let {
-            it is ReferenceInstruction && it.reference.toString() == method
-        }
-        val next = instructions.indices.single { calls(it, "Ljava/util/Iterator;->next()Ljava/lang/Object;") }
-        val loop = (next downTo 0).first { calls(it, "Ljava/util/Iterator;->hasNext()Z") }
-        // next() goes to a register that is dead once copied into the tab variable.
-        val scratch = (instructions[next + 1] as OneRegisterInstruction).registerA
-        val increment = (next until instructions.size).first { instructions[it].opcode == Opcode.ADD_INT_LIT8 }
-        val (nextIndex, index) = (instructions[increment] as TwoRegisterInstruction).let { it.registerA to it.registerB }
-        val tabCast = (next until instructions.size).first { instructions[it].opcode == Opcode.CHECK_CAST }
-        val tab = (instructions[tabCast] as OneRegisterInstruction).registerA
-        val tabType = ((instructions[tabCast] as ReferenceInstruction).reference as TypeReference).type
-        val routeGetter = classDefBy(tabType).methods.single {
-            it.parameterTypes.isEmpty() && it.returnType == routeType
-        }
-        if (scratch > 15 || tab > 15) throw PatchException("Rumble: unexpected registers in the bottom bar loop")
-
-        addInstructionsWithLabels(
-            tabCast + 1,
-            """
-                ${isEnabled(KEY, "v$scratch")}
-                if-eqz v$scratch, :keep
-                invoke-virtual { v$tab }, $tabType->${routeGetter.name}()$routeType
-                move-result-object v$scratch
-                instance-of v$scratch, v$scratch, $shortsRoute
-                if-eqz v$scratch, :keep
-                move/from16 v$index, v$nextIndex
-                goto/16 :loop
-            """,
-            ExternalLabel("keep", getInstruction(tabCast + 1)),
-            ExternalLabel("loop", getInstruction(loop)),
         )
     }
 }
