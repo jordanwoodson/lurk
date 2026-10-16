@@ -22,6 +22,7 @@ public final class RumblePlayer {
     static final String FILL_SCREEN = "fill_screen";
     static final String KEEP_SCREEN_ON = "keep_screen_on_paused";
     static final String REFRESH = "refresh_stream";
+    static final String SEEK = "seek_seconds";
 
     /** Media3's AspectRatioFrameLayout.RESIZE_MODE_FIT and RESIZE_MODE_ZOOM. */
     private static final int FIT = 0;
@@ -161,5 +162,38 @@ public final class RumblePlayer {
 
     /** Replaced at patch time: the player's reload with its current source. */
     private static void reloadPlayer(Object player) {
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Seek interval
+
+    /** Injection point: Rumble's 15 s for the rewind and forward buttons, in milliseconds. */
+    public static int seekMillis(int millis) {
+        int seconds = Settings.getInt(SEEK);
+        return seconds > 0 ? seconds * 1000 : millis;
+    }
+
+    /** Injection point: the rewind button's icon. Without its "15s" while another interval is chosen. */
+    public static int seekBackIcon(int icon) {
+        return seekIcon(icon, "lurk_seek_back");
+    }
+
+    /** Injection point: the forward button's icon. Without its "15s" while another interval is chosen. */
+    public static int seekForwardIcon(int icon) {
+        return seekIcon(icon, "lurk_seek_forward");
+    }
+
+    private static int seekIcon(int icon, String name) {
+        if (Settings.getInt(SEEK) <= 0) return icon;
+        try {
+            Context context = Settings.appContext();
+            if (context == null) return icon;
+            // The resources keep Rumble's package even in a cloned app.
+            String resources = context.getResources().getResourcePackageName(icon);
+            int id = context.getResources().getIdentifier(name, "drawable", resources);
+            return id != 0 ? id : icon;
+        } catch (RuntimeException e) {
+            return icon;
+        }
     }
 }

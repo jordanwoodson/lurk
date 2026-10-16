@@ -175,6 +175,7 @@ choices.
 | Keep screen on while paused | `keep_screen_on_paused` | at the next pause |
 | Sleep timer (a choice in minutes; "Off" is 0) | `sleep_timer` | when playback next starts |
 | Refresh stream | `refresh_stream` | when the error panel is drawn again |
+| Seek interval (a choice in seconds; "15 seconds (Rumble's)" is 0) | `seek_seconds` | at the next tap |
 | Default startup tab (a choice; "Rumble's choice" is -1) | `startup_tab` | after a restart |
 | Hide Create tab | `hide_create_tab` | after a restart |
 | Hide category rows, Hide creator rows, Hide playlist rows | `home_hide_categories`, `home_hide_creators`, `home_hide_playlists` | when Home loads again |
@@ -605,6 +606,16 @@ Rumble retries network errors itself: with the network cut, live streams and VOD
 minutes without the error panel and resume when the network returns. The panel, and so the reload, is for
 errors the player gives up on.
 
+### Seek interval
+
+The player's rewind and forward buttons call its seek methods through their default-argument twins, which
+fill in 15,000 ms; TV remote keys pass their own 10 s. The patch passes the twins' constant through
+`RumblePlayer.seekMillis`, which returns the `seek_seconds` choice while one is set. The buttons' icons
+(`ic_backward`, `ic_forward`) draw the arrow with strokes and "15s" as a filled path. A resource patch adds
+copies with only the arrow (`lurk_seek_back`, `lurk_seek_forward`, with the helper Twitch's player
+gestures use), and the icon reads (the R class fields with those IDs) return a copy while another interval is
+chosen. At "15 seconds (Rumble's)" the buttons and icons are Rumble's own.
+
 `PlayerProbe` runs the real speed store with the switch on and off, and the focus and keep-screen-on
 decisions. `RefreshProbe` checks the clickable panel modifier and the silent callback.
 
@@ -740,3 +751,6 @@ that app code calls every new extension method.
   and a half during a VOD, left both buffering, with no error panel; both resumed when the network returned.
   The reload was checked with a test build that triggers it 15 s after a video loads: playback carries on
   from its position, and Rumble's DataStore gets no quality keys.
+- **Seek interval:** at 30 seconds the forward button moves a VOD about 30 s ahead and the buttons show
+  arrows without "15s"; at Rumble's setting it moves about 15 s. Twitch's generated seek icons are
+  byte-identical with the shared helper.

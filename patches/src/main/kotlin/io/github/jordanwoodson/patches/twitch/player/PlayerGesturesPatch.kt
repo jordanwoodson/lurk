@@ -19,6 +19,7 @@ import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.WideLiteralInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import io.github.jordanwoodson.patches.shared.copyDrawablePaths
 import io.github.jordanwoodson.patches.shared.settings.ChoiceSetting
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
@@ -41,19 +42,12 @@ private val seekIconsPatch = resourcePatch {
     }
 }
 
-private fun ResourcePatchContext.numberless(icon: String, name: String) {
-    val source = get("res/drawable/$icon.xml")
-    if (!source.exists()) throw PatchException("Twitch: no $icon icon")
-    get("res/drawable/$name.xml").writeBytes(source.readBytes())
-    document("res/drawable/$name.xml").use { doc ->
-        val paths = doc.getElementsByTagName("path").let { list -> List(list.length) { list.item(it) as Element } }
-        val arrows = paths.filter { path ->
-            Regex("""^\s*[Mm]\s*[-\d.]+[\s,]+([-\d.]+)""").find(path.getAttribute("android:pathData"))
-                ?.groupValues?.get(1)?.toFloatOrNull()?.let { it < 4f } == true
-        }
-        if (paths.size < 2 || arrows.size != 1) throw PatchException("Twitch: the $icon icon changed")
-        (paths - arrows.toSet()).forEach { it.parentNode.removeChild(it) }
+private fun ResourcePatchContext.numberless(icon: String, name: String) = copyDrawablePaths(icon, name, "Twitch") { paths ->
+    val arrows = paths.filter { path ->
+        Regex("""^\s*[Mm]\s*[-\d.]+[\s,]+([-\d.]+)""").find(path.getAttribute("android:pathData"))
+            ?.groupValues?.get(1)?.toFloatOrNull()?.let { it < 4f } == true
     }
+    arrows.takeIf { paths.size >= 2 && arrows.size == 1 }
 }
 
 @Suppress("unused")
