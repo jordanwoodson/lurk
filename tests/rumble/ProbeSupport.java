@@ -53,11 +53,25 @@ final class ProbeSupport {
         return m.invoke(null, args);
     }
 
-    /** The registry the patches wrote into the extension, as JSON. */
+    private static JSONObject current;
+
+    /** The registry as this process sees it: what the patches wrote, with the probe's changes. */
     static JSONObject registry() throws Exception {
-        Method json = Class.forName(SETTINGS).getDeclaredMethod("registryJson");
-        json.setAccessible(true);
-        return new JSONObject((String) json.invoke(null));
+        if (current == null) {
+            Method json = Class.forName(SETTINGS).getDeclaredMethod("registryJson");
+            json.setAccessible(true);
+            current = new JSONObject((String) json.invoke(null));
+        }
+        return new JSONObject(current.toString());
+    }
+
+    private static void install(JSONObject root) throws Exception {
+        current = root;
+        Method parse = Class.forName(REGISTRY).getDeclaredMethod("parse", String.class);
+        parse.setAccessible(true);
+        Field registry = Class.forName(SETTINGS).getDeclaredField("registry");
+        registry.setAccessible(true);
+        registry.set(null, parse.invoke(null, root.toString()));
     }
 
     /** Whether the patches registered {@code key}. */
@@ -82,11 +96,19 @@ final class ProbeSupport {
             }
         }
         check(found, "setting " + key + " is not registered");
-        Method parse = Class.forName(REGISTRY).getDeclaredMethod("parse", String.class);
-        parse.setAccessible(true);
-        Field registry = Class.forName(SETTINGS).getDeclaredField("registry");
-        registry.setAccessible(true);
-        registry.set(null, parse.invoke(null, root.toString()));
+        install(root);
+    }
+
+    /** Leaves {@code key} out of the registry for this process, as if its patch weren't included. */
+    static void unregister(String key) throws Exception {
+        JSONObject root = registry();
+        JSONArray settings = root.getJSONArray("settings");
+        JSONArray kept = new JSONArray();
+        for (int i = 0; i < settings.length(); i++) {
+            if (!key.equals(settings.getJSONObject(i).getString("key"))) kept.put(settings.getJSONObject(i));
+        }
+        root.put("settings", kept);
+        install(root);
     }
 
     /** Runs a probe body, printing its failure and exiting 1. */

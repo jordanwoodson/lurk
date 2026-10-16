@@ -160,6 +160,11 @@ choices.
 | Live streams too | `video_quality_live` | after a restart |
 | On mobile data (a choice; "Same as on Wi-Fi" is 0) | `video_quality_mobile` | at the next video |
 | Show exact counts | `exact_counts` | when the screen is drawn again |
+| Hide pinned messages, Hide sponsor reads | `chat_hide_pinned`, `chat_hide_sponsor_reads` | when the chat is drawn again |
+| Hide raid notices, Hide gift notices | `chat_hide_raid_notices`, `chat_hide_gift_notices` | at the next chat messages |
+| Hide chat badges, Hide live chat | `chat_hide_badges`, `chat_hide_all` | when a stream is opened again |
+| Show deleted messages | `show_deleted_messages` | when the chat is drawn again |
+| Chat timestamps | `chat_timestamps` | when the chat is drawn again |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
 | Unlock Premium | `unlock_premium` | after signing in again |
 
@@ -452,6 +457,59 @@ three scrolls, background.
 Not verified at runtime: category tabs, Rants and the Rumble Wallet (both need an account), the account
 screen offer banner, and the downloads upsell.
 
+## Live chat
+
+Rumble's live chat arrives as JSON events on a chat endpoint (`web7.rumble.com` in testing). Gson parses
+them into DTOs in `com.rumble.network.dto.livechat`, which keep their field names; a mapper turns each
+`LiveChatMessage` into a `LiveChatMessageEntity` (a Kotlin data class, found through its `toString`), and
+Compose rows draw the entities.
+
+**The chat hook** is a hidden patch that Hide chat clutter depends on. The getters of
+`LiveChatMessageData.messages` (each event's messages) and `LiveChatInitData.messages` (the history sent on
+joining) pass their list through `RumbleChat.messages`. It drops the messages a switch hides before any
+entity is built, so they don't count as unread either. It returns Rumble's own list while nothing is hidden,
+and the same filtered list when the getter runs again on the same DTO. Switches of patches that weren't
+included count as off there, because unknown keys normally count as on.
+
+### Hide chat clutter
+
+| Switch | How |
+|---|---|
+| Hide pinned messages | `PinnedMessageSectionView` (the pinned message above the chat) returns at once. |
+| Hide raid notices | The chat hook drops messages with a `raidNotification`. The raid countdown, the auto-join dialog and Rumble's own Auto-join Raids setting stay. |
+| Hide gift notices | The chat hook drops messages with a `giftPurchaseNotification`. The notice for your own gift stays. |
+| Hide sponsor reads | `HostReadsMessageView` (`host_ad_read` events: a creator's sponsor spot with a product link) returns at once. These aren't ad-network ads, so they stay out of Block ads. |
+| Hide chat badges | `LiveChatUser.badges` is empty. The message row tints messages from users with the `recurring_subscription` badge, so that tint goes too. |
+| Hide live chat | `Video.liveChatDisabled` (`is_chat_disabled`) is true, as for a stream whose creator turned chat off. The video page shows the description and related videos instead, and Rumble no longer connects to the chat endpoint. |
+
+Event types aren't remapped: an unknown type becomes a `LiveChatError` event, and whether that triggers a
+reconnect wasn't traced.
+
+### Show deleted messages
+
+`LiveChatViewModel` marks a message deleted when moderators delete it or mute its sender
+(`deleted = deletedIds.contains(id) || mutedUserIds.contains(userId) || deleted`), and the entity keeps the
+original text. Two rows draw `R.string.live_chat_deleted_message` ("Message was removed by moderator")
+instead: the deleted message row and the Rant row. After each `stringResource` call the patch passes the
+label and the entity to `RumbleChat.deletedLabel`, which appends ": " and the text while
+`show_deleted_messages` is on. The text comes from the entity's `message` getter through a bridged stub.
+The row lambda keeps the entity in a captured field; in the Rant row it is the register of the nearest call
+on the entity, checked not to change before the label. The label is a plain `String`, so there is no
+strike-through.
+
+### Chat timestamps
+
+`LiveChatContentView(modifier, ..., message, userName, ...)` draws a message row. The regular and the
+deleted message rows call it from lambdas that capture the entity; the patch follows the `userName`
+argument back to the entity's `userName` getter and passes the name and entity to
+`RumbleChat.nameWithTime`. While `chat_timestamps` is on it puts the time first (`H:mm` or `h:mm` after the
+device's 24-hour setting) with the name's color and weight. `timeReceived` is already local time: the mapper
+parses the DTO's ISO `time` and converts it to `ZoneId.systemDefault()`. Rants, notifications, pinned
+messages and Premium purchase messages get no time.
+
+`ChatProbe` runs the real DTO getters (live messages, history, badges, `liveChatDisabled`) and the bridged
+entity getters with each switch on and off, including the hook with the keys unregistered.
+
 ## Validation on 2026-10-16
 
 Built with the local fallback (Gradle still gets 401 from GitHub Packages) against Morphe Desktop 1.18.1,
@@ -469,3 +527,10 @@ that app code calls every new extension method.
   - Picking 1080p in the player plays it. The next VOD on mobile data starts at 480p again, and with Wi-Fi
     back on the next one starts at the saved 1080p.
   - A Short on mobile data starts at 480p.
+- **Chat timestamps:** live chat rows show "2:30  StantheJokemanShow", matching the emulator clock (12-hour).
+- **Hide chat clutter:** Hide chat badges removes every badge (10 on screen before, 0 after) and the
+  subscriber tint. Hide live chat shows the video page without chat, and the proxy log has no
+  `web7.rumble.com` (chat) connection; with the switch off it is opened 3 s after the stream starts.
+  Pinned messages, raids, gift notices and sponsor reads didn't occur during testing; `ChatProbe` covers
+  the raid and gift filter.
+- **Show deleted messages:** no message was deleted while watching; `ChatProbe` covers the label.
