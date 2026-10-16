@@ -2310,6 +2310,34 @@
       "options": []
     },
     {
+      "name": "Seek interval",
+      "description": "Sets how far the player's rewind and forward buttons skip, instead of 15 seconds. Starts off. Choose it in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.rumble.battles",
+          "name": "Rumble",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#85C742",
+          "signatures": [
+            "eca34178cd915ce443fa1d3900ae6a3b3a3b6532488543d22a39ecb844872b5d"
+          ],
+          "targets": [
+            {
+              "version": "3.21.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
       "name": "Show deleted messages",
       "description": "Shows the text of live chat messages that moderators remove, or that Rumble hides because the sender was muted, after Rumble's \"Message was removed by moderator\" label. On by default. Turn it off in Lurk settings > Chat.",
       "default": true,
