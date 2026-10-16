@@ -42,16 +42,17 @@ bin/emu start
 bash bin/test-rumble ~/scratch/morphe/out/rumble-3.21.0-patched.apk
 ```
 
-The probe executes the actual APK's profile getter and mapper on `emulator-5580`
-using free and paid fixtures, including absent subscription metadata. It also checks
-unrelated account state. It does not use a Rumble account or send API requests.
-The test is deliberately pinned to 3.21.0 and must be re-derived for other versions.
+`bin/test-rumble` runs every probe in `tests/rumble/`, or only the ones named after the APK
+(`bash bin/test-rumble <apk> PremiumProbe`). `PremiumProbe` executes the actual APK's profile
+getter and mapper on `emulator-5580` using free and paid fixtures, including absent subscription
+metadata. It also checks unrelated account state. No probe uses a Rumble account or sends API
+requests. The probes are deliberately pinned to 3.21.0 and must be re-derived for other versions.
 
 To confirm the negative control, the same probe against the original base APK must
 fail with `Profile must report premium when server is_premium=false`:
 
 ```sh
-bash bin/test-rumble ~/scratch/morphe/rumble/3.21.0/base.apk
+bash bin/test-rumble ~/scratch/morphe/rumble/3.21.0/base.apk PremiumProbe
 ```
 
 ## Validation on 2026-10-14

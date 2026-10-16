@@ -160,6 +160,9 @@ bash bin/test-twitch-privacy "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"
   patched apktool output, decode Hermes bundles, or compile an extension helper against small
   stubs and run it on the JVM. Each docstring gives the usage. They honor `MORPHE_WORK` and
   `JAVA_HOME`.
+- `tests/verify_extension_calls.py <patched.apk> Class.method ...` checks that app code calls each
+  named extension method. Run it after adding a hook: an injected call can vanish without an error
+  (see below).
 - `bin/decompile <app>` decodes the stock APK; decode a patched one the same way for the Python
   checks: `java -jar tools/apktool_*.jar d -f -p "$MORPHE_WORK/apktool-framework" -o <dir> <patched.apk>`.
 
