@@ -54,6 +54,52 @@ based on this APK; the Rumble and Kick fingerprints do not apply directly.
 These were added on 2026-10-15 after comparing Lurk with other Twitch patch bundles and mods at the
 feature level. Each is written from 31.6.0's own code.
 
+### Feature checklist
+
+Every feature from that comparison that Lurk didn't have, and what covers it now. The sources compared
+were ReVanced, the community Morphe bundles (hoomans, uyu, Kizu, ryykitty, Canic), PurpleTV and
+ReVive, bttv-android, TwitchMod, Xtra, Twire and Frosty.
+
+| Feature in other bundles | Lurk |
+| --- | --- |
+| Stitched (SSAI) ad handling without a proxy | Avoid stitched ads (picture-by-picture stream during breaks) and Mute stitched ads (fallback) |
+| Proxy ad blocking | Playlist proxy (opt-in, own URL) |
+| Hide display ads, audio ads | Block display ads |
+| Fix login / notifications in re-signed builds | Fix notifications. Sign-in has no signature gate (see below). |
+| Disable Bugsnag | Not in 31.6.0. Nielsen and Sprig, the remaining reporters, are now in Disable analytics. |
+| Disable Google Play services | Declined |
+| Anonymous chat | Anonymous chat |
+| Show deleted messages, ignore chat clears | Show deleted messages, with Ignore chat clears |
+| Chat timestamps | Chat timestamps |
+| Highlights and blacklist | Chat keywords |
+| Chat appearance | Chat appearance |
+| 7TV/BTTV/FFZ emotes | Third-party emotes (opt-in) |
+| Third-party badges and pronouns | Third-party badges, with pronouns (opt-in) |
+| Recent chat history | Declined: Twitch already loads it |
+| Danmaku | Chat overlay (opt-in) |
+| Hide Hype Train, leaderboards, gift and sub banners, pinned cheers, watch streaks | Hide chat highlights |
+| Background audio | Background audio |
+| Sleep timer | Sleep timer |
+| Refresh stream | Refresh stream |
+| Brightness/volume gestures, seek interval | Player gestures |
+| Hide Clip/Cast/Share buttons | Hide player buttons |
+| Video stats / latency | Show video stats |
+| Disable low latency, force ExoPlayer | Normal latency, Force ExoPlayer |
+| VOD chapters | VOD chapters |
+| VODHunter (sub-only and deleted VODs) | Declined |
+| Default startup tab | Default startup tab |
+| Hide Home sections | Hide Home sections (and Hide Clips now covers the native Home tabs) |
+| Hide mature-content warning | Hide mature content warning |
+| Tablet UI | Tablet layout |
+| Navigation bar position | Navigation bar position |
+| Auto-claim channel points | Auto-claim channel points |
+| Twitch debug mode | Declined |
+| Twitch's newer React Native player bypassing native hooks | Use native player |
+
+Two patches have no counterpart in those bundles. *Watch without signing in* opens Twitch's own
+signed-out mode. *Fix stuck start screen* fixes a stock start-up stall. The reasons for each decline
+are under [Declined](#declined).
+
 ### Watch without signing in
 
 31.6.0 still ships Twitch's signed-out browsing mode. It sits behind the Eppo `loggedOutExperiment`,
