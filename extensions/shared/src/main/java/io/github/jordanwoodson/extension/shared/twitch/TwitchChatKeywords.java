@@ -2,11 +2,6 @@ package io.github.jordanwoodson.extension.shared.twitch;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
-import android.os.SystemClock;
-import android.os.VibrationEffect;
-import android.os.Vibrator;
-import android.os.VibratorManager;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -18,16 +13,13 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
+import io.github.jordanwoodson.extension.shared.ChatFilter;
 import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
@@ -39,21 +31,16 @@ import io.github.jordanwoodson.extension.shared.settings.Settings;
  */
 @SuppressWarnings("unused")
 public final class TwitchChatKeywords {
-    static final String KEY = "chat_keywords";
-    static final String MENTIONS = "chat_highlight_mentions";
-    static final String HIGHLIGHT_WORDS = "chat_highlight_words";
-    static final String VIBRATE = "chat_highlight_vibrate";
-    static final String BLOCKED_WORDS = "chat_blocked_words";
-    static final String BLOCKED_USERS = "chat_blocked_users";
+    static final String KEY = ChatFilter.KEY;
+    static final String MENTIONS = ChatFilter.MENTIONS;
+    static final String VIBRATE = ChatFilter.VIBRATE;
 
-    static final int NONE = 0;
-    static final int HIGHLIGHT = 1;
-    static final int HIDE = 2;
+    static final int NONE = ChatFilter.NONE;
+    static final int HIGHLIGHT = ChatFilter.HIGHLIGHT;
+    static final int HIDE = ChatFilter.HIDE;
 
     /** Twitch purple at 30%: readable over both the dark and the light chat background. */
     static final int HIGHLIGHT_COLOR = 0x4D9147FF;
-
-    private static final long VIBRATE_GAP_MS = 3000;
 
     /** The verdict of a line, set on its sender span. Spans of any class survive Twitch's copies of the line. */
     private static final class Mark {
@@ -75,16 +62,7 @@ public final class TwitchChatKeywords {
     private static final Map<Class<?>, Field> LOGIN_FIELDS = new ConcurrentHashMap<>();
     private static final Map<Class<?>, Field> SOURCE_FIELDS = new ConcurrentHashMap<>();
     private static final Field NO_FIELD;
-    private static final Set<String> vibrated = Collections.newSetFromMap(new LinkedHashMap<String, Boolean>() {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
-            return size() > 64;
-        }
-    });
-
-    private static volatile Lists lists;
     private static volatile SharedPreferences userPreferences;
-    private static long lastVibration;
     private static boolean loggedFailure;
 
     static {
@@ -149,7 +127,7 @@ public final class TwitchChatKeywords {
             if (verdict == HIDE) return true;
             if (verdict == HIGHLIGHT && Settings.isEnabled(VIBRATE)
                     && !login.toLowerCase(Locale.ROOT).equals(lists().self)) {
-                vibrate(id);
+                ChatFilter.vibrate(application(), id);
             }
         } catch (ReflectiveOperationException | RuntimeException e) {
             fail(e);
@@ -199,7 +177,7 @@ public final class TwitchChatKeywords {
     // Verdicts
 
     static boolean enabled() {
-        return Settings.isEnabled(KEY);
+        return ChatFilter.enabled();
     }
 
     /** The verdict marked on a bound line, NONE when it has none. */
@@ -213,94 +191,13 @@ public final class TwitchChatKeywords {
 
     /** Hidden for a blocked user or word, highlighted for a mention of you or a highlight word. */
     static int classify(String login, String text) {
-        Lists current = lists();
-        String sender = login == null ? "" : login.toLowerCase(Locale.ROOT);
-        if (!sender.isEmpty() && current.blockedUsers.contains(sender)) return HIDE;
-        if (current.blockedWords != null && current.blockedWords.matcher(text).find()) return HIDE;
-        if (current.mention != null && !sender.equals(current.self) && current.mention.matcher(text).find()) {
-            return HIGHLIGHT;
-        }
-        if (current.highlightWords != null && current.highlightWords.matcher(text).find()) return HIGHLIGHT;
-        return NONE;
+        return ChatFilter.classify(login, text, lists());
     }
 
-    /** The settings as patterns, rebuilt when one of them changes. */
-    private static final class Lists {
-        final String rawBlockedWords;
-        final String rawBlockedUsers;
-        final String rawHighlightWords;
-        final boolean mentions;
-        final String self;
-        final String selfName;
-        final Pattern blockedWords;
-        final Pattern highlightWords;
-        final Pattern mention;
-        final Set<String> blockedUsers = new HashSet<>();
-
-        Lists(String blockedWords, String blockedUsers, String highlightWords, boolean mentions, String self,
-              String selfName) {
-            rawBlockedWords = blockedWords;
-            rawBlockedUsers = blockedUsers;
-            rawHighlightWords = highlightWords;
-            this.mentions = mentions;
-            this.self = self;
-            this.selfName = selfName;
-            this.blockedWords = wordsPattern(entries(blockedWords));
-            this.highlightWords = wordsPattern(entries(highlightWords));
-            for (String user : entries(blockedUsers)) {
-                while (user.startsWith("@")) user = user.substring(1);
-                if (!user.isEmpty()) this.blockedUsers.add(user.toLowerCase(Locale.ROOT));
-            }
-            List<String> names = new ArrayList<>();
-            if (mentions && !self.isEmpty()) {
-                names.add(self);
-                if (!selfName.isEmpty() && !selfName.equalsIgnoreCase(self)) names.add(selfName);
-            }
-            this.mention = wordsPattern(names);
-        }
-
-        boolean matches(String blockedWords, String blockedUsers, String highlightWords, boolean mentions,
-                        String self, String selfName) {
-            return rawBlockedWords.equals(blockedWords) && rawBlockedUsers.equals(blockedUsers)
-                    && rawHighlightWords.equals(highlightWords) && this.mentions == mentions
-                    && this.self.equals(self) && this.selfName.equals(selfName);
-        }
-    }
-
-    static Lists lists() {
-        String blockedWords = Settings.getText(BLOCKED_WORDS);
-        String blockedUsers = Settings.getText(BLOCKED_USERS);
-        String highlightWords = Settings.getText(HIGHLIGHT_WORDS);
+    /** The lists for Twitch's signed-in account: its login, and its display name while mentions are on. */
+    static ChatFilter.Lists lists() {
         boolean mentions = Settings.isEnabled(MENTIONS);
-        String self = signedIn("name");
-        String selfName = mentions ? signedIn("DisplayName") : "";
-        Lists current = lists;
-        if (current == null || !current.matches(blockedWords, blockedUsers, highlightWords, mentions, self, selfName)) {
-            lists = current = new Lists(blockedWords, blockedUsers, highlightWords, mentions, self, selfName);
-        }
-        return current;
-    }
-
-    /** The entries of a comma- (or line-) separated list, trimmed, without empty ones. */
-    static List<String> entries(String list) {
-        List<String> entries = new ArrayList<>();
-        for (String entry : list.split("[,\n]")) {
-            String trimmed = entry.trim();
-            if (!trimmed.isEmpty()) entries.add(trimmed);
-        }
-        return entries;
-    }
-
-    /** Any of {@code words} as a whole word (not inside a longer word), in any case. Null for no words. */
-    static Pattern wordsPattern(List<String> words) {
-        if (words.isEmpty()) return null;
-        StringBuilder alternatives = new StringBuilder();
-        for (String word : words) {
-            if (alternatives.length() > 0) alternatives.append('|');
-            alternatives.append(Pattern.quote(word));
-        }
-        return Pattern.compile("(?<![\\p{L}\\p{N}_])(?:" + alternatives + ")(?![\\p{L}\\p{N}_])",
-                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        return ChatFilter.lists(signedIn("name"), mentions ? signedIn("DisplayName") : "");
     }
 
     /** A value of the signed-in account from Twitch's own user preferences, lowercase; "" when signed out. */
@@ -345,26 +242,6 @@ public final class TwitchChatKeywords {
             }
             row.setVisibility(View.VISIBLE);
         }
-    }
-
-    private static void vibrate(String id) {
-        synchronized (vibrated) {
-            if (id != null && !vibrated.add(id)) return;
-            long now = SystemClock.elapsedRealtime();
-            if (now - lastVibration < VIBRATE_GAP_MS) return;
-            lastVibration = now;
-        }
-        Context context = application();
-        if (context == null) return;
-        Vibrator vibrator;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            VibratorManager manager = context.getSystemService(VibratorManager.class);
-            vibrator = manager == null ? null : manager.getDefaultVibrator();
-        } else {
-            vibrator = context.getSystemService(Vibrator.class);
-        }
-        if (vibrator == null || !vibrator.hasVibrator()) return;
-        vibrator.vibrate(VibrationEffect.createOneShot(120, VibrationEffect.DEFAULT_AMPLITUDE));
     }
 
     // ---------------------------------------------------------------------------------------------
