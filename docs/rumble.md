@@ -155,7 +155,11 @@ choices.
 | Hide Premium upsells | `hide_premium_upsells` | when the screen is drawn again |
 | Hide Shorts | `hide_shorts` | after a restart |
 | Hide tipping and Rants | `hide_tipping` | when the data is loaded again |
+| Block update prompts | `block_update_prompts` | after a restart |
 | Default video quality (a choice; "Rumble's default" is 0) | `video_quality` | at the next video |
+| Live streams too | `video_quality_live` | after a restart |
+| On mobile data (a choice; "Same as on Wi-Fi" is 0) | `video_quality_mobile` | at the next video |
+| Show exact counts | `exact_counts` | when the screen is drawn again |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
 | Unlock Premium | `unlock_premium` | after signing in again |
 
@@ -311,7 +315,74 @@ preferred height, isLive, data saver, live uses Auto). That signature is unique,
 - The patch fills in the chosen height and the highest bitrate, and Rumble's own nearest-height logic does
   the rest.
 - A quality picked in the player is stored app-wide and keeps winning.
-- Data saver, and Auto for live streams, still take precedence.
+- Data saver still takes precedence.
+
+Only starting a video runs the chooser: the player itself, when a Short is created or becomes current, and
+the Shorts cache preloading the rendition it will play. A quality picked in the player plays that source
+directly and is saved through Rumble's own quality-save use case.
+
+**Live streams too** (`video_quality_live`, initially the `live` option, off). Before it looks at any
+height, the chooser returns the Auto source (height and bitrate 0) for a live stream while Rumble's
+"live uses Auto" preference is true. That is DataStore `liveVideoUseAutoKey`, read as `?: true`. Picking
+Auto in the player stores true; picking a quality on a live stream stores false. While the switch is on
+and a default quality is chosen, the patch changes the `?: true` default to false, the same way Disable
+autoplay changes its defaults. Live streams then start at the default quality, until Auto is picked in the
+player. With the switch off the default is Rumble's again.
+
+**On mobile data** (`video_quality_mobile`, initially the `mobileQuality` option, "Same as on Wi-Fi").
+On a metered network (mobile data, or a Wi-Fi hotspot marked as metered) a cap C lowers the quality a video
+starts at; it never raises it:
+
+- The start height is what Rumble or the default quality would start at (a saved pick, the default
+  quality, or the server's preferred height), lowered to C. A saved Auto counts as C.
+- Rumble picks the source nearest a height by the difference of reciprocals, which can land above C when no
+  source has exactly that height (480 sits exactly between 360 and 720). So the extension reads each
+  source's height (the `resolution` getter of the player source, found through its `toString`) and starts at
+  the highest available height at or below the target, or the lowest one if every source is above it.
+- While capped, the live-stream Auto return is skipped, so a live stream starts at the nearest rendition at
+  or below C, even when Auto was picked. A stream that only has Auto stays on Auto.
+- A quality picked in the player still plays, and Rumble saves it as usual. The next video on mobile data
+  starts at C again; back on Wi-Fi the saved pick applies, because Lurk never writes `videoQualityKey`,
+  `videoBitrateKey` or `liveVideoUseAutoKey`.
+- With the choice at "Same as on Wi-Fi", or off a metered network, the chooser gets exactly the values it
+  got before.
+
+`QualityProbe` runs the real chooser with fake sources (default quality, a kept pick, live Auto, Rumble's
+default), the live default with each setting, and the cap function. The metered check can't be faked under
+`app_process`.
+
+## Block update prompts
+
+Rumble can lock old versions out from Firebase Remote Config. `ContentViewModel` (constructor strings
+`shouldForceNewAppVersionUseCase`, `shouldSuggestNewAppVersionUseCase`) asks two use cases at startup,
+passing the literal `"3.21.0"`:
+
+- **Forced:** `ShouldForceNewAppVersionUseCase` compares `forced_app_version` with that version. If it is
+  newer, `com.rumble.battles.landing.ForceUpdateView` replaces the app with an "update required" screen.
+- **Suggested:** `ShouldSuggestNewAppVersionUseCase` compares `suggested_app_version`, at most once a day
+  (DataStore `lastNewVersionDisplayTimeStampKey`), and shows
+  `com.rumble.battles.landing.AppUpdateAvailableAlertDialog`.
+
+Both are found by their Remote Config key and the name their catch block logs, plus the signature: `(String)Z`
+and the suspend `(String, Continuation)Object`. While `block_update_prompts` is on (its default) they
+return false before reading Remote Config. There is no Play in-app update library in the APK. The patch can't
+help if Rumble's API starts refusing old clients; no such check was found in 3.21.0.
+
+`UpdateProbe` calls both use cases with null dependencies: patched, they return false; with the switch off
+(or on the stock APK) the original code runs and fails on the missing Firebase setup. The remote flags can't
+be flipped from outside, so the blocked screens weren't seen on a device.
+
+## Show exact counts
+
+Every count in the app (video cards and the video page, Shorts like and comment buttons, channel
+followers, "watching now") goes through one static formatter, `(long count, boolean keepDecimal)String`. It
+returns the number below 1000, otherwise 12K, 1.2M or 3B; it is the only method with all three suffix
+strings. No DTO carries a server-formatted count. While `exact_counts` is on, the formatter returns the
+count grouped for the device locale (`NumberFormat.getIntegerInstance()`, 12,345).
+
+The narrowest place is the Shorts side rail, which has no fixed width. A test build that showed 1,234,567
+for every count kept the rail on screen (x 922-1071 of 1080) without covering the video, so the text size is
+left alone. `CountProbe` checks the formatter both ways.
 
 ## Clone app and Change app name
 
@@ -380,3 +451,21 @@ three scrolls, background.
 
 Not verified at runtime: category tabs, Rants and the Rumble Wallet (both need an account), the account
 screen offer banner, and the downloads upsell.
+
+## Validation on 2026-10-16
+
+Built with the local fallback (Gradle still gets 401 from GitHub Packages) against Morphe Desktop 1.18.1,
+with every Rumble patch except Clone app and Change app name, and run on the Android 16 emulator signed out.
+Lurk switches were set by writing `lurk_settings.xml` as root. `tests/verify_extension_calls.py` confirms
+that app code calls every new extension method.
+
+- **Block update prompts:** `UpdateProbe` passes. The app starts and plays normally with the switch on.
+- **Show exact counts:** Home shows "3,339" watching instead of "3.3K". Shorts side rail checked with a
+  forced 1,234,567 (see above).
+- **Default video quality:**
+  - Live streams too on: a live stream (360p, 720p and two 1080p renditions) starts at 1080p. Off: Auto.
+  - On mobile data (Wi-Fi off; the emulator's cellular network is metered), cap 480p: the same live stream
+    starts at 360p, its highest rendition at or below the cap. A VOD starts at 480p instead of 1080p.
+  - Picking 1080p in the player plays it. The next VOD on mobile data starts at 480p again, and with Wi-Fi
+    back on the next one starts at the saved 1080p.
+  - A Short on mobile data starts at 480p.

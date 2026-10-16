@@ -3,8 +3,11 @@ package io.github.jordanwoodson.patches.rumble.shared
 import app.morphe.patcher.patch.PatchException
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.ClassDef
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.FieldReference
+import com.android.tools.smali.dexlib2.iface.reference.MethodReference
 
 private val FIELD_READS = setOf(
     Opcode.IGET, Opcode.IGET_WIDE, Opcode.IGET_OBJECT, Opcode.IGET_BOOLEAN, Opcode.IGET_BYTE, Opcode.IGET_CHAR,
@@ -14,7 +17,9 @@ private val RETURNS = setOf(Opcode.RETURN, Opcode.RETURN_WIDE, Opcode.RETURN_OBJ
 
 /**
  * The field a Kotlin data class prints after [label] in its toString(), such as ", message=". R8 renames
- * the field, but the label is the source name.
+ * the field, but the label is the source name. The value is the argument of the second
+ * StringBuilder.append after the label (the first appends the label); R8 may read all fields up front,
+ * so the field is the last read into that register before the append.
  */
 internal fun ClassDef.toStringField(label: String): FieldReference {
     val toString = methods.firstOrNull {
@@ -23,8 +28,21 @@ internal fun ClassDef.toStringField(label: String): FieldReference {
     val instructions = toString.implementation!!.instructions.toList()
     val labelIndex = instructions.indexOfFirst { it.constString() == label }
     if (labelIndex < 0) throw PatchException("Rumble: $type doesn't print \"$label\"")
-    val read = instructions.drop(labelIndex + 1).firstOrNull { it.opcode in FIELD_READS }
-        ?: throw PatchException("Rumble: no field after \"$label\" in $type")
+    val appends = (labelIndex + 1 until instructions.size).filter { index ->
+        val instruction = instructions[index]
+        instruction.opcode == Opcode.INVOKE_VIRTUAL &&
+            ((instruction as ReferenceInstruction).reference as MethodReference).let {
+                it.definingClass == "Ljava/lang/StringBuilder;" && it.name == "append"
+            }
+    }
+    val valueAppend = appends.getOrNull(1) ?: throw PatchException("Rumble: no value after \"$label\" in $type")
+    val register = (instructions[valueAppend] as FiveRegisterInstruction).registerD
+    val read = (valueAppend - 1 downTo 0).map { instructions[it] }.firstOrNull {
+        it.opcode.setsRegister() && (it as? OneRegisterInstruction)?.registerA == register
+    }
+    if (read == null || read.opcode !in FIELD_READS) {
+        throw PatchException("Rumble: the value after \"$label\" in $type isn't a field")
+    }
     return (read as ReferenceInstruction).reference as FieldReference
 }
 
