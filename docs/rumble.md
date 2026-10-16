@@ -533,6 +533,9 @@ through `RumbleInterface.homeSectionKind`, which returns `hide` for a categories
 whose switch is on, or a section whose `title` (read by its field name) matches an entry of
 `home_hide_titles`, ignoring case. A `hide` section is neither loaded nor drawn, as Hide Shorts relies on.
 
+`InterfaceProbe` runs the real startup tab getter (with a stored My Feed) and the section `kind` getter with
+each setting.
+
 ## Player
 
 ### Remember playback speed
@@ -709,6 +712,6 @@ that app code calls every new extension method.
 - **Default startup tab:** "My Feed" opens Rumble on My Feed after a cold start, "Home" on Home.
 - **Hide Create tab:** the bottom bar shows Home, My Feed and Account (with Hide Shorts); each still opens its
   own screen.
-- **Hide Home sections:** with creator rows hidden and the titles "Editor Picks, sports", Home loses Editor
+- **Hide Home sections:** with category and creator rows hidden and the titles "Editor Picks, sports", Home loses Editor
   Picks, Sports and Top Channels and keeps the other twelve sections. No categories or playlists row was on
   Home during testing.
