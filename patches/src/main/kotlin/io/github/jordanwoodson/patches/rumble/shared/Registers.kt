@@ -5,8 +5,10 @@ import app.morphe.patcher.util.proxy.mutableTypes.MutableMethod
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Format
 import com.android.tools.smali.dexlib2.Opcode
+import com.android.tools.smali.dexlib2.iface.instruction.FiveRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.Instruction
 import com.android.tools.smali.dexlib2.iface.instruction.OneRegisterInstruction
+import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.ThreeRegisterInstruction
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
 
@@ -63,4 +65,34 @@ internal fun MutableMethod.requireNoBranchTo(index: Int, what: String) {
     if (implementation!!.instructions[index].location.labels.isNotEmpty()) {
         throw PatchException("Rumble: $what is a branch target")
     }
+}
+
+/**
+ * The type of the constructor parameter Kotlin checks against [name] ("saveQueryUseCase"), found through
+ * the register its checkNotNullParameter call passes.
+ */
+internal fun MutableMethod.constructorParameterType(name: String): String {
+    val code = implementation!!.instructions.toList()
+    val nameIndex = code.indexOfFirst { it.constString() == name }
+    if (nameIndex < 0) throw PatchException("Rumble: $definingClass doesn't check $name")
+    val nameRegister = (code[nameIndex] as OneRegisterInstruction).registerA
+    val check = code.drop(nameIndex + 1).firstOrNull {
+        it is FiveRegisterInstruction && it.registerCount == 2 && it.registerD == nameRegister &&
+            (it as ReferenceInstruction).reference.toString().endsWith("->checkNotNullParameter(Ljava/lang/Object;Ljava/lang/String;)V")
+    } as? FiveRegisterInstruction ?: throw PatchException("Rumble: no null check of $name in $definingClass")
+    // The checked register, or the parameter it was copied from.
+    var register = check.registerC
+    val checkIndex = code.indexOf(check as com.android.tools.smali.dexlib2.iface.instruction.Instruction)
+    val write = (checkIndex - 1 downTo 0).firstOrNull { code[it].writes(register) }
+    if (write != null) {
+        val copy = code[write]
+        if (copy.opcode !in setOf(Opcode.MOVE_OBJECT, Opcode.MOVE_OBJECT_FROM16, Opcode.MOVE_OBJECT_16)) {
+            throw PatchException("Rumble: $name in $definingClass isn't a parameter")
+        }
+        register = (copy as TwoRegisterInstruction).registerB
+    }
+    val index = (0..parameterTypes.size).firstOrNull { parameterRegister(it) == register }
+        ?: throw PatchException("Rumble: $name in $definingClass isn't a parameter")
+    // Index 0 is `this`.
+    return parameterTypes[index - 1].toString()
 }
