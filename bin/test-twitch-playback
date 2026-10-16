@@ -12,7 +12,7 @@ while [[ ${1:-} == --* ]]; do
     shift
 done
 [[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-twitch-playback [--compile-only] [--stock] <apk>"
-serial=emulator-5580
+serial=${ANDROID_SERIAL:-emulator-5580}
 out="$WORK/twitch-playback/art-probe"
 remote=/data/local/tmp/lurk-twitch-playback
 mkdir -p "$out/classes" "$out/dex" "$out/tmp"

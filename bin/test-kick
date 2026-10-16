@@ -2,7 +2,7 @@
 # Run the actual injected bundle loader on the scratch Android emulator.
 source "$(dirname "$0")/lib/common.sh"
 [[ $# == 1 && -f "$1" ]] || die "usage: bash bin/test-kick <patched.apk>"
-serial=emulator-5580
+serial=${ANDROID_SERIAL:-emulator-5580}
 out="$WORK/tests/kick"
 remote=/data/local/tmp/morphe-kick-test
 mkdir -p "$out/classes" "$out/dex" "$WORK/tmp"

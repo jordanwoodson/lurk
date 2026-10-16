@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile production playback/link helpers; outputs only under ~/scratch/morphe/twitch-playback."""
+"""Compile production playback/link helpers; outputs only under $MORPHE_WORK/twitch-playback."""
 import os
 from pathlib import Path
 import shutil
@@ -12,7 +12,7 @@ JAVA = ROOT / 'extensions/shared/src/main/java/io/github/jordanwoodson/extension
 def main():
     for name in ['TwitchPlayback', 'TwitchLinks']:
         assert (JAVA / (name + '.java')).is_file(), f'missing production {name} helper'
-    scratch = Path.home() / 'scratch/morphe/twitch-playback'
+    scratch = Path(os.environ.get('MORPHE_WORK', Path.home() / 'scratch/morphe')) / 'twitch-playback'
     scratch.mkdir(parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix='contracts-', dir=scratch))
     try:
@@ -55,7 +55,8 @@ def main():
             sources.append(str(target))
         sources += [str(JAVA / (name + '.java')) for name in ['TwitchPlayback', 'TwitchLinks']]
         sources.append(str(ROOT / 'tests/twitch/PlaybackLinksProbe.java'))
-        jdk = Path(os.environ.get('JAVA_HOME', '/home/jordan/.local/opt/jdk-21')) / 'bin'
+        java_home = os.environ.get('JAVA_HOME')
+        jdk = Path(java_home) / 'bin' if java_home else Path()  # else javac/java from PATH
         subprocess.run([str(jdk / 'javac'), '-d', str(output / 'classes'), *sources], check=True)
         subprocess.run([str(jdk / 'java'), '-XX:-UsePerfData', '-cp', str(output / 'classes'), 'PlaybackLinksProbe'], check=True)
     finally:

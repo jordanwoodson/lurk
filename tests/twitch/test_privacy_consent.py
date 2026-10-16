@@ -10,7 +10,7 @@ import tempfile
 
 def main():
     repo = Path(__file__).resolve().parents[2]
-    scratch = Path.home() / "scratch/morphe/twitch-privacy"
+    scratch = Path(os.environ.get("MORPHE_WORK", Path.home() / "scratch/morphe")) / "twitch-privacy"
     scratch.mkdir(parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix="consent-", dir=scratch))
     try:
@@ -85,10 +85,11 @@ def main():
             source.write_text(content)
             paths.append(str(source))
         paths.append(str(repo / "extensions/shared/src/main/java/io/github/jordanwoodson/extension/shared/twitch/TwitchPrivacy.java"))
-        java_home = Path(os.environ.get("JAVA_HOME", str(Path.home() / ".local/opt/jdk-21")))
+        java_home = os.environ.get("JAVA_HOME")
+        jdk = Path(java_home) / "bin" if java_home else Path()  # else javac/java from PATH
         classes = output / "classes"
-        subprocess.run([str(java_home / "bin/javac"), "-d", str(classes), *paths], check=True)
-        subprocess.run([str(java_home / "bin/java"), "-XX:-UsePerfData", "-cp", str(classes), "PrivacyConsentProbe"], check=True)
+        subprocess.run([str(jdk / "javac"), "-d", str(classes), *paths], check=True)
+        subprocess.run([str(jdk / "java"), "-XX:-UsePerfData", "-cp", str(classes), "PrivacyConsentProbe"], check=True)
     finally:
         if sys.platform == "darwin":
             print(f"Test files retained on macOS: {output}")

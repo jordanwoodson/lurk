@@ -7,14 +7,13 @@ the viable equivalents of the existing patches, verify the resulting APK and run
 settings, and publish a tested stable Lurk release through the repository workflow.
 
 The supported target is `tv.twitch.android.app` **31.6.0**, version code **3106006**.
-The user supplied the original APKMirror bundle on 2026-10-14. `bin/apk-add --copy`
-verified its signature and stored it in `apks/twitch/31.6.0/`. The source upload was
-left intact. The universal variant supports Android 12L+ (API 32), with arm64-v8a,
+The original APKMirror bundle was added on 2026-10-14 with `bin/apk-add --copy`, which
+verified its signature and stored it in `apks/twitch/31.6.0/`. The universal variant supports Android 12L+ (API 32), with arm64-v8a,
 armeabi-v7a, x86 and x86_64 splits. The base APK SHA-256 is
 `9e540dc16e8c6bb2c10ff06600f11576afe671b6f4cc7ba3ee80985b523d45b8`.
 
-Allowed sources are APKMirror, Google Play and Uptodown, as required by `CLAUDE.md`.
-The supplied variant is listed here:
+Allowed sources are APKMirror, Google Play and Uptodown (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+The variant used is listed here:
 
 - [APKMirror release and variants](https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/twitch-live-streaming-31-6-0-release/)
 - [APKMirror universal bundle](https://www.apkmirror.com/apk/twitch-interactive-inc/twitch/twitch-live-streaming-31-6-0-release/twitch-live-streaming-31-6-0-android-apk-download/)

@@ -4,7 +4,8 @@ Lurk, Jordan's Morphe privacy patch bundle, and the tooling around it. Main focu
 clients for Twitch (`tv.twitch.android.app`), Kick (`com.kick.mobile`) and Rumble (`com.rumble.battles`).
 Use "Morphe" only descriptively ("patches for Morphe"), never as part of Lurk's name (see `NOTICE`).
 The GitHub repo is `jordanwoodson/lurk-morphe-patches` for discovery: Lurk is the name, "morphe-patches" says what it is.
-README.md documents the layout, commands and workflow; read it first.
+README.md is the public page. docs/development.md documents the layout, commands and workflow; read it
+first. CONTRIBUTING.md has the rules contributors see; keep the two in line with this file.
 
 ## Rules
 
