@@ -16,12 +16,10 @@ import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
 import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.RUMBLE_CHAT
-import io.github.jordanwoodson.patches.rumble.shared.bridge
 import io.github.jordanwoodson.patches.rumble.shared.overwrittenNext
 import io.github.jordanwoodson.patches.rumble.shared.requireNoBranchTo
 import io.github.jordanwoodson.patches.rumble.shared.requireUnwritten
 import io.github.jordanwoodson.patches.rumble.shared.single
-import io.github.jordanwoodson.patches.rumble.shared.toStringGetter
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
 
@@ -35,21 +33,11 @@ val showDeletedMessagesPatch = bytecodePatch(
         "it off in Lurk settings > Chat.",
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
-    dependsOn(settingsPatch)
+    dependsOn(settingsPatch, chatEntityPatch)
 
     execute {
         // Rumble keeps the text in the entity and marks it deleted; the rows draw the label instead.
         val entity = ChatMessageEntityFingerprint.single("live chat message entity").classDef
-        bridge(
-            RUMBLE_CHAT,
-            "messageText",
-            """
-                check-cast p0, ${entity.type}
-                invoke-virtual { p0 }, ${entity.toStringGetter(", message=")}
-                move-result-object p0
-                return-object p0
-            """,
-        )
 
         val label = resourceId(ResourceType.STRING, "live_chat_deleted_message")
         val sites = DeletedMessageLabelFingerprint.matchAll()

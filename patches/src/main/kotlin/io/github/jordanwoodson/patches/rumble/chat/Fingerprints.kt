@@ -43,3 +43,18 @@ internal object ChatMessageEntityFingerprint : Fingerprint(
 internal object DeletedMessageLabelFingerprint : Fingerprint(
     filters = listOf(resourceLiteral(ResourceType.STRING, "live_chat_deleted_message")),
 )
+
+// The live chat event mapper: (time, event, baseUrl, currentUserId, creatorName). Signed in, currentUserId
+// is "_u" and the user ID in base 36.
+internal object ChatEventMapperFingerprint : Fingerprint(
+    parameters = listOf("J", "$LIVE_CHAT/LiveChatEvent;", "Ljava/lang/String;", "Ljava/lang/String;", "Ljava/lang/String;"),
+    strings = listOf("baseUrl", "currentUserId", "creatorName"),
+)
+
+// A regular live chat message row: (modifier, message entity, ...).
+internal val LiveChatMessageViewFingerprint =
+    composableFingerprint("com.rumble.battles.livechat.presentation.content.LiveChatMessageView")
+
+// A Rant row, which paints its background with Modifier.background. Another composable has the same label.
+internal val RantMessageViewFingerprint =
+    composableFingerprint("com.rumble.battles.livechat.presentation.rant.RantMessageView")

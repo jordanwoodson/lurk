@@ -165,6 +165,8 @@ choices.
 | Hide chat badges, Hide live chat | `chat_hide_badges`, `chat_hide_all` | when a stream is opened again |
 | Show deleted messages | `show_deleted_messages` | when the chat is drawn again |
 | Chat timestamps | `chat_timestamps` | when the chat is drawn again |
+| Chat keywords, Highlight mentions, Vibrate on highlights | `chat_keywords`, `chat_highlight_mentions`, `chat_highlight_vibrate` | at the next chat messages |
+| Highlight words, Blocked words, Blocked users (text) | `chat_highlight_words`, `chat_blocked_words`, `chat_blocked_users` | at the next chat messages |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
 | Unlock Premium | `unlock_premium` | after signing in again |
 
@@ -507,6 +509,30 @@ device's 24-hour setting) with the name's color and weight. `timeReceived` is al
 parses the DTO's ISO `time` and converts it to `ZoneId.systemDefault()`. Rants, notifications, pinned
 messages and Premium purchase messages get no time.
 
+### Chat keywords
+
+The same switches, texts and defaults as Twitch's Chat keywords, matched by the shared `ChatFilter`
+(whole words, any case; blocked users without the `@`):
+
+- **Hiding:** the chat hook builds a `userId` to `userName` map from the DTO's `users` and drops messages
+  from blocked users or with blocked words, live messages and the join history alike. They never become
+  rows, can't be @-mentioned and don't count as unread.
+- **Highlighting:** at the start of `LiveChatMessageView(modifier, entity, ...)` (its one caller passes
+  the modifier) `RumbleChat.highlight` returns Rumble's modifier, or for a highlighted message
+  `Modifier.background(Rumble green at 30%)` around it. The background call is the one the Rant row uses,
+  resolved at patch time by its signature; the extension reaches it through a bridged stub. Rows that
+  aren't highlighted keep Rumble's modifier instance, so Compose can still skip them.
+- **Mentions:** the live chat event mapper `(time, event, baseUrl, currentUserId, creatorName)` gets the
+  signed-in user's chat ID (`_u` and the user ID in base 36). The history sent on joining lists the
+  current user among its `users`, which gives the name to match (`@name`, or the name as a word). Signed
+  out there is no ID and no mention.
+- **Vibrate:** a highlighted live message (not the history) vibrates, once per message and at most every
+  three seconds.
+
+The patches that read entities share one hidden patch that fills the extension's getter stubs (text,
+sender, time), so each is filled once. `KeywordsProbe` runs the hook, the learned username, mention and
+word highlights and the real Compose background modifier with each setting.
+
 `ChatProbe` runs the real DTO getters (live messages, history, badges, `liveChatDisabled`) and the bridged
 entity getters with each switch on and off, including the hook with the keys unregistered.
 
@@ -534,3 +560,6 @@ that app code calls every new extension method.
   Pinned messages, raids, gift notices and sponsor reads didn't occur during testing; `ChatProbe` covers
   the raid and gift filter.
 - **Show deleted messages:** no message was deleted while watching; `ChatProbe` covers the label.
+- **Chat keywords:** on a busy live chat, highlight word "the" tints every message with the whole word "the"
+  (on a subscriber's row it blends with Rumble's tint); blocked word "the" leaves none of the 14 visible
+  lines with it. Mentions need an account and weren't tried; `KeywordsProbe` covers them.

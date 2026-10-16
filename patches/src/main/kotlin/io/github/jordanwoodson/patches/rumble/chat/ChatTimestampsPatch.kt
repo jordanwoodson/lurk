@@ -16,7 +16,6 @@ import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
 import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.RUMBLE_CHAT
-import io.github.jordanwoodson.patches.rumble.shared.bridge
 import io.github.jordanwoodson.patches.rumble.shared.calls
 import io.github.jordanwoodson.patches.rumble.shared.requireNoBranchTo
 import io.github.jordanwoodson.patches.rumble.shared.requireUnwritten
@@ -35,21 +34,11 @@ val chatTimestampsPatch = bytecodePatch(
         "default. Turn it off in Lurk settings > Chat.",
 ) {
     compatibleWith(COMPATIBILITY_RUMBLE)
-    dependsOn(settingsPatch)
+    dependsOn(settingsPatch, chatEntityPatch)
 
     execute {
         val entity = ChatMessageEntityFingerprint.single("live chat message entity").classDef
         val userName = entity.toStringGetter(", userName=")
-        bridge(
-            RUMBLE_CHAT,
-            "timeReceived",
-            """
-                check-cast p0, ${entity.type}
-                invoke-virtual { p0 }, ${entity.toStringGetter(", timeReceived=")}
-                move-result-object p0
-                return-object p0
-            """,
-        )
 
         // LiveChatContentView(modifier, ..., message, userName, ...) draws a message row. The regular and the
         // deleted message rows call it from lambdas that capture the message entity; the pinned message and

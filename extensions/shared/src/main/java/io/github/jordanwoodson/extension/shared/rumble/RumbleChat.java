@@ -8,16 +8,20 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.github.jordanwoodson.extension.shared.ChatFilter;
 import io.github.jordanwoodson.extension.shared.Logger;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
 /**
- * Live chat for Rumble: hiding notices before Rumble builds its messages, deleted message text and
- * message times. With every setting off, each hook returns Rumble's own value.
+ * Live chat for Rumble: hiding notices and blocked messages before Rumble builds its messages, keyword
+ * highlights, deleted message text and message times. With every setting off, each hook returns Rumble's
+ * own value.
  */
 @SuppressWarnings("unused")
 public final class RumbleChat {
@@ -25,6 +29,14 @@ public final class RumbleChat {
     static final String HIDE_GIFTS = "chat_hide_gift_notices";
     static final String SHOW_DELETED = "show_deleted_messages";
     static final String TIMESTAMPS = "chat_timestamps";
+
+    /** Rumble green at 30%, as a Compose color: readable over both chat backgrounds. */
+    private static final int HIGHLIGHT_ARGB = 0x4D85C742;
+
+    /** The signed-in user's chat ID ("_u" and the ID in base 36), from the chat mapper; null signed out. */
+    private static volatile String currentUserId;
+    /** The signed-in user's name, lowercase, once a chat's users list had it; "" until then. */
+    private static volatile String self = "";
 
     /** The last lists handed out, so a getter called again on the same DTO returns the same list. */
     private static final int REMEMBERED = 8;
@@ -83,8 +95,11 @@ public final class RumbleChat {
         try {
             boolean raids = on(HIDE_RAIDS);
             boolean gifts = on(HIDE_GIFTS);
-            if (!raids && !gifts) return messages;
-            String settings = raids + "," + gifts;
+            boolean keywords = on(ChatFilter.KEY);
+            if (!raids && !gifts && !keywords) return messages;
+            Map<Long, String> names = keywords ? userNames(dto) : null;
+            ChatFilter.Lists lists = keywords ? ChatFilter.lists(self, "") : null;
+            String settings = raids + "," + gifts + "," + System.identityHashCode(lists);
             synchronized (FILTERED) {
                 for (Filtered filtered : FILTERED) {
                     if (filtered != null && filtered.dto.get() == dto && filtered.source == messages
@@ -93,12 +108,25 @@ public final class RumbleChat {
                     }
                 }
             }
+            // Only messages arriving live vibrate, not the history sent on joining.
+            boolean live = keywords && "LiveChatMessageData".equals(dto.getClass().getSimpleName())
+                    && Settings.isEnabled(ChatFilter.VIBRATE);
             List<Object> kept = null;
             for (int i = 0; i < messages.size(); i++) {
                 Object message = messages.get(i);
                 boolean hide = message != null
                         && ((raids && read(message, "raidNotification") != null)
                         || (gifts && read(message, "giftPurchaseNotification") != null));
+                if (!hide && keywords && message != null) {
+                    Object userId = read(message, "userId");
+                    String name = userId instanceof Long ? names.get(userId) : null;
+                    Object text = read(message, "text");
+                    int verdict = ChatFilter.classify(name, text instanceof String ? (String) text : "", lists);
+                    hide = verdict == ChatFilter.HIDE;
+                    if (verdict == ChatFilter.HIGHLIGHT && live && (name == null || !name.equalsIgnoreCase(self))) {
+                        ChatFilter.vibrate(Settings.appContext(), "rumble:" + read(message, "id"));
+                    }
+                }
                 if (hide && kept == null) {
                     kept = new ArrayList<>(messages.size());
                     for (int j = 0; j < i; j++) kept.add(messages.get(j));
@@ -116,6 +144,68 @@ public final class RumbleChat {
             fail(e);
             return messages;
         }
+    }
+
+    /**
+     * The senders' names of a DTO's messages by user ID, from its users list. Learns the signed-in user's name
+     * when the list has it.
+     */
+    private static Map<Long, String> userNames(Object dto) throws ReflectiveOperationException {
+        Map<Long, String> names = new HashMap<>();
+        Object users = read(dto, "users");
+        if (!(users instanceof List)) return names;
+        String current = currentUserId;
+        for (Object user : (List<?>) users) {
+            if (user == null) continue;
+            Object id = read(user, "id");
+            Object name = read(user, "userName");
+            if (!(id instanceof Long) || !(name instanceof String)) continue;
+            names.put((Long) id, (String) name);
+            if (current != null && current.equals("_u" + Long.toString((Long) id, 36))) {
+                self = ((String) name).trim().toLowerCase(Locale.ROOT);
+            }
+        }
+        return names;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Chat keywords
+
+    /** Injection point: the start of the live chat event mapper, with the signed-in user's chat ID. */
+    public static void currentUserId(String id) {
+        String previous = currentUserId;
+        String current = id == null || id.isEmpty() ? null : id;
+        if (current == null ? previous != null : !current.equals(previous)) {
+            currentUserId = current;
+            self = "";
+        }
+    }
+
+    /**
+     * Injection point: the start of a live chat message row, with its modifier and message entity. A message
+     * that mentions you or has a highlight word gets a tinted background; any other keeps Rumble's modifier.
+     */
+    public static Object highlight(Object modifier, Object entity) {
+        if (modifier == null || entity == null || !on(ChatFilter.KEY)) return modifier;
+        try {
+            int verdict = ChatFilter.classify(userName(entity), messageText(entity), ChatFilter.lists(self, ""));
+            if (verdict != ChatFilter.HIGHLIGHT) return modifier;
+            Object tinted = background(modifier, ((long) HIGHLIGHT_ARGB) << 32);
+            return tinted == null ? modifier : tinted;
+        } catch (RuntimeException e) {
+            fail(e);
+            return modifier;
+        }
+    }
+
+    /** Replaced at patch time: Compose's Modifier.background with an sRGB color, on the given modifier. */
+    private static Object background(Object modifier, long color) {
+        return null;
+    }
+
+    /** Replaced at patch time: a chat message entity's sender. */
+    private static String userName(Object entity) {
+        return null;
     }
 
     /** A field of one of Rumble's Gson DTOs, which keep their field names; null when it has none. */
