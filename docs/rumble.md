@@ -167,6 +167,8 @@ choices.
 | Chat timestamps | `chat_timestamps` | when the chat is drawn again |
 | Chat keywords, Highlight mentions, Vibrate on highlights | `chat_keywords`, `chat_highlight_mentions`, `chat_highlight_vibrate` | at the next chat messages |
 | Highlight words, Blocked words, Blocked users (text) | `chat_highlight_words`, `chat_blocked_words`, `chat_blocked_users` | at the next chat messages |
+| Don't save searches | `no_search_history` | at the next search |
+| Resume videos when signed out | `resume_signed_out` | at the next video |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
 | Unlock Premium | `unlock_premium` | after signing in again |
 
@@ -459,6 +461,42 @@ three scrolls, background.
 Not verified at runtime: category tabs, Rants and the Rumble Wallet (both need an account), the account
 screen offer banner, and the downloads upsell.
 
+## Don't save searches
+
+Searches are kept only in the local Room table `queries(id, query, time)`. `SearchViewModel` (a kept name)
+takes the use cases that save a search, update its time and read the recent searches. The patch finds each
+one's type through the constructor's `checkNotNullParameter` names (`saveQueryUseCase`,
+`updateQueryUseCase`, `getRecentQueriesUseCase`), following a copy back to the parameter, and patches
+the one public suspend method of each. While `no_search_history` is on (its default), save and update
+return `Unit` without writing, and the recent searches are an empty list. The list filtered as you type
+filters that list, so it is empty too. Autocomplete suggestions come from Rumble's server and stay.
+
+Stored rows aren't deleted, so turning the switch off shows them again; Clear all in Rumble's search
+deletes them. Signed out, Rumble's own logout use case (which also deletes every search) runs at launch,
+so the table is emptied at each start whether the patch is included or not.
+
+`SearchProbe` calls the three use cases with no repository: they return before reaching it while on, and
+fail on the missing repository while off.
+
+## Resume videos when signed out
+
+Rumble keeps a position per video in the local table `last_positions(video_id, last_position, user_id)`,
+also signed out (`user_id` empty). The player saves it through `SaveLastPositionUseCase` when it stops, is
+released or another video starts. `DefineCurrentWatchPositionUseCase` (constructor strings
+`getLastPositionUseCase`, `sessionManager`) decides where a video starts:
+
+1. It reads the local position.
+2. If the server's `lastPositionSeconds` and the duration are both 0, it uses the local position.
+3. Otherwise it asks the session whether you're signed in: signed in, the server's position (or the local
+   one when the server has none); **signed out, 0**.
+4. Near the end of the video it starts at 0.
+
+jadx can't decompile the coroutine, so the patch works from the smali. After the `Boolean.booleanValue()`
+of the signed-in check, the false branch is a `move-wide` of 0 over the register pair that holds the local
+position on both paths into it. The patch replaces that move with `RumblePlayback.signedOutPosition`, which
+returns the local position while `resume_signed_out` is on (its default) and 0 otherwise. Step 4 still
+applies, and signed in nothing changes.
+
 ## Live chat
 
 Rumble's live chat arrives as JSON events on a chat endpoint (`web7.rumble.com` in testing). Gson parses
@@ -563,3 +601,8 @@ that app code calls every new extension method.
 - **Chat keywords:** on a busy live chat, highlight word "the" tints every message with the whole word "the"
   (on a subscriber's row it blends with Rumble's tint); blocked word "the" leaves none of the 14 visible
   lines with it. Mentions need an account and weren't tried; `KeywordsProbe` covers them.
+- **Don't save searches:** with the switch on, a search for "news" leaves `queries` empty and the search
+  box shows no recent searches. Off, "podcast" is stored and listed under Recent; on again, it is hidden.
+- **Resume videos when signed out:** search, watch the first result for 40 s, start the second (which saves
+  the first at 41 s), go back and open the first again: it continues from 0:41 with the switch on and starts
+  at 0:00 with it off. Positions survive a restart.

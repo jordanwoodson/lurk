@@ -93,6 +93,17 @@ public final class RumblePlayback {
         return lowest != Integer.MAX_VALUE ? lowest : target;
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Resume videos when signed out
+
+    /**
+     * Injection point: where a video starts when you aren't signed in, which is 0 in Rumble. Returns the
+     * position Rumble kept on the phone (milliseconds) while the switch is on.
+     */
+    public static long signedOutPosition(long local) {
+        return Settings.isEnabled("resume_signed_out") && local > 0 ? local : 0;
+    }
+
     /** Replaced at patch time: a player video source's height (0 for Auto). */
     private static int sourceHeight(Object source) {
         return 0;

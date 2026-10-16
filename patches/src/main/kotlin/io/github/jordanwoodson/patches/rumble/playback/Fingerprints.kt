@@ -38,3 +38,17 @@ internal object VideoSourceSelectionFingerprint : Fingerprint(
     parameters = listOf("Ljava/util/List;", "Ljava/lang/Integer;", "Ljava/lang/Integer;", "I", "Z", "Z", "Z"),
     filters = listOf(string("sourceList")),
 )
+
+// DefineCurrentWatchPositionUseCase(video, resume, continuation): where a video starts. It reads the position
+// kept on the phone, then uses the server's position signed in and 0 signed out.
+internal object WatchPositionFingerprint : Fingerprint(
+    returnType = "Ljava/lang/Object;",
+    parameters = listOf("L", "Z", "L"),
+    custom = { method, classDef ->
+        method.name != "<init>" && classDef.methods.any { constructor ->
+            constructor.name == "<init>" && constructor.implementation?.instructions?.mapNotNull {
+                if (it.opcode == Opcode.CONST_STRING) ((it as ReferenceInstruction).reference as StringReference).string else null
+            }?.containsAll(listOf("getLastPositionUseCase", "sessionManager")) == true
+        }
+    },
+)
