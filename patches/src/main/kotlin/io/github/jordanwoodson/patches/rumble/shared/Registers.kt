@@ -54,3 +54,13 @@ private fun Instruction.reads(register: Int): Boolean = when {
         (opcode.setsWideRegister() && registerB + 1 == register)
     else -> false
 }
+
+/**
+ * Fails if a branch jumps to [index]. Code inserted at [index] runs before the instruction there, but a
+ * branch to that instruction would skip it.
+ */
+internal fun MutableMethod.requireNoBranchTo(index: Int, what: String) {
+    if (implementation!!.instructions[index].location.labels.isNotEmpty()) {
+        throw PatchException("Rumble: $what is a branch target")
+    }
+}
