@@ -169,6 +169,11 @@ choices.
 | Highlight words, Blocked words, Blocked users (text) | `chat_highlight_words`, `chat_blocked_words`, `chat_blocked_users` | at the next chat messages |
 | Don't save searches | `no_search_history` | at the next search |
 | Resume videos when signed out | `resume_signed_out` | at the next video |
+| Remember playback speed | `remember_speed` | at the next pick |
+| Fill screen | `fill_screen` | when the player is laid out again |
+| Keep playing during other sounds (a choice; "Pause" is 0) | `audio_focus` | at the next interruption |
+| Keep screen on while paused | `keep_screen_on_paused` | at the next pause |
+| Sleep timer (a choice in minutes; "Off" is 0) | `sleep_timer` | when playback next starts |
 | No autoplay of the next video, No feed previews | `autoplay_next_video_off`, `feed_previews_off` | after a restart |
 | Unlock Premium | `unlock_premium` | after signing in again |
 
@@ -497,6 +502,57 @@ position on both paths into it. The patch replaces that move with `RumblePlaybac
 returns the local position while `resume_signed_out` is on (its default) and 0 otherwise. Step 4 still
 applies, and signed in nothing changes.
 
+## Player
+
+### Remember playback speed
+
+The speed menu lists the nine constants of Rumble's speed enum (`SPEED_0_25` to `SPEED_2`, with `NORMAL`).
+A Kotlin object keeps the picked speed per scope (video page, other) in memory; its setter and getter are
+found through their `videoScope`/`speed` null checks, and the player service resets every scope to 1x. The
+player takes the stored speed unless the video is live without DVR. While `remember_speed` is on, a pick is
+also kept by name in the SharedPreferences file `lurk_rumble` (Lurk's own state, not the settings), and the
+getter returns it for every scope, also after a restart. While off nothing is kept or returned, and turning it
+on starts from the next pick.
+
+### Fill screen
+
+The phone players are Media3 `PlayerView`s that Rumble always gives the FIT resize mode (the custom
+`SurfaceView` with its own FIT/ZOOM is only used on TV). Rumble sets the mode once and only again when it
+changes, so the patch changes it where `AspectRatioFrameLayout` (inflated from XML, so the name is kept)
+reads it in `onMeasure`. While `fill_screen` is on, in landscape and outside picture-in-picture,
+`RumblePlayer.resizeMode` turns FIT into ZOOM: the video fills the screen and the edges are cropped. Each
+rotation re-measures, so portrait goes back to FIT.
+
+### Keep playing during other sounds
+
+`RumblePlayerService` (named in the manifest) is the player's `OnAudioFocusChangeListener`: it resumes on
+any gain and pauses on any loss. Its `onAudioFocusChange` asks `RumblePlayback.ignoreFocusLoss` first.
+The `audio_focus` choice: 0 (Rumble's), 1 ignores transient losses (`LOSS_TRANSIENT` and
+`LOSS_TRANSIENT_CAN_DUCK`), 2 ignores every loss. A loss is never ignored while the phone is in a call or
+ringing (`AudioManager.getMode()`). Unplugging headphones still pauses.
+
+### Keep screen on while paused
+
+A static helper adds or clears `FLAG_KEEP_SCREEN_ON` on the activity of a `Context` (found as the
+`(Context, boolean)` method calling both `Window.addFlags` and `clearFlags`). The player's state effect
+calls it with "on unless paused or finished, outside an ad"; it is found as the caller that checks the state
+against the Paused class (whose `toString` starts with `Paused(isBuffering=`). The state classes are
+package-private, so the effect reads the state itself (in a register that is dead after the call) and passes
+it to `RumblePlayer.keepScreenOn`, which keeps the screen on for Paused while `keep_screen_on_paused` is on.
+The end of a video and leaving the player still let the screen turn off.
+
+### Sleep timer
+
+The same choices and behavior as Twitch's, in the shared `SleepTimer`: playback pauses the chosen time
+after it last started or resumed. The player service's `Player.Listener` (the inner class checking states 1
+and 4 in `onPlaybackStateChanged`) reports `onIsPlayingChanged` to it. To pause, the extension sends
+`KEYCODE_MEDIA_PAUSE` through `AudioManager.dispatchMediaKeyEvent`: it reaches Rumble's media session and
+its own pause path, also in the background and in picture-in-picture. Twitch's sleep timer uses the same
+class with Twitch's own pause action.
+
+`PlayerProbe` runs the real speed store with the switch on and off, and the focus and keep-screen-on
+decisions.
+
 ## Live chat
 
 Rumble's live chat arrives as JSON events on a chat endpoint (`web7.rumble.com` in testing). Gson parses
@@ -602,7 +658,20 @@ that app code calls every new extension method.
   (on a subscriber's row it blends with Rumble's tint); blocked word "the" leaves none of the 14 visible
   lines with it. Mentions need an account and weren't tried; `KeywordsProbe` covers them.
 - **Don't save searches:** with the switch on, a search for "news" leaves `queries` empty and the search
-  box shows no recent searches. Off, "podcast" is stored and listed under Recent; on again, it is hidden.
+  box shows no recent searches. Off, "podcast" is stored and listed under Recent. Hiding kept rows is
+  covered by `SearchProbe`: signed out, Rumble had already deleted the row at the next launch.
 - **Resume videos when signed out:** search, watch the first result for 40 s, start the second (which saves
   the first at 41 s), go back and open the first again: it continues from 0:41 with the switch on and starts
   at 0:00 with it off. Positions survive a restart.
+- **Remember playback speed:** 1.5x picked on one video; after a force-stop the next video plays at 1.5x
+  (media session speed 1.5). Switch off: 1.0.
+- **Fill screen:** a 16:9 video in landscape fullscreen on the 20:9 emulator fills the width with the switch
+  on and is letterboxed with it off; portrait is unchanged.
+- **Keep playing during other sounds:** another process took audio focus while a VOD played. Rumble's
+  default pauses on a transient request; choice 1 keeps playing through it but pauses for a permanent one;
+  choice 2 keeps playing through both.
+- **Keep screen on while paused:** with a 15 s screen timeout (and stay-awake-while-charging off), a video
+  paused for 30 s keeps the screen awake with the switch on; off, the screen goes to sleep.
+- **Sleep timer:** checked with a test build that counts minutes as seconds: with "15", Rumble logs "sent
+  pause" and its media session goes to PAUSED 15 s after playback starts; Twitch logs "paused 1 native
+  players" 15 s after a stream starts.
