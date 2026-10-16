@@ -6,6 +6,7 @@ internally. This page says how to do each so it lands quickly.
 
 ## Reporting a bug
 
+Not sure it's a bug? Ask in [Discussions](https://github.com/jordanwoodson/lurk-morphe-patches/discussions) first.
 Open a [bug report](https://github.com/jordanwoodson/lurk-morphe-patches/issues/new?template=bug_report.yml).
 It asks for what a fix needs:
 
