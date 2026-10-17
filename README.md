@@ -64,7 +64,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.11.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.11.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;103 patches total
+> **[v1.11.1-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.11.1-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;103 patches total
 <details open>
 <summary><img src="assets/kick-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;26 patches</summary>
 <br>
@@ -100,7 +100,7 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Seek interval | Sets how far the rewind and forward buttons skip in videos and rewound live streams: 5, 15, 20 or 30 seconds instead of 10. Starts at Kick's 10 seconds. Choose another in Lurk settings > Playback. |  |
 | Show deleted messages | Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. A second switch keeps the chat when a moderator clears it. Both on by default, as on Twitch. Turn them off in Lurk settings > Chat. |  |
 | Sleep timer | Pauses playback a chosen time after it last started or resumed, including background audio. Starts off. Choose a time in Lurk settings > Playback. |  |
-| Stay on channel when it hosts | When the channel you're watching hosts another one, stays on it instead of switching when the countdown ends. Kick's Watch now button still switches. Starts off. Turn it on in Lurk settings > Interface. |  |
+| Stay on channel when it hosts | When the channel you're watching hosts another one, Kick's host dialog waits for you instead of switching when its countdown ends: Watch now still switches, Cancel stays. Starts off. Turn it on in Lurk settings > Interface. |  |
 | Third-party emotes | Adds a switch that shows the channel's 7TV emotes, and 7TV's global emotes, in live chat. When on, it sends the channel owner's Kick user ID to 7tv.io and loads emote images from cdn.7tv.app. Not in the emote picker or autocomplete. Starts off. Turn it on in Lurk settings > Chat. |  |
 
 </details>
