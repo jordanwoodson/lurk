@@ -223,7 +223,7 @@ details and validation follow.
 | Clone app | No | None (patch time) | Separate package, permissions and 13 provider authorities; defaults to `com.kick.mobile.lurk`. |
 | Disable analytics | Yes | On | Firebase collection/event bridge, Insider initialization/events/queued jobs, Datadog initialization, Mux/Datazoom and PAL nonce suppression. Promise completion is preserved. |
 | Disable autoplay | Yes | On | Changes the initial feed-preview preference; saved preferences and Kick's own toggle take precedence. |
-| Default video quality | No | On | Configurable adaptive default/Auto ceiling, consistently applied to initialization, reset and cleanup. Explicit player selections retain Kick's normal rules. |
+| Default video quality | No | On; quality on mobile data, Same as on Wi-Fi | Configurable adaptive default/Auto ceiling, consistently applied to initialization, reset and cleanup. Explicit player selections retain Kick's normal rules. A lower starting ceiling can be set for mobile data. |
 | Hide KICKs tipping | No | On | Gift-shop, purchase and leaderboard tipping entry points; received gifts remain. |
 | Hide subscription upsells | No | On | Subscribe/gift-subscription prompts, preserving the subscribed badge. |
 | Hide Clips | No | On | Browse/channel/category tabs and channel clip rail. Direct playback routes remain. |
@@ -399,6 +399,18 @@ The shared sleep timer arms on IVS `play()` and stops tracking a player on `paus
 React Native last played through), whose `pause()` also updates the audio service and lets
 the player controls show Play. Any IVS player still playing three seconds later is paused
 directly. A notice says the timer paused playback.
+
+### Quality on mobile data
+
+Part of Default video quality. Every quality ceiling reaches the player through
+`KickIvsPlayerV2View.setAutoMaxQuality(Integer)`: the starting one, Auto, a picked quality
+and the re-apply on each player state. Kick doesn't remember a pick across videos, so on a
+metered network the choice caps a starting ceiling: none, Kick's 720 or the patch's own
+height. Any other height is a pick and passes through, and Kick's stored values aren't
+changed. Picking exactly 720p (or the patch's height) on mobile data can't be told apart
+from a start and is capped too. Picking Auto is capped, since Auto means "let the app
+decide". It applies when the ceiling is next set (a stream load or a player state change),
+not on a network change mid-stream.
 
 ## Implementation contracts and verification
 
