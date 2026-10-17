@@ -236,6 +236,7 @@ details and validation follow.
 | Stay on channel when it hosts | Yes | Off | The host dialog's countdown no longer switches channels. |
 | Background audio | Yes | On; a second switch for picture-in-picture, off | Audio keeps playing through Kick's own audio service when you leave the app. |
 | Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
+| Sleep timer | Yes | Off (choice) | Pauses playback a chosen time after it last started. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -390,6 +391,14 @@ Kick's player view turns on IVS low-latency mode for every player it creates, an
 else sets it. The patch hooks the IVS SDK's `setLiveLowLatencyEnabled(boolean)`, the same
 hook Lurk uses on Twitch: with the switch on, the request becomes false. It applies to
 streams opened afterwards.
+
+### Sleep timer
+
+The shared sleep timer arms on IVS `play()` and stops tracking a player on `pause()` and
+`release()`, as on Twitch. When it fires, it pauses through Kick's player view (the one
+React Native last played through), whose `pause()` also updates the audio service and lets
+the player controls show Play. Any IVS player still playing three seconds later is paused
+directly. A notice says the timer paused playback.
 
 ## Implementation contracts and verification
 
