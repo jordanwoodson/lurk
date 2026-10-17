@@ -461,6 +461,18 @@ elements and borders) stays. `MainActivity.onCreate` also sets the window backgr
 seen during transitions, to black. The splash screen, drawn before any app code runs,
 stays Kick's `#090A0B`, and colours hardcoded in components stay as they are.
 
+### Third-party emotes (not included)
+
+Third-party (7TV) emotes, which Lurk has for Twitch, can't be added from the app's side
+in this version, because the chat is Kick's web page (see Show deleted messages). The page
+receives live messages over its own realtime connection, so the app's Pusher and
+Centrifugo listeners never see what it draws. Its emote pattern, `\[emote:(\d+):[^\]]+\]`,
+only accepts Kick's numeric emote IDs, not 7TV's 26-character ones, and its images load
+through the WebView rather than the app's OkHttp clients. The app does fetch the history
+the page starts with (`/api/v1/chat/<channel ID>/history`, handed over through
+`window.injectChatHistory`), but 7TV tokens written there would show as raw text. Showing
+7TV emotes on Kick would take a script injected into the chat page.
+
 ## Implementation contracts and verification
 
 The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its function
