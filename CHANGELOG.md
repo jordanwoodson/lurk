@@ -1,3 +1,13 @@
+## [1.10.0-dev.8](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.7...v1.10.0-dev.8) (2026-10-17)
+
+### ✨ New Features
+
+* **kick:** add a seek interval choice ([615667b](https://github.com/jordanwoodson/lurk-morphe-patches/commit/615667bb56a1b4a8fd88c818a4de88b15a59ab24))
+* **kick:** add AMOLED black ([38e2ca1](https://github.com/jordanwoodson/lurk-morphe-patches/commit/38e2ca197216ef5cf127707878a7f026814d6d8f))
+* **kick:** add default startup tab ([2174fee](https://github.com/jordanwoodson/lurk-morphe-patches/commit/2174feeae79ea4ffd55fc5c88d3a4ff046654192))
+* **kick:** hide Home sections ([19fa1d3](https://github.com/jordanwoodson/lurk-morphe-patches/commit/19fa1d35722b9b970cb44e467eebf20105e7f805))
+* **kick:** stop saving searches ([e9834db](https://github.com/jordanwoodson/lurk-morphe-patches/commit/e9834db2d86cc1ccb79a5a726a79aa957d51aae3))
+
 ## [1.10.0-dev.7](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.6...v1.10.0-dev.7) (2026-10-17)
 
 ### ✨ New Features

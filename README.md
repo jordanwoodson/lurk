@@ -64,7 +64,46 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0-dev.7](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.7)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;97 patches total
+> **[v1.10.0-dev.8](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0-dev.8)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;102 patches total
+<details open>
+<summary><img src="assets/kick-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;25 patches</summary>
+<br>
+
+**🎯 Supported versions:**
+
+| 40.32.1 |
+| :---: |
+
+| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
+|----------|----------------|-----------|
+| AMOLED black | Makes Kick's dark background pure black for OLED screens, optionally with near-black cards and sheets. Starts off. Choose it in Lurk settings > Interface. |  |
+| Background audio | Keeps live streams and videos playing as audio when you leave Kick, using Kick's own audio notification. A second switch turns off the automatic picture-in-picture window. On by default, as on Twitch. Turn it off in Lurk settings > Playback. |  |
+| Block update prompts | Stops Kick from asking for or forcing an app update. A patched Kick can't be updated from Google Play, so update by patching a newer version. On by default. Turn it off in Lurk settings > Interface. |  |
+| Bypass VOD ad sessions | Experimental: uses the original VOD URL instead of requesting a separate ad-session manifest. Does not remove ads stitched into live streams. Enable in Lurk settings after patching. |  |
+| Change app name | Changes Kick's name in the launcher and Android settings. | • App name |
+| Clean share links | Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean. |  |
+| Clone app | Installs Kick under another package name alongside the original, with separate sign-in and settings. Sharing sign-in with Kick's broadcaster app may not work after re-signing. | • Package name |
+| Default startup tab | Adds a choice of the screen Kick opens on instead of Home: Browse or Following. Links and notifications still open what they point to. Starts on Home. Choose another in Lurk settings > Interface. |  |
+| Default video quality | Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling. A lower starting ceiling can be set for mobile data in Lurk settings > Playback; it's off until then. | • Default quality ceiling |
+| Disable analytics | Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads. |  |
+| Disable autoplay | Starts Kick's feed previews switched off. Existing preferences and Kick's own autoplay switch keep working. Does not change intentionally opened streams. |  |
+| Don't save searches | Stops Kick from saving what you search for on this device. Searches you saved earlier stay until you remove them. On by default. Turn it off in Lurk settings > Privacy. |  |
+| Hide Clips | Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open. |  |
+| Hide Home sections | Hides the featured carousel, recommended streams and categories rows on Home, each with its own switch. Starts off. Turn them on in Lurk settings > Interface. |  |
+| Hide KICKs tipping | Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt. |  |
+| Hide chat highlights | Hides pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs gifts and celebration prompts, each with its own switch. Lines in the chat itself, including sub and gift messages, are unchanged. Starts off. Turn them on in Lurk settings > Interface. |  |
+| Hide rating prompt | Stops Kick from asking you to rate the app. On by default. Turn it off in Lurk settings > Interface. |  |
+| Hide subscription upsells | Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator. |  |
+| Lurk icon | Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon. |  |
+| Normal latency | Adds a switch that turns off low-latency mode for live streams: a few seconds more delay, fewer rebuffers on weak connections. Starts off. Turn it on in Lurk settings > Playback. |  |
+| Remove tracking permissions | Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
+| Seek interval | Sets how far the rewind and forward buttons skip in videos and rewound live streams: 5, 15, 20 or 30 seconds instead of 10. Starts at Kick's 10 seconds. Choose another in Lurk settings > Playback. |  |
+| Show deleted messages | Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. Chat clears still clear. On by default, as on Twitch. Turn it off in Lurk settings > Chat. |  |
+| Sleep timer | Pauses playback a chosen time after it last started or resumed, including background audio. Starts off. Choose a time in Lurk settings > Playback. |  |
+| Stay on channel when it hosts | When the channel you're watching hosts another one, stays on it instead of switching when the countdown ends. Kick's Watch now button still switches. Starts off. Turn it on in Lurk settings > Interface. |  |
+
+</details>
+
 <details open>
 <summary><img src="assets/twitch-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Twitch</b>&nbsp;&nbsp;•&nbsp;&nbsp;45 patches</summary>
 <br>
@@ -121,40 +160,6 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Use native player | Always opens live channels in Twitch's native player, never the React Native "Ultralight" player a server experiment can switch some users to. Most Lurk playback, chat and ad patches hook the native player. |  |
 | VOD chapters | Adds a Chapters button to the native video (VOD) player that lists the stream's game and category changes and jumps to one through Twitch's own seek. The list comes from Twitch's public data, fetched with the app's client ID. On by default. |  |
 | Watch without signing in | Opens Twitch without an account instead of stopping at the Log In / Sign Up screen, using Twitch's own signed-out mode. Streams, videos and chat can be watched; following, chatting and other account actions still ask you to sign in. Signed-in use is unchanged. |  |
-
-</details>
-
-<details open>
-<summary><img src="assets/kick-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;20 patches</summary>
-<br>
-
-**🎯 Supported versions:**
-
-| 40.32.1 |
-| :---: |
-
-| 💊&nbsp;Patch | 📜&nbsp;Description | ⚙️&nbsp;Options |
-|----------|----------------|-----------|
-| Background audio | Keeps live streams and videos playing as audio when you leave Kick, using Kick's own audio notification. A second switch turns off the automatic picture-in-picture window. On by default, as on Twitch. Turn it off in Lurk settings > Playback. |  |
-| Block update prompts | Stops Kick from asking for or forcing an app update. A patched Kick can't be updated from Google Play, so update by patching a newer version. On by default. Turn it off in Lurk settings > Interface. |  |
-| Bypass VOD ad sessions | Experimental: uses the original VOD URL instead of requesting a separate ad-session manifest. Does not remove ads stitched into live streams. Enable in Lurk settings after patching. |  |
-| Change app name | Changes Kick's name in the launcher and Android settings. | • App name |
-| Clean share links | Removes known campaign and advertising click parameters from kick.com links in share sheets. Keeps timestamps, clip IDs, unknown parameters and fragments. Kick's current share links are already clean. |  |
-| Clone app | Installs Kick under another package name alongside the original, with separate sign-in and settings. Sharing sign-in with Kick's broadcaster app may not work after re-signing. | • Package name |
-| Default video quality | Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling. A lower starting ceiling can be set for mobile data in Lurk settings > Playback; it's off until then. | • Default quality ceiling |
-| Disable analytics | Disables Firebase Analytics collection, Insider and Datadog initialization/events, Mux/Datazoom player analytics and PAL nonce requests. Playback API requests remain necessary to obtain streams. Restart Kick after changing this setting. This does not remove video ads. |  |
-| Disable autoplay | Starts Kick's feed previews switched off. Existing preferences and Kick's own autoplay switch keep working. Does not change intentionally opened streams. |  |
-| Hide Clips | Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open. |  |
-| Hide KICKs tipping | Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt. |  |
-| Hide chat highlights | Hides pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs gifts and celebration prompts, each with its own switch. Lines in the chat itself, including sub and gift messages, are unchanged. Starts off. Turn them on in Lurk settings > Interface. |  |
-| Hide rating prompt | Stops Kick from asking you to rate the app. On by default. Turn it off in Lurk settings > Interface. |  |
-| Hide subscription upsells | Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator. |  |
-| Lurk icon | Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon. |  |
-| Normal latency | Adds a switch that turns off low-latency mode for live streams: a few seconds more delay, fewer rebuffers on weak connections. Starts off. Turn it on in Lurk settings > Playback. |  |
-| Remove tracking permissions | Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
-| Show deleted messages | Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. Chat clears still clear. On by default, as on Twitch. Turn it off in Lurk settings > Chat. |  |
-| Sleep timer | Pauses playback a chosen time after it last started or resumed, including background audio. Starts off. Choose a time in Lurk settings > Playback. |  |
-| Stay on channel when it hosts | When the channel you're watching hosts another one, stays on it instead of switching when the countdown ends. Kick's Watch now button still switches. Starts off. Turn it on in Lurk settings > Interface. |  |
 
 </details>
 
