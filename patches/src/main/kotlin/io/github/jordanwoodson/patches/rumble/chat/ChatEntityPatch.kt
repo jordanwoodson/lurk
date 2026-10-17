@@ -4,7 +4,7 @@ import app.morphe.patcher.patch.bytecodePatch
 import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.RUMBLE_CHAT
-import io.github.jordanwoodson.patches.rumble.shared.bridge
+import io.github.jordanwoodson.patches.shared.bridge
 import io.github.jordanwoodson.patches.rumble.shared.single
 import io.github.jordanwoodson.patches.rumble.shared.toStringGetter
 

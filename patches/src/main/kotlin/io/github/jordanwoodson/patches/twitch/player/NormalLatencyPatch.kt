@@ -3,6 +3,7 @@ package io.github.jordanwoodson.patches.twitch.player
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.bytecodePatch
 import com.android.tools.smali.dexlib2.iface.instruction.TwoRegisterInstruction
+import io.github.jordanwoodson.patches.shared.ivs.IvsLowLatencyFingerprint
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
 import io.github.jordanwoodson.patches.twitch.settings.twitchSettings

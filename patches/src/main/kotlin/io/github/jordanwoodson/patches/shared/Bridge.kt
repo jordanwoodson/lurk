@@ -1,4 +1,4 @@
-package io.github.jordanwoodson.patches.rumble.shared
+package io.github.jordanwoodson.patches.shared
 
 import app.morphe.patcher.extensions.InstructionExtensions.addInstructions
 import app.morphe.patcher.patch.BytecodePatchContext

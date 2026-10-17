@@ -18,7 +18,7 @@ import io.github.jordanwoodson.patches.rumble.settings.rumbleSettings
 import io.github.jordanwoodson.patches.rumble.settings.settingsPatch
 import io.github.jordanwoodson.patches.rumble.shared.Constants.COMPATIBILITY_RUMBLE
 import io.github.jordanwoodson.patches.rumble.shared.RUMBLE_PLAYER
-import io.github.jordanwoodson.patches.rumble.shared.bridge
+import io.github.jordanwoodson.patches.shared.bridge
 import io.github.jordanwoodson.patches.rumble.shared.calls
 import io.github.jordanwoodson.patches.rumble.shared.clickableCall
 import io.github.jordanwoodson.patches.rumble.shared.single

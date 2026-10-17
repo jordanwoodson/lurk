@@ -10,25 +10,7 @@ import app.morphe.patcher.resourceLiteral
 import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 
-private const val IVS_PLAYER = "Lcom/amazonaws/ivs/player/CorePlayerImpl;"
 private const val DRAGGABLE = "Ltv/twitch/android/shared/ui/elements/draggable/"
-
-// IVS's only MediaPlayer, used by every native, portal and React Native player. The SDK keeps its names.
-internal object IvsPlayFingerprint : Fingerprint(
-    definingClass = IVS_PLAYER, name = "play", returnType = "V", parameters = emptyList(),
-)
-
-internal object IvsPauseFingerprint : Fingerprint(
-    definingClass = IVS_PLAYER, name = "pause", returnType = "V", parameters = emptyList(),
-)
-
-internal object IvsReleaseFingerprint : Fingerprint(
-    definingClass = IVS_PLAYER, name = "release", returnType = "V", parameters = emptyList(),
-)
-
-internal object IvsLowLatencyFingerprint : Fingerprint(
-    definingClass = IVS_PLAYER, name = "setLiveLowLatencyEnabled", returnType = "V", parameters = listOf("Z"),
-)
 
 // The base class of the native player presenters (live, VOD, clips, vertical): its property delegates
 // keep their Kotlin names.

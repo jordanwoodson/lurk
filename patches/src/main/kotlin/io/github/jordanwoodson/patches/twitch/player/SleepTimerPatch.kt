@@ -7,6 +7,9 @@ import com.android.tools.smali.dexlib2.AccessFlags
 import com.android.tools.smali.dexlib2.Opcode
 import com.android.tools.smali.dexlib2.iface.instruction.ReferenceInstruction
 import com.android.tools.smali.dexlib2.iface.reference.MethodReference
+import io.github.jordanwoodson.patches.shared.ivs.IvsPauseFingerprint
+import io.github.jordanwoodson.patches.shared.ivs.IvsPlayFingerprint
+import io.github.jordanwoodson.patches.shared.ivs.IvsReleaseFingerprint
 import io.github.jordanwoodson.patches.shared.settings.ChoiceSetting
 import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.requireLocals
