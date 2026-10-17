@@ -153,6 +153,9 @@ bash bin/test-twitch "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"       # inject
 bash bin/test-twitch-privacy "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"
 ```
 
+- The emulator's host renderer keeps about 400 MB for every app process that is killed, so a day of
+  force-stops and relaunches adds up. `bin/emu status` shows its size; `bin/emu stop` then `bin/emu start`
+  releases it. On Linux it runs under a 12 GB memory cap.
 - `bin/test-<app>` and the other `bin/test-twitch-*` scripts compile a probe from `tests/<app>/`
   with the Android SDK, push it with the patched APK and run it with `app_process`, so the
   probe calls the app's real, patched methods on ART. Several accept `--compile-only`.
@@ -160,6 +163,9 @@ bash bin/test-twitch-privacy "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"
   patched apktool output, decode Hermes bundles, or compile an extension helper against small
   stubs and run it on the JVM. Each docstring gives the usage. They honor `MORPHE_WORK` and
   `JAVA_HOME`.
+- `tests/verify_extension_calls.py <patched.apk> Class.method ...` checks that app code calls each
+  named extension method. Run it after adding a hook: an injected call can vanish without an error
+  (see below).
 - `bin/decompile <app>` decodes the stock APK; decode a patched one the same way for the Python
   checks: `java -jar tools/apktool_*.jar d -f -p "$MORPHE_WORK/apktool-framework" -o <dir> <patched.apk>`.
 
@@ -172,6 +178,13 @@ worth pinning, and say in the pull request what you ran.
 - Work on the `dev` branch. Pushing `feat:` or `fix:` commits there makes `release.yml` publish a
   pre-release; `chore:` commits don't release but still build. Merge `dev` into `main` (no squash)
   for a stable release; `open_pull_request.yml` keeps a `dev` → `main` PR open for that.
+- `release.yml` runs `.github/scripts/release.py`. The version comes from the commits since the last
+  release tag on the branch: `feat` is a minor release, `fix`, `perf` and `bump` a patch, `feat!:` or a
+  `BREAKING CHANGE:` footer a major one; `dev` adds `-dev.N`. The script writes the generated files,
+  builds the bundle, pushes the release commit and its tag together, then creates the GitHub release with
+  the `.mpp`. If that last step fails, the next run (or "Run workflow" on the Release workflow) publishes
+  the missing release. A stable release is merged back into `dev`. To preview the next release and its
+  notes: `git fetch && python3 .github/scripts/release.py --dry-run --branch dev`.
 - Use semantic commit messages: `feat(twitch): ...`, `fix(kick): ...`, `chore: ...`.
 - Don't hand-edit generated files: `patches-list.json`, `patches-bundle.json`, `CHANGELOG.md`, or
   the patch list in `README.md` (written by `.github/scripts/generate_patches_readme.py`). Don't

@@ -107,7 +107,7 @@ diff doesn't.
 
 ## Releases
 
-The maintainer merges `dev` into `main` without squashing; semantic-release builds the
+The maintainer merges `dev` into `main` without squashing; the release workflow builds the
 bundle, writes the changelog and patch list, and publishes the GitHub release that Manager
 picks up. Pre-releases come from `dev` the same way.
 

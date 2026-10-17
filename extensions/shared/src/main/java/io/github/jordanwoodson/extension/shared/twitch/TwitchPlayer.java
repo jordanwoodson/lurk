@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 import io.github.jordanwoodson.extension.shared.Logger;
+import io.github.jordanwoodson.extension.shared.SleepTimer;
 import io.github.jordanwoodson.extension.shared.settings.Settings;
 
 /**
@@ -55,26 +56,25 @@ public final class TwitchPlayer {
     // ---------------------------------------------------------------------------------------------
     // Sleep timer
 
-    /** IVS players that were started and not paused or released since. */
-    private static final Map<Object, Boolean> STARTED = Collections.synchronizedMap(new WeakHashMap<>());
     /** Twitch's own set of players to pause, the one it pauses before a Guest Star call. */
     private static volatile WeakReference<Set<?>> pauseRegistry = new WeakReference<>(null);
-    private static final Runnable SLEEP = TwitchPlayer::sleep;
     private static final Runnable SLEEP_LEFTOVERS = TwitchPlayer::pauseLeftovers;
+
+    static {
+        SleepTimer.setPauseAction(TwitchPlayer::pauseAll);
+    }
 
     /**
      * Injection point: the start of IVS CorePlayerImpl.play(), which every native, portal and React
      * Native start or resume reaches. (Re)arms the timer from now. May run on any thread.
      */
     public static void onPlay(Object player) {
-        if (player == null) return;
-        STARTED.put(player, Boolean.TRUE);
-        MAIN.post(TwitchPlayer::armSleepTimer);
+        SleepTimer.onPlay(player);
     }
 
     /** Injection point: the start of IVS CorePlayerImpl.pause() and release(). */
     public static void onStop(Object player) {
-        if (player != null) STARTED.remove(player);
+        SleepTimer.onStop(player);
     }
 
     /** Injection point: Twitch adding a player to its pause-everything registry. */
@@ -82,18 +82,8 @@ public final class TwitchPlayer {
         if (registry != null && pauseRegistry.get() != registry) pauseRegistry = new WeakReference<>(registry);
     }
 
-    private static void armSleepTimer() {
-        MAIN.removeCallbacks(SLEEP);
-        int minutes = Settings.getInt("sleep_timer");
-        if (minutes > 0) MAIN.postDelayed(SLEEP, minutes * 60_000L);
-    }
-
-    private static void sleep() {
-        if (Settings.getInt("sleep_timer") <= 0) return;
-        if (STARTED.isEmpty()) {
-            Logger.d("sleep timer: nothing is playing");
-            return;
-        }
+    /** The sleep timer's pause action: Twitch's own pause paths, then any player they missed. */
+    private static void pauseAll() {
         int registered = 0;
         Set<?> registry = pauseRegistry.get();
         if (registry != null) {
@@ -114,18 +104,13 @@ public final class TwitchPlayer {
         boolean feed = callRn("com.twitchrn.player.FeedPlayerRegistry", "pauseActiveFeedPlayer", true);
         Logger.d("sleep timer: paused " + registered + " native players, React Native session " + session
                 + ", feed " + feed);
-        toast("Sleep timer: playback paused");
         MAIN.removeCallbacks(SLEEP_LEFTOVERS);
         MAIN.postDelayed(SLEEP_LEFTOVERS, 3000);
     }
 
     /** A player none of Twitch's paths reached, such as a native feed preview: pause it directly. */
     private static void pauseLeftovers() {
-        List<Object> players;
-        synchronized (STARTED) {
-            players = new ArrayList<>(STARTED.keySet());
-        }
-        for (Object player : players) {
+        for (Object player : SleepTimer.started()) {
             try {
                 player.getClass().getMethod("pause").invoke(player);
                 Logger.d("sleep timer: paused a player Twitch's paths missed");

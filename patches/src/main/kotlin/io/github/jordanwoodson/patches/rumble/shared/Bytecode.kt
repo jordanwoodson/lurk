@@ -87,6 +87,8 @@ internal fun dtoGetterFingerprint(dtoClass: String, field: String, type: String)
     returnType = type,
     parameters = emptyList(),
     filters = listOf(fieldAccess(definingClass = "this", name = field, type = type)),
+    // toString() reads every field too.
+    custom = { method, _ -> method.name != "toString" },
 )
 
 /** The static field holding the enum constant named [name] (R8 renames the fields, not the names). */

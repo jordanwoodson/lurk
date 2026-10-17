@@ -1,20 +1,9 @@
 package io.github.jordanwoodson.patches.rumble.shorts
 
 import app.morphe.patcher.Fingerprint
-import app.morphe.patcher.StringComparisonType
 import app.morphe.patcher.fieldAccess
-import app.morphe.patcher.string
 import com.android.tools.smali.dexlib2.Opcode
 import io.github.jordanwoodson.patches.rumble.shared.composableFingerprint
-
-// The bottom bar's content lambda, which loops over the tab list and draws one item per tab.
-internal object BottomNavigationBarFingerprint : Fingerprint(
-    returnType = "V",
-    filters = listOf(
-        string("\$this\$RumbleBottomNavigation"),
-        string("com.rumble.battles.navigation.BottomNavigationBar.<anonymous> (", StringComparisonType.STARTS_WITH),
-    ),
-)
 
 // The horizontal Shorts row (title, "View all" and cards) on Home, My Feed, channels, search and
 // My Videos.

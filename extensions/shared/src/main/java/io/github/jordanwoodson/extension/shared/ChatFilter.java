@@ -1,0 +1,175 @@
+package io.github.jordanwoodson.extension.shared;
+
+import android.content.Context;
+import android.os.Build;
+import android.os.SystemClock;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
+import android.os.VibratorManager;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import io.github.jordanwoodson.extension.shared.settings.Settings;
+
+/**
+ * Chat keywords, shared by the apps: the verdict on a chat message from the Lurk settings, whether it mentions
+ * you or has a highlight word (highlight) or a blocked word or sender (hide). The apps supply the signed-in
+ * account and do the marking, hiding and tinting.
+ */
+public final class ChatFilter {
+    public static final String KEY = "chat_keywords";
+    public static final String MENTIONS = "chat_highlight_mentions";
+    public static final String HIGHLIGHT_WORDS = "chat_highlight_words";
+    public static final String VIBRATE = "chat_highlight_vibrate";
+    public static final String BLOCKED_WORDS = "chat_blocked_words";
+    public static final String BLOCKED_USERS = "chat_blocked_users";
+
+    public static final int NONE = 0;
+    public static final int HIGHLIGHT = 1;
+    public static final int HIDE = 2;
+
+    private static final long VIBRATE_GAP_MS = 3000;
+
+    private static final Set<String> vibrated = Collections.newSetFromMap(new LinkedHashMap<String, Boolean>() {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+            return size() > 64;
+        }
+    });
+    private static long lastVibration;
+    private static volatile Lists lists;
+
+    private ChatFilter() {
+    }
+
+    /** The settings as patterns, rebuilt when one of them or the signed-in account changes. */
+    public static final class Lists {
+        final String rawBlockedWords;
+        final String rawBlockedUsers;
+        final String rawHighlightWords;
+        final boolean mentions;
+        /** The signed-in login, lowercase; "" when signed out. Its own messages are never mentions. */
+        public final String self;
+        final String selfName;
+        final Pattern blockedWords;
+        final Pattern highlightWords;
+        final Pattern mention;
+        final Set<String> blockedUsers = new HashSet<>();
+
+        Lists(String blockedWords, String blockedUsers, String highlightWords, boolean mentions, String self,
+              String selfName) {
+            rawBlockedWords = blockedWords;
+            rawBlockedUsers = blockedUsers;
+            rawHighlightWords = highlightWords;
+            this.mentions = mentions;
+            this.self = self;
+            this.selfName = selfName;
+            this.blockedWords = wordsPattern(entries(blockedWords));
+            this.highlightWords = wordsPattern(entries(highlightWords));
+            for (String user : entries(blockedUsers)) {
+                while (user.startsWith("@")) user = user.substring(1);
+                if (!user.isEmpty()) this.blockedUsers.add(user.toLowerCase(Locale.ROOT));
+            }
+            List<String> names = new ArrayList<>();
+            if (mentions && !self.isEmpty()) {
+                names.add(self);
+                if (!selfName.isEmpty() && !selfName.equalsIgnoreCase(self)) names.add(selfName);
+            }
+            this.mention = wordsPattern(names);
+        }
+
+        boolean matches(String blockedWords, String blockedUsers, String highlightWords, boolean mentions,
+                        String self, String selfName) {
+            return rawBlockedWords.equals(blockedWords) && rawBlockedUsers.equals(blockedUsers)
+                    && rawHighlightWords.equals(highlightWords) && this.mentions == mentions
+                    && this.self.equals(self) && this.selfName.equals(selfName);
+        }
+    }
+
+    /** Whether Chat keywords is on. */
+    public static boolean enabled() {
+        return Settings.isEnabled(KEY);
+    }
+
+    /**
+     * The current lists for the signed-in account: {@code self} its login and {@code selfName} another name
+     * that mentions it (a display name), both lowercase, "" when signed out or unknown.
+     */
+    public static Lists lists(String self, String selfName) {
+        String blockedWords = Settings.getText(BLOCKED_WORDS);
+        String blockedUsers = Settings.getText(BLOCKED_USERS);
+        String highlightWords = Settings.getText(HIGHLIGHT_WORDS);
+        boolean mentions = Settings.isEnabled(MENTIONS);
+        Lists current = lists;
+        if (current == null || !current.matches(blockedWords, blockedUsers, highlightWords, mentions, self, selfName)) {
+            lists = current = new Lists(blockedWords, blockedUsers, highlightWords, mentions, self, selfName);
+        }
+        return current;
+    }
+
+    /** Hidden for a blocked user or word, highlighted for a mention of you or a highlight word. */
+    public static int classify(String login, String text, Lists current) {
+        String sender = login == null ? "" : login.toLowerCase(Locale.ROOT);
+        if (text == null) text = "";
+        if (!sender.isEmpty() && current.blockedUsers.contains(sender)) return HIDE;
+        if (current.blockedWords != null && current.blockedWords.matcher(text).find()) return HIDE;
+        if (current.mention != null && !sender.equals(current.self) && current.mention.matcher(text).find()) {
+            return HIGHLIGHT;
+        }
+        if (current.highlightWords != null && current.highlightWords.matcher(text).find()) return HIGHLIGHT;
+        return NONE;
+    }
+
+    /** The entries of a comma- (or line-) separated list, trimmed, without empty ones. */
+    public static List<String> entries(String list) {
+        List<String> entries = new ArrayList<>();
+        for (String entry : list.split("[,\n]")) {
+            String trimmed = entry.trim();
+            if (!trimmed.isEmpty()) entries.add(trimmed);
+        }
+        return entries;
+    }
+
+    /** Any of {@code words} as a whole word (not inside a longer word), in any case. Null for no words. */
+    public static Pattern wordsPattern(List<String> words) {
+        if (words.isEmpty()) return null;
+        StringBuilder alternatives = new StringBuilder();
+        for (String word : words) {
+            if (alternatives.length() > 0) alternatives.append('|');
+            alternatives.append(Pattern.quote(word));
+        }
+        return Pattern.compile("(?<![\\p{L}\\p{N}_])(?:" + alternatives + ")(?![\\p{L}\\p{N}_])",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    }
+
+    /**
+     * A short vibration for a highlighted message, once per message {@code id} and at most every three
+     * seconds. Only call it while the vibrate switch is on.
+     */
+    public static void vibrate(Context context, String id) {
+        synchronized (vibrated) {
+            if (id != null && !vibrated.add(id)) return;
+            long now = SystemClock.elapsedRealtime();
+            if (now - lastVibration < VIBRATE_GAP_MS) return;
+            lastVibration = now;
+        }
+        if (context == null) return;
+        Vibrator vibrator;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            VibratorManager manager = context.getSystemService(VibratorManager.class);
+            vibrator = manager == null ? null : manager.getDefaultVibrator();
+        } else {
+            vibrator = context.getSystemService(Vibrator.class);
+        }
+        if (vibrator == null || !vibrator.hasVibrator()) return;
+        vibrator.vibrate(VibrationEffect.createOneShot(120, VibrationEffect.DEFAULT_AMPLITUDE));
+    }
+}

@@ -37,18 +37,21 @@ public final class KickBundle {
             if (context == null) throw new IllegalStateException("No application context");
             JSONObject manifest = new JSONObject(new String(read(assets, "lurk-hermes.json", 1024 * 1024),
                     StandardCharsets.UTF_8));
-            if (manifest.getInt("format") != 1 || manifest.getInt("version") != 99) {
+            if (manifest.getInt("format") != 2 || manifest.getInt("version") != 99) {
                 throw new IllegalArgumentException("Unknown bundle manifest");
             }
             JSONArray edits = manifest.getJSONArray("edits");
-            // Each process gets a single snapshot.
-            Map<String, Boolean> snapshot = new HashMap<>();
+            // Each process gets a single snapshot: "true" or "false" for a switch, the number for a choice.
+            Map<String, String> snapshot = new HashMap<>();
             boolean defaults = true;
             for (int i = 0; i < edits.length(); i++) {
                 JSONObject edit = edits.getJSONObject(i);
                 String key = edit.getString("key");
-                if (!snapshot.containsKey(key)) snapshot.put(key, Settings.isEnabled(key));
-                if (snapshot.get(key) != edit.getBoolean("default")) defaults = false;
+                if (!snapshot.containsKey(key)) {
+                    snapshot.put(key, edit.has("values") ? String.valueOf(Settings.getInt(key))
+                            : String.valueOf(Settings.isEnabled(key)));
+                }
+                if (!snapshot.get(key).equals(String.valueOf(edit.get("default")))) defaults = false;
             }
             File output = new File(context.getCodeCacheDir(), "lurk-kick.hbc");
             if (defaults) {
@@ -68,16 +71,14 @@ public final class KickBundle {
                 JSONObject edit = edits.getJSONObject(i);
                 int offset = edit.getInt("offset");
                 byte[] original = unhex(edit.getString("original"));
-                byte[] replacement = unhex(edit.getString("replacement"));
-                if (original.length == 0 || original.length != replacement.length || offset < previousEnd ||
-                        offset > bundle.length - 20 - original.length) {
+                if (original.length == 0 || offset < previousEnd || offset > bundle.length - 20 - original.length) {
                     throw new IllegalArgumentException("Invalid bundle edit range");
                 }
-                byte[] expected = edit.getBoolean("default") ? replacement : original;
+                byte[] expected = bytesFor(edit, String.valueOf(edit.get("default")), original);
                 if (!Arrays.equals(expected, Arrays.copyOfRange(bundle, offset, offset + expected.length))) {
                     throw new IllegalArgumentException("Bundle edit mismatch");
                 }
-                byte[] selected = snapshot.get(edit.getString("key")) ? replacement : original;
+                byte[] selected = bytesFor(edit, snapshot.get(edit.getString("key")), original);
                 System.arraycopy(selected, 0, bundle, offset, selected.length);
                 previousEnd = offset + original.length;
             }
@@ -103,6 +104,19 @@ public final class KickBundle {
             Logger.d("Kick Hermes: using embedded defaults: " + e);
             return null;
         }
+    }
+
+    /**
+     * The bytes an edit writes for a setting value: a switch's replacement while "true", a choice's entry
+     * for the value, or else the original. Every candidate must have the original's length.
+     */
+    private static byte[] bytesFor(JSONObject edit, String value, byte[] original) throws Exception {
+        JSONObject values = edit.optJSONObject("values");
+        String selected = values == null ? ("true".equals(value) ? edit.getString("replacement") : null)
+                : values.optString(value, null);
+        byte[] bytes = selected == null ? original : unhex(selected);
+        if (bytes.length != original.length) throw new IllegalArgumentException("Invalid bundle edit length");
+        return bytes;
     }
 
     private static byte[] read(AssetManager assets, String path, int limit) throws Exception {

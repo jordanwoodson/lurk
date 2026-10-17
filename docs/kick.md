@@ -7,9 +7,10 @@ classes or Compose UI. Kick uses React Native/Expo, Hermes bytecode and native
 player modules. Several features are good candidates for independent Kick patches.
 
 The assessment below, up to "Workspace result", was the starting point and is kept as
-it was written. Twelve Kick patches have since been implemented; the notes from
+it was written. Twelve Kick patches were implemented from it, and a second batch,
+inspired by Xtra and by Lurk's own Twitch patches, added more. The notes from
 "Implemented patch set" on describe them and separate tested behavior from the
-remaining limitations.
+remaining limitations. Everything is checked against Kick 40.32.1.
 
 ## Input and analysis
 
@@ -214,20 +215,41 @@ details and validation follow.
 
 ## Implemented patch set
 
-| Patch | Selected by default | Behavior |
-| --- | --- | --- |
-| Change app name | No | Configurable launcher label; default `Kick Lurk`. |
-| Lurk icon | Yes | Adaptive Lurk icon in Kick green, including themed icon. |
-| Remove tracking permissions | Yes | Removes the four verified advertising/referrer permissions. |
-| Clone app | No | Separate package, permissions and 13 provider authorities; defaults to `com.kick.mobile.lurk`. |
-| Disable analytics | Yes | Firebase collection/event bridge, Insider initialization/events/queued jobs, Datadog initialization, Mux/Datazoom and PAL nonce suppression. Promise completion is preserved. |
-| Disable autoplay | Yes | Changes the initial feed-preview preference; saved preferences and Kick's own toggle take precedence. |
-| Default video quality | No | Configurable adaptive default/Auto ceiling, consistently applied to initialization, reset and cleanup. Explicit player selections retain Kick's normal rules. |
-| Hide KICKs tipping | No | Gift-shop, purchase and leaderboard tipping entry points; received gifts remain. |
-| Hide subscription upsells | No | Subscribe/gift-subscription prompts, preserving the subscribed badge. |
-| Hide Clips | No | Browse/channel/category tabs and channel clip rail. Direct playback routes remain. |
-| Clean share links | Yes | Known campaign/click parameters on Kick URLs only; functional parameters, other hosts and attachments remain. |
-| Bypass VOD ad sessions | No | Experimental original-VOD-URL fallback. Its runtime switch also starts off. No live-ad removal claim. |
+| Patch | Selected by default | Lurk settings | Behavior |
+| --- | --- | --- | --- |
+| Change app name | No | None (patch time) | Configurable launcher label; default `Kick Lurk`. |
+| Lurk icon | Yes | None (patch time) | Adaptive Lurk icon in Kick green, including themed icon. |
+| Remove tracking permissions | Yes | None (patch time) | Removes the four verified advertising/referrer permissions. |
+| Clone app | No | None (patch time) | Separate package, permissions and 13 provider authorities; defaults to `com.kick.mobile.lurk`. |
+| Disable analytics | Yes | On | Firebase collection/event bridge, Insider initialization/events/queued jobs, Datadog initialization, Mux/Datazoom and PAL nonce suppression. Promise completion is preserved. |
+| Disable autoplay | Yes | On | Changes the initial feed-preview preference; saved preferences and Kick's own toggle take precedence. |
+| Default video quality | No | On; quality on mobile data, Same as on Wi-Fi | Configurable adaptive default/Auto ceiling, consistently applied to initialization, reset and cleanup. Explicit player selections retain Kick's normal rules. A lower starting ceiling can be set for mobile data. |
+| Hide KICKs tipping | No | On | Gift-shop, purchase and leaderboard tipping entry points; received gifts remain. |
+| Hide subscription upsells | No | On | Subscribe/gift-subscription prompts, preserving the subscribed badge. |
+| Hide Clips | No | On | Browse/channel/category tabs and channel clip rail. Direct playback routes remain. |
+| Clean share links | Yes | On | Known campaign/click parameters on Kick URLs only; functional parameters, other hosts and attachments remain. |
+| Bypass VOD ad sessions | No | Off | Experimental original-VOD-URL fallback. No live-ad removal claim. |
+| Block update prompts | Yes | On | Kick's forced-update screen and update sheet, and the Play Store version lookup behind them. |
+| Hide rating prompt | Yes | On | Kick's automatic "rate the app" prompts. |
+| Show deleted messages | Yes | On | Moderator-style struck-through deleted, timed-out and banned messages in chat. |
+| Hide chat highlights | Yes | Eight switches, all off | Pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs, celebration prompts. |
+| Stay on channel when it hosts | Yes | Off | The host dialog's countdown no longer switches channels. |
+| Background audio | Yes | On; a second switch for picture-in-picture, off | Audio keeps playing through Kick's own audio service when you leave the app. |
+| Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
+| Sleep timer | Yes | Off (choice) | Pauses playback a chosen time after it last started. |
+| Default startup tab | Yes | Home (choice) | Opens Kick on Browse or Following instead. |
+| Hide Home sections | Yes | Three switches, all off | Featured, recommended streams and categories rows on Home. |
+| Seek interval | Yes | Kick's 10 seconds (choice) | 5, 15, 20 or 30-second skips in videos and rewound live streams. |
+| Don't save searches | Yes | On | New searches aren't added to the search history. |
+| AMOLED black | Yes | Off (choice) | Pure black background, optionally near-black cards and sheets. |
+
+The second batch follows one switch policy, the same in all three apps: every patch whose
+effect can be decided at run time has a Lurk setting that turns it fully off, and a new
+patch with a switch is selected by default while its switch starts off, so a freshly
+patched app behaves like stock until you turn something on. The exceptions start on:
+lockout protection (Block update prompts), nags (Hide rating prompt), local privacy (Don't
+save searches), and features that match what the same patch does by default on Twitch
+(Show deleted messages, Background audio).
 
 There is no cookie-notice or Premium-unlock patch: no corresponding Kick feature
 was established. The VOD patch does not promise removal of ads already stitched
@@ -244,31 +266,266 @@ Hermes patches disable Expo OTA updates, including the controller path that read
 the update database. Native-only combinations leave Expo enabled. Repatch with a
 supported new app version to receive JavaScript updates.
 
+## Second batch
+
+Each entry says what Kick does, what the patch changes and how it was checked. Hermes
+switches take effect after **Restart Kick** on the Lurk settings screen; native ones apply
+at once. Function names are Kick's own JavaScript names; anonymous functions are found by
+the properties they read and the strings they load.
+
+### Block update prompts
+
+Kick's root layout renders `AppUpdateHandler`. On start it compares the remote minimum
+version (`mobileAndroidForcedUpdateVersion`) and the suggested-update flags with the
+installed version, asks Google Play for the store version, and stores the result. A child
+then opens the forced-update screen, which can't be dismissed, after five seconds, or
+shows an "update available" sheet. A patched app can't take a Play update, so the patch
+returns null from `AppUpdateHandler`: neither prompt shows and the Play lookup doesn't
+run. It is a leaf of the root layout with no children, and nothing else calls the check.
+Expo's own over-the-air updates are already off whenever Kick's JavaScript is patched.
+If Kick's server ever rejects an old version, you won't see Kick's warning: patch a newer
+version. Checked: Kick starts and renders Home with the switch on; the forced path can't
+be triggered from outside.
+
+### Hide rating prompt
+
+`useAppRating` opens Kick's rating sheet after a won prediction, a number of follows or a
+redeemed reward, through `showAppRatingDialog`. That asks the rating store's
+`shouldShowAppRating` first (never shown, or more than 120 days ago), and the patch makes
+it return false. The developer-settings button that forces the sheet is untouched. The
+triggers need an account, so this was checked statically.
+
+### Show deleted messages
+
+The app doesn't draw chat messages itself. On the stream screen and on a channel's Chat tab,
+`HTMLChatWrapper` opens Kick's chat web page, `https://chat.mobile.kick.com`, in a WebView
+and passes it a JSON `config` URL parameter: the chatroom and channel IDs, the viewer's
+`userCanModerate`, text size, locale and session headers. The page keeps its own realtime
+connection and draws every chat line, including deletions, bans, subs, gifts, hosts and
+reward redemptions. The app's own chat store has handlers for the same events
+(`handleDeleteChatMessageEvent`, `handleClearChatEvent`, `handleSubscriptionEvent` and
+others), but in 40.32.1 nothing calls most of them, and the entries it keeps are only drawn
+by VOD chat replay. Chat lines can only be changed through that config.
+
+The page shows a removed message according to `userCanModerate`. When it's false, a deleted
+message's text becomes "Deleted by a moderator" and a ban or timeout removes the user's
+messages. When it's true, the text is struck through with "(Deleted)", "(Timed out)" or
+"(Banned)", with Kick's "AI Mod" label and the rules it flagged when its AI moderation
+acted, and lines such as "X timed out Y for 10 minutes", "X banned Y" and "X unbanned Y"
+appear. The patch makes the config builder, the function that loads the chat page's URL,
+store `true` in the slot its object literal names `userCanModerate`. The app's own
+`userCanModerate`, which its moderation menus read, doesn't change. The page uses the value
+for one control too: large (mid and high tier) KICKs gifts in chat get the moderators' menu
+with Delete, which sends the app the same delete request a moderator's tap would. Kick's
+server is expected to refuse it from anyone else; that wasn't tested. The config is part of
+the page's URL, so Kick's server also sees the value in the request for the page.
+
+Messages removed before you opened the chat don't come back: history arrives without them.
+The page only marks messages it has already drawn. Kick's AI moderation often removes a
+message within milliseconds, while it's still waiting in the page's queue, and such a message
+then shows as an ordinary one, as in stock Kick. Twitch's second switch, "Ignore chat
+clears", has no Kick counterpart: the page clears itself when a moderator clears the chat,
+and the config has no way to stop it.
+
+Checked on the emulator (Android 16, signed out) on a large live channel's Chat tab, by
+screenshots and the realtime event log: with the switch on, both timeouts in six minutes left
+the user's messages in place marked "(Timed out)" and added "moderator timed out X for 2
+minutes"; with it off and Kick restarted, a timeout removed the user's message and added no
+line, as in stock. Manual deletes and bans didn't happen during the tests; they go through the
+same flag.
+
+### Hide chat highlights
+
+| Switch | What it changes | Hidden |
+| --- | --- | --- |
+| Hide pinned messages | `PinnedMessage` returns null | The message pinned above chat |
+| Hide polls and predictions | `PollFloating`, `PredictionBannerView` return null | Poll and prediction cards; a hidden poll can't be voted in |
+| Hide goals | `FloatingGoalCard` returns null | The channel goal card |
+| Hide sub and gift cards | The sub and gift card callbacks return | The "just subscribed" and gift cards above chat |
+| Hide host cards | The host card callback returns | The "is hosting" card above chat |
+| Hide event and drops banners | `DropsBanner`, `StreamEventBanner` return null | Drops campaign and "Only on Kick" event banners |
+| Hide pinned KICKs | `PinnedKicks` returns null | KICKs gifts pinned above chat |
+| Hide celebration prompts | `ConsumingCelebration` returns null | The celebration button in the chat footer |
+
+The components' parents are ordinary lists and footers, so the space closes up. A new
+subscriber, a gift and a host each queue a timed card (`EventBanner`) in the floating stack
+above chat, where pinned messages, polls and goals also live. Three anonymous callbacks, which
+Kick's realtime listeners call, queue them; they now return at once. The lines for the same
+events inside the chat come from Kick's chat web page (see Show deleted messages) and still
+show, and so do reward redemptions, which only appear there; the app's own sub, gift, host and
+reward handlers are never called. Pinned KICKs sits here rather than under Hide KICKs tipping
+because it shows a gift someone already sent. Checked on the emulator: the pinned KICKs and
+prediction cards disappear, and with the sub callbacks returning no sub card appeared above
+chat while "just subscribed!" lines kept showing in the chat page.
+
+### Stay on channel when it hosts
+
+When the channel you watch hosts another one, `JoinHostDialogContent` starts a countdown
+whose end callback switches to the hosted channel if you're on a stream, clip or VOD
+screen. The patch returns from that callback, so the dialog stays at zero with its buttons:
+Watch now still switches and closing it keeps you where you are. Hosting can't be
+triggered on demand, so this was checked statically.
+
+### Background audio
+
+Kick already keeps audio going with the screen locked and in picture-in-picture: its
+`KickIvsPlayerV2Manager.shouldRunAudioService()` is `isPlaying && (screen locked ||
+picture-in-picture)`, and `AudioService` is a media-playback foreground service with a
+notification. Leaving the app without picture-in-picture (the device has none, or the
+second switch is on) starts nothing, so the audio stops once Android freezes the app.
+
+The patch starts Kick's audio service from `MainActivity.onUserLeaveHint()`, while Kick is
+still in front, which Android allows; starting it later from the background would throw.
+`shouldRunAudioService()` then also returns true while Kick was left playing, so the player
+state changes, unlock and resume that would stop the service keep it, and
+`onActivityResume` hands control back to Kick's own rule. With background audio on and
+picture-in-picture off by default, the only change from stock is where Kick couldn't open
+picture-in-picture: the audio keeps playing. Closing the picture-in-picture window still
+pauses, as in stock. "No automatic picture-in-picture" skips Kick's automatic window when
+you leave while watching: both the window Kick opens from `onUserLeaveHint` and, on
+Android 12 and later, the system's auto-enter, which Kick turns on in the window's
+picture-in-picture parameters (`updatePipParams`). Kick's own picture-in-picture button
+still works. Checked on the emulator (Android 16), signed out, on a live stream: with
+the defaults, Home opens picture-in-picture and `AudioService` runs in the foreground as
+in stock; with automatic picture-in-picture off, Home leaves no window, `AudioService`
+runs in the foreground and the stream's audio track keeps playing.
+
+### Normal latency
+
+Kick's player view turns on IVS low-latency mode for every player it creates, and nothing
+else sets it. The patch hooks the IVS SDK's `setLiveLowLatencyEnabled(boolean)`, the same
+hook Lurk uses on Twitch: with the switch on, the request becomes false. It applies to
+streams opened afterwards.
+
+### Sleep timer
+
+The shared sleep timer arms on IVS `play()` and stops tracking a player on `pause()` and
+`release()`, as on Twitch. When it fires, it pauses through Kick's player view (the one
+React Native last played through), whose `pause()` also updates the audio service and lets
+the player controls show Play. Any IVS player still playing three seconds later is paused
+directly. A notice says the timer paused playback.
+
+### Quality on mobile data
+
+Part of Default video quality. Every quality ceiling reaches the player through
+`KickIvsPlayerV2View.setAutoMaxQuality(Integer)`: the starting one, Auto, a picked quality
+and the re-apply on each player state. Kick doesn't remember a pick across videos, so on a
+metered network the choice caps a starting ceiling: none, Kick's 720 or the patch's own
+height. Any other height is a pick and passes through, and Kick's stored values aren't
+changed. Picking exactly 720p (or the patch's height) on mobile data can't be told apart
+from a start and is capped too. Picking Auto is capped, since Auto means "let the app
+decide". It applies when the ceiling is next set (a stream load or a player state change),
+not on a network change mid-stream.
+
+### Default startup tab
+
+Kick is an Expo Router app: links go through `Linking.getInitialURL()`, which reads the
+activity's intent when its action is VIEW. Its link mapper already turns
+`https://kick.com/browse` into Browse and `https://kick.com/following` into Following. On a
+fresh start from the launcher (no saved state, no link), the patch makes the launch intent
+such a link before `MainActivity.onCreate` reads it. Links, notifications and restored
+activities keep their own intent, and since the activity is `singleTask`, returning to a
+running Kick keeps the current screen.
+
+### Hide Home sections
+
+`HomePageIndex` renders `FeaturedStreamsRow`, `RecommendedStreamsRow` and `CategoriesRow`,
+then the sections Kick's server configures. Each row loads its own data and shows its own
+loading placeholder, so returning null removes it and its placeholder; the server
+sections move up. The recommended row only shows when signed in.
+
+### Seek interval
+
+Kick's player config holds `controls.skip.scale = {livestream: [60], vod: [10, 10, 10],
+'live-vod': [10, 10, 10], clip: [10]}`. The `vod` and `live-vod` arrays read the same three
+integers in the literal buffer, and nothing else reads them, so a choice edit rewrites the
+three values. The live-edge and clip arrays share their bytes with unrelated literals and
+stay.
+
+### Don't save searches
+
+The search-history store's `addHistoryEntry` prepends each query. It returns at its
+opening guard instead, so nothing is added; removing a saved search still works. The store
+is saved together with the sign-in tokens, so the patch doesn't clear it natively, and
+searches saved before stay until you remove them.
+
+### AMOLED black
+
+Kick is dark only. Its `Colors.surface.default` object holds `highest` `#1C1E20`, `base`
+`#141517` and `lowest` `#090A0B`. Hermes stores strings overlapping each other (`'#141517'`
+shares bytes with `'1'`, `'17'` and others), so the colours aren't edited in place: the
+object's string IDs in the literal buffer are swapped for existing strings. "Black
+background" makes `lowest` `#000000`; "Black background and surfaces" also makes `base`
+`#0B0B0C`, one step above black, so cards and sheets still stand out. `highest` (raised
+elements and borders) stays. `MainActivity.onCreate` also sets the window background,
+seen during transitions, to black. The splash screen, drawn before any app code runs,
+stays Kick's `#090A0B`, and colours hardcoded in components stay as they are.
+
+### Third-party emotes (not included)
+
+Third-party (7TV) emotes, which Lurk has for Twitch, can't be added from the app's side
+in this version, because the chat is Kick's web page (see Show deleted messages). The page
+receives live messages over its own realtime connection, so the app's Pusher and
+Centrifugo listeners never see what it draws. Its emote pattern, `\[emote:(\d+):[^\]]+\]`,
+only accepts Kick's numeric emote IDs, not 7TV's 26-character ones, and its images load
+through the WebView rather than the app's OkHttp clients. The app does fetch the history
+the page starts with (`/api/v1/chat/<channel ID>/history`, handed over through
+`window.injectChatHistory`), but 7TV tokens written there would show as raw text. Showing
+7TV emotes on Kick would take a script injected into the chat page.
+
 ## Implementation contracts and verification
 
 The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its function
 and string tables, requires unique targets and rejects overlapping or unequal-length
 edits. The official Morphe `hermesPatch` performs the actual replacements and footer
-update. A generated manifest records the original/default byte ranges. The native
-bundle loader takes a settings snapshot. When every switch is at its patch-time
+update. A generated manifest (`assets/lurk-hermes.json`, format 2) records each edit's
+original bytes and, for a switch, its replacement and default, or, for a choice, the
+bytes each choice value writes and the value the APK ships with. The native
+bundle loader takes a settings snapshot. When every setting is at its patch-time
 default it loads the embedded asset as is and deletes any earlier private copy;
 otherwise it verifies the embedded hash, chooses ranges from the snapshot, refreshes
-SHA-1 and atomically writes an app-private bundle. Disabling every switch
-reconstructs the original bundle byte for byte; reloading in the same process keeps
-the original snapshot. On a manifest/file error it logs and uses embedded defaults.
+SHA-1 and atomically writes an app-private bundle. Turning every switch off and every
+choice to 0 reconstructs the original bundle byte for byte; reloading in the same
+process keeps the original snapshot. On a manifest/file error it logs and uses
+embedded defaults.
+
+The edit helpers, all equal-length and fail-closed:
+
+- `returnNull` / `returnAtEntry`: return null, undefined or false as a function's first
+  instruction. `returnAtEntry` takes any prologue of environment, global, parameter and
+  property loads, decoded with the v99 instruction lengths, and refuses a function that
+  branches into the replaced bytes.
+- `trueProperty` / `falseProperty`: the function's single `GetById` of a property loads
+  a constant instead, in the same general register.
+- `skipGuard`: a handler's opening `if (!event) return;` jump becomes a `Mov` of the
+  tested register onto itself, so the handler always returns before doing anything.
+- `dataEdit` / `dataChoice`: values in the literal buffer that array and object literals
+  read, as a switch or a choice. Their replacement window is grown until its original
+  bytes are unique in the bundle.
+- `functionUsing`: selects an anonymous function by the properties it reads and the
+  strings it loads, rather than by bytes that embed build-local string IDs.
+- `objectKeys`: an object literal's property names, read from the bundle's shape table in
+  slot order, so an edit can find the slot a named property is stored in.
 
 Verification tools retained in this repository:
 
 - `tests/kick/verify_resources.py`: actual decoded resource/manifest assertions,
   including signature-protected token sharing, intact internet permission and
   (`--analytics`) Firebase Analytics starting disabled.
-- `tests/kick/HermesProbe.kt`: actual-bundle parsing, negative controls, uniqueness,
-  overlap rejection, preview literals and exact restoration.
+- `tests/kick/HermesProbe.kt`: actual-bundle parsing, negative controls for every
+  helper, uniqueness, overlap rejection, preview literals, unique literal windows and
+  exact restoration. It runs on the JVM, compiled with `kick/shared/Hermes.kt` against
+  Morphe Desktop.
 - `tests/kick/test_hermes.py`: independent instruction/branch decoding of emitted
-  edits, all-on/all-off/individual combinations and SHA checks.
+  edits; all-on, all-off, each switch alone and each choice value (plus 0 and an
+  unknown value); SHA checks.
+- `tests/kick/verify_literals.py`: for literal-buffer edits, decodes every function and
+  requires that only the intended array/object literals read the edited bytes, and that
+  every choice value keeps each literal's tags, count and length. `test_hermes.py` runs it.
 - `bin/test-kick`: executes the injected Java loader on Android, checking defaults,
-  process snapshots, independent switches and exact stock restoration; invokes the
-  two Insider job guards and checks synchronous completion without SDK dispatch.
+  process snapshots, independent switches, the exact bytes of each choice value and
+  exact stock restoration; invokes the two Insider job guards and checks synchronous
+  completion without SDK dispatch.
 - `tests/kick/verify_privacy.py`: production share/PAL helpers with boundary doubles;
   31 assertions, including host spoofing, functional parameters and switch isolation.
 - `tests/kick/verify_quality.py`: interprets actual reset/setter instructions to
@@ -276,6 +533,9 @@ Verification tools retained in this repository:
   negative control reproduces the initial-only patch's 1080p-to-720p reset bug.
 - `tests/kick/verify_analytics_jobs.py`: compares actual decoded job methods with
   stock, including unchanged instructions, branches and exception handlers when off.
+- `tests/kick/verify_player.py`: production `KickPlayer` with boundary doubles: the
+  mobile-data ceiling's decision table (with and without a Default video quality
+  height), normal latency and the background audio decisions.
 
 The combined APK was built and patched with all twelve patches. Its resource,
 signature and alignment checks passed. Native-only and Clips-only combinations

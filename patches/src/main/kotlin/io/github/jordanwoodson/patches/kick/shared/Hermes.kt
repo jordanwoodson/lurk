@@ -14,8 +14,14 @@ internal class HermesBundle(input: ByteArray) {
     private val bytes = input.copyOf()
     private val strings: List<String>
     private val functions: List<HermesFunction>
-    private val literalStart: Int
-    private val literalSize: Int
+    /** File offset of the literal value buffer, where array and object literals keep their values. */
+    val literalStart: Int
+    val literalSize: Int
+    /** The object key buffer, and the shape table whose entries (key offset, property count) index it. */
+    private val keyStart: Int
+    private val keySize: Int
+    private val shapeTable: Int
+    private val shapeCount: Int
     private val changes = mutableListOf<HermesEdit>()
     val edits: List<HermesEdit> get() = changes.toList()
 
@@ -59,7 +65,13 @@ internal class HermesBundle(input: ByteArray) {
         }
         literalStart = align(cursor)
         literalSize = u32(80)
-        checkedEnd(literalStart, literalSize, 1)
+        cursor = checkedEnd(literalStart, literalSize, 1)
+        keyStart = align(cursor)
+        keySize = u32(84)
+        cursor = checkedEnd(keyStart, keySize, 1)
+        shapeTable = align(cursor)
+        shapeCount = u32(88)
+        checkedEnd(shapeTable, shapeCount, 8)
         functions = List(functionCount) { id ->
             val position = 128 + id * 12
             val first = u32Bits(position)
@@ -84,8 +96,88 @@ internal class HermesBundle(input: ByteArray) {
         }
     }
 
+    fun stringId(value: String): Int = strings.indexOf(value).also { ensure(it >= 0, "missing string $value") }
+
     fun function(name: String): HermesFunction = functions.filter { it.name == name }.singleOrNull()
         ?: fail("expected one function named $name")
+
+    /**
+     * The one function that reads every property in [reads] (GetById and its variants) and loads every
+     * string in [loads], for anonymous functions. Built from string IDs, so it survives a reordered
+     * string table, unlike a byte anchor.
+     */
+    fun functionUsing(what: String, reads: List<String> = emptyList(), loads: List<String> = emptyList()): HermesFunction {
+        ensure(reads.isNotEmpty() || loads.isNotEmpty(), "empty function description")
+        val properties = reads.map(::stringId)
+        val constants = loads.map(::stringId)
+        return functions.filter { function ->
+            if (function.body.isEmpty()) return@filter false
+            val instructions = runCatching { instructions(function) }.getOrNull() ?: return@filter false
+            properties.all { id -> instructions.any { it.propertyId() == id } } &&
+                constants.all { id -> instructions.any { it.stringLoaded() == id } }
+        }.singleOrNull() ?: fail("expected one $what function")
+    }
+
+    /**
+     * [function]'s instructions, decoded with the v99 length table. Decoding stops where a switch's
+     * jump table starts, since the table's entries aren't instructions.
+     */
+    fun instructions(function: HermesFunction): List<HermesInstruction> {
+        val body = function.body
+        val result = mutableListOf<HermesInstruction>()
+        var end = body.size
+        var offset = 0
+        while (offset < end) {
+            val opcode = body[offset].toInt() and 255
+            ensure(opcode < LENGTHS.length, "unknown opcode $opcode in ${function.label}")
+            val length = LENGTHS[opcode].digitToInt(36)
+            ensure(offset + length <= body.size, "truncated instruction in ${function.label}")
+            val instruction = HermesInstruction(offset, opcode, body.copyOfRange(offset, offset + length))
+            // The table's offset from the switch: UIntSwitchImm's second operand, StringSwitchImm's third.
+            if (opcode == UINT_SWITCH) end = minOf(end, offset + instruction.u32(2))
+            if (opcode == STRING_SWITCH) end = minOf(end, offset + instruction.u32(6))
+            result += instruction
+            offset += length
+        }
+        return result
+    }
+
+    /**
+     * The property names of the object literal [instruction] creates (NewObjectWithBuffer or its long form),
+     * in slot order, which is the order PutOwnBySlotIdx fills them. A key that isn't a string is null.
+     */
+    fun objectKeys(instruction: HermesInstruction): List<String?> {
+        val shape = when (instruction.opcode) {
+            NEW_OBJECT_WITH_BUFFER -> instruction.u16(2)
+            NEW_OBJECT_WITH_BUFFER_LONG -> instruction.u32(2)
+            else -> fail("not an object literal instruction")
+        }
+        ensure(shape in 0 until shapeCount, "object shape outside the table")
+        var cursor = keyStart + u32(shapeTable + shape * 8)
+        val count = u32(shapeTable + shape * 8 + 4)
+        val keys = mutableListOf<String?>()
+        // Serialized literals: a tag (type in bits 4-6, run length in the low bits, 12 bits if bit 7 is set),
+        // then the run's values.
+        while (keys.size < count) {
+            ensure(cursor < keyStart + keySize, "object keys outside the key buffer")
+            val tag = u8(cursor++)
+            val run = if (tag and 0x80 != 0) ((tag and 0x0f) shl 8) or u8(cursor++) else tag and 0x0f
+            val type = (tag ushr 4) and 7
+            val width = intArrayOf(0, 0, 0, 8, 4, 2, 1, 4)[type]
+            repeat(run) {
+                ensure(cursor + width <= keyStart + keySize, "object keys outside the key buffer")
+                keys += when (type) {
+                    4 -> strings.getOrNull(u32(cursor))
+                    5 -> strings.getOrNull(u8(cursor) or (u8(cursor + 1) shl 8))
+                    6 -> strings.getOrNull(u8(cursor))
+                    else -> null
+                }
+                cursor += width
+            }
+        }
+        ensure(keys.size == count, "object key run overruns its shape")
+        return keys
+    }
 
     /** An anonymous function must be selected by a unique bytecode anchor, never its build-local ID. */
     fun matchingFunction(anchor: ByteArray): HermesFunction {
@@ -111,6 +203,114 @@ internal class HermesBundle(input: ByteArray) {
         byteArrayOf(0x94.toByte(), register.toByte(), 0x76, register.toByte()).copyInto(replacement)
         // Unreachable (0) pads through the last replaced instruction boundary, after Ret.
         add(function, key, 0, body.copyOfRange(0, length), replacement, defaultEnabled)
+    }
+
+    /**
+     * Returns [value] as the function's first instruction. Accepts any prologue made of environment,
+     * parameter and property loads, which [returnNull] doesn't. Every call returns before any hook or
+     * branch, so React hook order stays the same for the process (edits are restart-gated).
+     */
+    fun returnAtEntry(function: HermesFunction, key: String, value: Constant = Constant.NULL,
+                      defaultEnabled: Boolean = true) {
+        ensure(function.flags and 0x18 == 0, "${function.label} has exception/debug metadata")
+        val instructions = instructions(function)
+        var length = 0
+        for (instruction in instructions) {
+            if (length >= 4) break
+            ensure(instruction.opcode in PROLOGUE, "${function.label} has an unexpected prologue instruction at $length")
+            length += instruction.bytes.size
+        }
+        ensure(length >= 4, "${function.label} is too short")
+        ensure(instructions.none { it.target() in 1 until length }, "${function.label} branches into its prologue")
+        val register = generalRegister(function)
+        val replacement = ByteArray(length)
+        byteArrayOf(value.opcode, register.toByte(), 0x76, register.toByte()).copyInto(replacement)
+        // Unreachable (0) pads through the last replaced instruction boundary, after Ret.
+        add(function, key, 0, function.body.copyOfRange(0, length), replacement, defaultEnabled)
+    }
+
+    fun returnAtEntry(functionName: String, key: String, value: Constant = Constant.NULL, defaultEnabled: Boolean = true) =
+        returnAtEntry(function(functionName), key, value, defaultEnabled)
+
+    /**
+     * Turns the function's single GetById of [property] into `true` in the same register, so one local
+     * read such as `userCanModerate` is true while every other read stays.
+     */
+    fun trueProperty(function: HermesFunction, property: String, key: String, defaultEnabled: Boolean = true) =
+        constantProperty(function, property, Constant.TRUE, key, defaultEnabled)
+
+    fun falseProperty(function: HermesFunction, property: String, key: String, defaultEnabled: Boolean = true) =
+        constantProperty(function, property, Constant.FALSE, key, defaultEnabled)
+
+    private fun constantProperty(function: HermesFunction, property: String, value: Constant, key: String,
+                                 defaultEnabled: Boolean) {
+        val id = stringId(property)
+        val read = instructions(function).filter { it.opcode == GET_BY_ID && it.u16(4) == id }.singleOrNull()
+            ?: fail("expected one $property read in ${function.label}")
+        val register = read.u8(1)
+        ensure(register >= function.numberRegisters + function.nonPointerRegisters,
+            "$property result has no general register")
+        val load = byteArrayOf(value.opcode, register.toByte())
+        add(function, key, read.offset, read.bytes, load + load + load, defaultEnabled)
+    }
+
+    /**
+     * For handlers that open with `if (!event) return;`. The guard's JmpTrue becomes a Mov of the tested
+     * register onto itself, so the handler always reaches its `return undefined` and nothing after the
+     * guard runs. The guard is the first JmpTrue: either followed by `LoadConstUndefined rU; Ret rU`, or
+     * between those two instructions.
+     */
+    fun skipGuard(function: HermesFunction, key: String, defaultEnabled: Boolean = true) {
+        ensure(function.flags and 0x18 == 0, "${function.label} has exception/debug metadata")
+        val instructions = instructions(function)
+        ensure(instructions.none { it.opcode == UINT_SWITCH || it.opcode == STRING_SWITCH }, "${function.label} has a switch")
+        val index = instructions.indexOfFirst { it.opcode == JMP_TRUE }
+        ensure(index >= 0, "${function.label} has no guard")
+        val guard = instructions[index]
+        val previous = instructions.getOrNull(index - 1)
+        val next = instructions.getOrNull(index + 1)
+        val after = instructions.getOrNull(index + 2)
+        fun undefined(load: HermesInstruction?, ret: HermesInstruction?) = load?.opcode == LOAD_UNDEFINED &&
+            ret?.opcode == RET && load.u8(1) == ret.u8(1)
+        ensure(undefined(next, after) || undefined(previous, next), "${function.label} guard doesn't return undefined")
+        ensure(guard.target()!! > guard.offset, "${function.label} guard jumps backwards")
+        ensure(instructions.none { it !== guard && it.target() == guard.offset }, "${function.label} branches to its guard")
+        val tested = guard.bytes[2]
+        add(function, key, guard.offset, guard.bytes, byteArrayOf(MOV.toByte(), tested, tested), defaultEnabled)
+    }
+
+    /**
+     * An edit inside the literal value buffer, [offset] bytes from its start: a value an array or object
+     * literal reads, such as a number or a string ID. A test (verify_literals.py) checks that only the
+     * intended literal instructions read those bytes.
+     */
+    fun dataEdit(offset: Int, key: String, before: ByteArray, after: ByteArray, defaultEnabled: Boolean = true): HermesEdit {
+        ensure(before.size == after.size, "edit must preserve literal length")
+        return record(HermesEdit(key, literal(offset, before), before.copyOf(), after.copyOf(), defaultEnabled, DATA))
+    }
+
+    /**
+     * Like [dataEdit] for a choice setting: each choice value in [values] writes its bytes, and any other
+     * value, normally "0", keeps [before]. The patched APK ships the bytes of [defaultValue].
+     */
+    fun dataChoice(offset: Int, key: String, before: ByteArray, values: Map<String, ByteArray>,
+                   defaultValue: String = "0"): HermesEdit {
+        ensure(values.isNotEmpty() && values.values.all { it.size == before.size }, "choice must preserve literal length")
+        ensure((values.keys + defaultValue).all { it.matches(Regex("-?[0-9]+")) }, "choice values must be numbers")
+        val copies = values.mapValues { it.value.copyOf() }
+        return record(HermesEdit(key, literal(offset, before), before.copyOf(), before.copyOf(), false, DATA,
+            copies, defaultValue))
+    }
+
+    /** The literal value buffer's bytes at [offset], for checking a value before editing it. */
+    fun literal(offset: Int, length: Int): ByteArray {
+        ensure(offset >= 0 && length > 0 && offset.toLong() + length <= literalSize, "range outside the literal buffer")
+        return bytes.copyOfRange(literalStart + offset, literalStart + offset + length)
+    }
+
+    private fun literal(offset: Int, before: ByteArray): Int {
+        literal(offset, before.size)
+        return literalStart + offset
     }
 
     fun replace(functionName: String, key: String, before: ByteArray, after: ByteArray,
@@ -159,40 +359,98 @@ internal class HermesBundle(input: ByteArray) {
 
     private fun add(function: HermesFunction, key: String, relative: Int, before: ByteArray,
                     after: ByteArray, defaultEnabled: Boolean): HermesEdit {
-        ensure(key.matches(Regex("[a-z][a-z0-9_]*")), "invalid setting key")
         ensure(before.size == after.size && before.isNotEmpty(), "edit must preserve bytecode length")
         ensure(functions.count { it.offset == function.offset && it.body.isNotEmpty() } == 1,
             "function bytecode is shared")
-        val offset = function.offset + relative
         ensure(relative >= 0 && relative.toLong() + before.size <= function.body.size, "edit outside function")
-        ensure(bytes.copyOfRange(offset, offset + before.size).contentEquals(before), "original bytes differ")
-        ensure(changes.none { offset < it.offset + it.original.size && it.offset < offset + before.size },
-            "overlapping Hermes edits")
-        return HermesEdit(key, offset, before.copyOf(), after.copyOf(), defaultEnabled, function.id)
-            .also { changes += it }
+        return record(HermesEdit(key, function.offset + relative, before.copyOf(), after.copyOf(), defaultEnabled,
+            function.id))
     }
 
-    /** Full original function bodies make Morphe's first-match byte replacement unambiguous. */
-    fun replacements(): Set<Pair<String, String>> = changes.groupBy { it.functionId }.map { (id, edits) ->
-        val function = functions[id]
-        ensure(bytes.positions(function.body).singleOrNull() == function.offset,
-            "function pattern is not globally unique")
-        val replacement = function.body.copyOf()
-        edits.filter { it.defaultEnabled }.forEach { it.replacement.copyInto(replacement, it.offset - function.offset) }
-        function.body.toHex() to replacement.toHex()
-    }.toSet()
+    private fun record(edit: HermesEdit): HermesEdit {
+        val offset = edit.offset
+        val size = edit.original.size
+        ensure(edit.key.matches(Regex("[a-z][a-z0-9_]*")), "invalid setting key")
+        ensure(size > 0, "empty edit")
+        ensure(bytes.copyOfRange(offset, offset + size).contentEquals(edit.original), "original bytes differ")
+        ensure(changes.none { offset < it.offset + it.original.size && it.offset < offset + size },
+            "overlapping Hermes edits")
+        // The runtime loader keeps one value per key: a switch or a choice, with one default.
+        ensure(changes.filter { it.key == edit.key }.all {
+            (it.values == null) == (edit.values == null) && it.defaultEnabled == edit.defaultEnabled &&
+                it.defaultValue == edit.defaultValue
+        }, "${edit.key} mixes edit kinds or defaults")
+        changes += edit
+        return edit
+    }
+
+    /**
+     * Full original function bodies make Morphe's first-match byte replacement unambiguous. Literal
+     * edits get the shortest window around them, in steps of 8 bytes, whose original bytes are unique.
+     */
+    fun replacements(): Set<Pair<String, String>> {
+        val code = changes.filter { it.functionId != DATA }.groupBy { it.functionId }.map { (id, edits) ->
+            val function = functions[id]
+            ensure(bytes.positions(function.body).singleOrNull() == function.offset,
+                "function pattern is not globally unique")
+            val replacement = function.body.copyOf()
+            edits.forEach { it.embedded.copyInto(replacement, it.offset - function.offset) }
+            function.body.toHex() to replacement.toHex()
+        }
+        val data = dataWindows().map { window ->
+            val original = bytes.copyOfRange(window.first, window.last + 1)
+            val replacement = original.copyOf()
+            changes.filter { it.functionId == DATA && it.offset in window }
+                .forEach { it.embedded.copyInto(replacement, it.offset - window.first) }
+            original.toHex() to replacement.toHex()
+        }
+        return (code + data).toSet()
+    }
+
+    private fun dataWindows(): List<IntRange> {
+        val literals = literalStart until literalStart + literalSize
+        var windows = changes.filter { it.functionId == DATA }.sortedBy { it.offset }
+            .map { it.offset until it.offset + it.original.size }
+        while (true) {
+            // Merge windows that touch, then widen each one whose bytes also occur elsewhere.
+            windows = windows.fold(mutableListOf<IntRange>()) { merged, window ->
+                val last = merged.lastOrNull()
+                if (last != null && window.first <= last.last + 1) {
+                    merged[merged.size - 1] = last.first..maxOf(last.last, window.last)
+                } else merged += window
+                merged
+            }
+            val ambiguous = windows.indexOfFirst { bytes.positions(bytes.copyOfRange(it.first, it.last + 1)).size != 1 }
+            if (ambiguous < 0) return windows
+            val window = windows[ambiguous]
+            ensure(window.last - window.first < 256, "no unique window around literal ${window.first - literalStart}")
+            windows = windows.toMutableList().also {
+                it[ambiguous] = maxOf(literals.first, window.first - 8)..minOf(literals.last, window.last + 8)
+            }
+        }
+    }
 
     fun preview(): ByteArray = bytes.copyOf().also { result ->
-        changes.filter { it.defaultEnabled }.forEach { it.replacement.copyInto(result, it.offset) }
+        changes.forEach { it.embedded.copyInto(result, it.offset) }
         digest("SHA-1", result.copyOfRange(0, result.size - 20)).copyInto(result, result.size - 20)
     }
 
+    /**
+     * The runtime loader's edit list. A switch edit has `replacement` and a boolean `default`; a choice
+     * edit has `values` (choice value to bytes) and the choice value it ships with as `default`.
+     */
     fun manifest(): String {
         val entries = changes.sortedBy { it.offset }.joinToString(",") {
             "{\"key\":\"${it.key}\",\"offset\":${it.offset},\"original\":\"${it.original.toHex()}\"," +
-                "\"replacement\":\"${it.replacement.toHex()}\",\"default\":${it.defaultEnabled}}"
+                if (it.values == null) {
+                    "\"replacement\":\"${it.replacement.toHex()}\",\"default\":${it.defaultEnabled}}"
+                } else {
+                    it.values.entries.joinToString(",", "\"values\":{", "}") { (value, replacement) ->
+                        "\"$value\":\"${replacement.toHex()}\""
+                    } + ",\"default\":\"${it.defaultValue}\"}"
+                }
         }
-        return "{\"format\":1,\"version\":99,\"sourceSha256\":\"$SOURCE_SHA256\"," +
+        return "{\"format\":2,\"version\":99,\"sourceSha256\":\"$SOURCE_SHA256\"," +
             "\"embeddedSha256\":\"${preview().sha256()}\",\"edits\":[$entries]}"
     }
 
@@ -211,16 +469,113 @@ internal class HermesBundle(input: ByteArray) {
     }
     private fun align(offset: Int) = (offset + 3) and -4
 
+    private fun generalRegister(function: HermesFunction): Int {
+        val register = function.numberRegisters + function.nonPointerRegisters
+        ensure(register in 0..255 && register < function.frameSize, "${function.label} has no general register")
+        return register
+    }
+
+    /** A loaded constant: the opcode that writes it into a register. */
+    enum class Constant(val opcode: Byte) {
+        UNDEFINED(0x93.toByte()),
+        NULL(0x94.toByte()),
+        TRUE(0x95.toByte()),
+        FALSE(0x96.toByte()),
+    }
+
     companion object {
         const val SOURCE_SHA256 = "a9d911b3f8b640d8e56b7527929a093c2356d97992409c453d167fdf39538d9a"
+
+        /** [HermesEdit.functionId] of an edit in the literal value buffer. */
+        const val DATA = -1
+
+        /**
+         * Byte length of each v99 instruction, by opcode, in base 36. Generated from hermes-dec 0.1.7's
+         * hbc99 definitions (BytecodeList.def of the static_h branch).
+         */
+        private const val LENGTHS =
+            "16abc238a4434433393333444444444444444444444444334455343454545223367556896866886688474768474554454465" +
+            "45565644455675747322423321136879574543636a464622222232333336443223eii5734332536363684747474747474747" +
+            "47474747474747474747"
+        private const val NEW_OBJECT_WITH_BUFFER = 0x01
+        private const val NEW_OBJECT_WITH_BUFFER_LONG = 0x02
+        private const val MOV = 0x10
+        private const val GET_BY_ID = 0x45
+        private const val RET = 0x76
+        private const val LOAD_UNDEFINED = 0x93
+        private const val UINT_SWITCH = 0xa7
+        private const val STRING_SWITCH = 0xa8
+        private const val JMP_TRUE = 0xb1
+
+        /** Instructions a replaced prologue may contain: environment, global, parameter and property loads. */
+        private val PROLOGUE = setOf(
+            0x34, // GetParentEnvironment
+            0x3b, // LoadFromEnvironment
+            0x3d, // GetGlobalObject
+            0x40, // CreateFunctionEnvironment
+            0x41, // CreateTopLevelEnvironment
+            0x44, // GetByIdShort
+            0x45, // GetById
+            0x48, // TryGetById
+            0x89, // LoadParam
+            0x99, // LoadThisNS
+        )
     }
 }
 
 internal data class HermesFunction(val id: Int, val name: String, val offset: Int, val body: ByteArray,
-    val frameSize: Int, val numberRegisters: Int, val nonPointerRegisters: Int, val flags: Int)
+    val frameSize: Int, val numberRegisters: Int, val nonPointerRegisters: Int, val flags: Int) {
+    val label get() = name.ifEmpty { "anonymous function" }
+}
 
+/**
+ * One edit the runtime loader can switch. A switch edit writes [replacement] while its setting is on;
+ * a choice edit writes the [values] entry of the setting's value, or keeps [original].
+ */
 internal data class HermesEdit(val key: String, val offset: Int, val original: ByteArray,
-    val replacement: ByteArray, val defaultEnabled: Boolean, val functionId: Int)
+    val replacement: ByteArray, val defaultEnabled: Boolean, val functionId: Int,
+    val values: Map<String, ByteArray>? = null, val defaultValue: String? = null) {
+    /** The bytes the patched APK ships, which a fresh install with default settings runs. */
+    val embedded: ByteArray get() = when {
+        values != null -> values[defaultValue] ?: original
+        defaultEnabled -> replacement
+        else -> original
+    }
+}
+
+internal class HermesInstruction(val offset: Int, val opcode: Int, val bytes: ByteArray) {
+    fun u8(index: Int) = bytes[index].toInt() and 255
+    fun u16(index: Int) = u8(index) or (u8(index + 1) shl 8)
+    fun u32(index: Int) = u16(index) or (u16(index + 2) shl 16)
+
+    /** Where a jump goes, from the function start, or null. Switch targets aren't covered. */
+    fun target(): Int? = when (opcode) {
+        in LONG_JUMPS -> offset + u32(1)
+        in 0xaf..0xdb -> offset + bytes[1]
+        else -> null
+    }
+
+    /** The string ID of the property a GetById variant reads, or null. */
+    fun propertyId(): Int? = when (opcode) {
+        0x44 -> u8(4) // GetByIdShort
+        0x45, 0x48 -> u16(4) // GetById, TryGetById
+        0x46, 0x49 -> u32(4) // GetByIdLong, TryGetByIdLong
+        else -> null
+    }
+
+    /** The string ID a LoadConstString variant loads, or null. */
+    fun stringLoaded(): Int? = when (opcode) {
+        0x90 -> u16(2)
+        0x91 -> u32(2)
+        else -> null
+    }
+
+    private companion object {
+        /** Jumps with a 32-bit offset; the others in 0xaf..0xdb have an 8-bit one. */
+        val LONG_JUMPS = setOf(0xb0, 0xb2, 0xb4, 0xb6, 0xb7, 0xb9, 0xbb, 0xbd, 0xbf, 0xc1, 0xc3, 0xc5, 0xc7, 0xc9,
+            0xcb, 0xcd, 0xcf, 0xd1, 0xd3, 0xd5, 0xd7, 0xd9, 0xdb)
+    }
+}
 
 internal fun hex(value: String): ByteArray {
     val compact = value.filterNot { it.isWhitespace() }

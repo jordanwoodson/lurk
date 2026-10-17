@@ -57,6 +57,19 @@ public final class Settings {
         }
     }
 
+    /**
+     * Whether a patch registered {@code key}, so it was included. Code shared by several patches checks this
+     * before {@link #isEnabled(String)}, which counts an unknown key as on.
+     */
+    public static boolean isRegistered(String key) {
+        return registry().get(key) != null;
+    }
+
+    /** The application context, or null before the app has one. */
+    public static Context appContext() {
+        return context();
+    }
+
     /** Injection point. The value picked for the choice {@code key} as a number, or 0 if it isn't one. */
     public static int getInt(String key) {
         try {

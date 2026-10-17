@@ -21,15 +21,27 @@ case "${1:-status}" in
             note "already running as $ANDROID_SERIAL"
             exit
         fi
-        nohup "$ANDROID_HOME/emulator/emulator" -avd "$AVD" -port "$PORT" -no-window -no-audio -no-boot-anim \
-            -gpu swiftshader_indirect >"$ANDROID_AVD_HOME/emulator.log" 2>&1 &
+        # The host renderer keeps graphics memory for every app process that is killed: each force-stop and
+        # relaunch of a video app adds ~400 MB to QEMU (41 GB after a day of patch testing, for a 2 GB guest).
+        # A memory cap (Linux) ends the emulator instead of the server running out; `status` shows the size,
+        # and stop + start releases it.
+        cap=()
+        if command -v systemd-run >/dev/null; then
+            cap=(systemd-run --user --scope --quiet -p MemoryMax=12G -p MemorySwapMax=0)
+        fi
+        nohup "${cap[@]}" "$ANDROID_HOME/emulator/emulator" -avd "$AVD" -port "$PORT" -no-window -no-audio \
+            -no-boot-anim -gpu swiftshader_indirect >"$ANDROID_AVD_HOME/emulator.log" 2>&1 &
         note "booting $ANDROID_SERIAL (log: $ANDROID_AVD_HOME/emulator.log)"
         adb wait-for-device
         until [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == 1 ]]; do sleep 2; done
         note "booted. Install with: bin/patch <app> --install=$ANDROID_SERIAL"
         ;;
     stop) adb emu kill ;;
-    status) adb devices | grep "^$ANDROID_SERIAL" || echo "not running" ;;
+    status)
+        adb devices | grep "^$ANDROID_SERIAL" || { echo "not running"; exit; }
+        qemu="$(pgrep -f "qemu-system.*-port $PORT" | head -1 || true)"
+        [[ -n "$qemu" ]] && note "QEMU uses $(( $(ps -o rss= -p "$qemu") / 1024 )) MB; restart it (stop, start) above ~8 GB"
+        ;;
     shot)
         mkdir -p "$WORK/shots"
         f="$WORK/shots/${2:-$(date +%Y%m%d-%H%M%S)}.png"
