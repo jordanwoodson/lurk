@@ -233,6 +233,7 @@ details and validation follow.
 | Hide rating prompt | Yes | On | Kick's automatic "rate the app" prompts. |
 | Show deleted messages | Yes | On | Moderator-style struck-through deleted, timed-out and banned messages in chat. |
 | Hide chat highlights | Yes | Eight switches, all off | Pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs, celebration prompts. |
+| Stay on channel when it hosts | Yes | Off | The host dialog's countdown no longer switches channels. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -348,6 +349,14 @@ reward handlers are never called. Pinned KICKs sits here rather than under Hide 
 because it shows a gift someone already sent. Checked on the emulator: the pinned KICKs and
 prediction cards disappear, and with the sub callbacks returning no sub card appeared above
 chat while "just subscribed!" lines kept showing in the chat page.
+
+### Stay on channel when it hosts
+
+When the channel you watch hosts another one, `JoinHostDialogContent` starts a countdown
+whose end callback switches to the hosted channel if you're on a stream, clip or VOD
+screen. The patch returns from that callback, so the dialog stays at zero with its buttons:
+Watch now still switches and closing it keeps you where you are. Hosting can't be
+triggered on demand, so this was checked statically.
 
 ## Implementation contracts and verification
 
