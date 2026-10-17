@@ -237,6 +237,7 @@ details and validation follow.
 | Background audio | Yes | On; a second switch for picture-in-picture, off | Audio keeps playing through Kick's own audio service when you leave the app. |
 | Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
 | Sleep timer | Yes | Off (choice) | Pauses playback a chosen time after it last started. |
+| Default startup tab | Yes | Home (choice) | Opens Kick on Browse or Following instead. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -411,6 +412,16 @@ changed. Picking exactly 720p (or the patch's height) on mobile data can't be to
 from a start and is capped too. Picking Auto is capped, since Auto means "let the app
 decide". It applies when the ceiling is next set (a stream load or a player state change),
 not on a network change mid-stream.
+
+### Default startup tab
+
+Kick is an Expo Router app: links go through `Linking.getInitialURL()`, which reads the
+activity's intent when its action is VIEW. Its link mapper already turns
+`https://kick.com/browse` into Browse and `https://kick.com/following` into Following. On a
+fresh start from the launcher (no saved state, no link), the patch makes the launch intent
+such a link before `MainActivity.onCreate` reads it. Links, notifications and restored
+activities keep their own intent, and since the activity is `singleTask`, returning to a
+running Kick keeps the current screen.
 
 ## Implementation contracts and verification
 
