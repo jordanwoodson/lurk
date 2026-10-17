@@ -231,6 +231,7 @@ details and validation follow.
 | Bypass VOD ad sessions | No | Off | Experimental original-VOD-URL fallback. No live-ad removal claim. |
 | Block update prompts | Yes | On | Kick's forced-update screen and update sheet, and the Play Store version lookup behind them. |
 | Hide rating prompt | Yes | On | Kick's automatic "rate the app" prompts. |
+| Show deleted messages | Yes | On | Moderator-style struck-through deleted, timed-out and banned messages in chat. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -284,6 +285,45 @@ redeemed reward, through `showAppRatingDialog`. That asks the rating store's
 it return false. The developer-settings button that forces the sheet is untouched. The
 triggers need an account, so this was checked statically.
 
+### Show deleted messages
+
+The app doesn't draw chat messages itself. On the stream screen and on a channel's Chat tab,
+`HTMLChatWrapper` opens Kick's chat web page, `https://chat.mobile.kick.com`, in a WebView
+and passes it a JSON `config` URL parameter: the chatroom and channel IDs, the viewer's
+`userCanModerate`, text size, locale and session headers. The page keeps its own realtime
+connection and draws every chat line, including deletions, bans, subs, gifts, hosts and
+reward redemptions. The app's own chat store has handlers for the same events
+(`handleDeleteChatMessageEvent`, `handleClearChatEvent`, `handleSubscriptionEvent` and
+others), but in 40.32.1 nothing calls most of them, and the entries it keeps are only drawn
+by VOD chat replay. Chat lines can only be changed through that config.
+
+The page shows a removed message according to `userCanModerate`. When it's false, a deleted
+message's text becomes "Deleted by a moderator" and a ban or timeout removes the user's
+messages. When it's true, the text is struck through with "(Deleted)", "(Timed out)" or
+"(Banned)", with Kick's "AI Mod" label and the rules it flagged when its AI moderation
+acted, and lines such as "X timed out Y for 10 minutes", "X banned Y" and "X unbanned Y"
+appear. The patch makes the config builder, the function that loads the chat page's URL,
+store `true` in the slot its object literal names `userCanModerate`. The app's own
+`userCanModerate`, which its moderation menus read, doesn't change. The page uses the value
+for one control too: large (mid and high tier) KICKs gifts in chat get the moderators' menu
+with Delete, which sends the app the same delete request a moderator's tap would. Kick's
+server is expected to refuse it from anyone else; that wasn't tested. The config is part of
+the page's URL, so Kick's server also sees the value in the request for the page.
+
+Messages removed before you opened the chat don't come back: history arrives without them.
+The page only marks messages it has already drawn. Kick's AI moderation often removes a
+message within milliseconds, while it's still waiting in the page's queue, and such a message
+then shows as an ordinary one, as in stock Kick. Twitch's second switch, "Ignore chat
+clears", has no Kick counterpart: the page clears itself when a moderator clears the chat,
+and the config has no way to stop it.
+
+Checked on the emulator (Android 16, signed out) on a large live channel's Chat tab, by
+screenshots and the realtime event log: with the switch on, both timeouts in six minutes left
+the user's messages in place marked "(Timed out)" and added "moderator timed out X for 2
+minutes"; with it off and Kick restarted, a timeout removed the user's message and added no
+line, as in stock. Manual deletes and bans didn't happen during the tests; they go through the
+same flag.
+
 ## Implementation contracts and verification
 
 The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its function
@@ -315,6 +355,8 @@ The edit helpers, all equal-length and fail-closed:
   bytes are unique in the bundle.
 - `functionUsing`: selects an anonymous function by the properties it reads and the
   strings it loads, rather than by bytes that embed build-local string IDs.
+- `objectKeys`: an object literal's property names, read from the bundle's shape table in
+  slot order, so an edit can find the slot a named property is stored in.
 
 Verification tools retained in this repository:
 

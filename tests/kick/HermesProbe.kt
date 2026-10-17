@@ -34,6 +34,16 @@ fun main(args: Array<String>) {
     check(decoded.last().offset == 0x122 && decoded.last().bytes.contentEquals(byteArrayOf(0x76, 1)))
     check(decoded.count { it.target() != null } == 5)
 
+    // Object literal keys come from the shape table, in the slot order PutOwnBySlotIdx fills.
+    val chatConfig = bundle.functionUsing("web chat config", reads = listOf("searchParams", "getRequestBaseHeaders"),
+        loads = listOf("https://chat.mobile.kick.com"))
+    val literals = bundle.instructions(chatConfig).filter { it.opcode == 2 } // NewObjectWithBufferLong
+    check(bundle.objectKeys(literals[0]).take(3) == listOf("chatroomId", "subscriberBadges", "userCanModerate"))
+    check(bundle.objectKeys(literals[0]).size == 11)
+    check(bundle.objectKeys(literals[1]) == listOf("id", "slug", "username"))
+    check(bundle.objectKeys(literals[2]) == listOf("uri"))
+    rejects { bundle.objectKeys(bundle.instructions(chatConfig).first()) }
+
     // returnAtEntry covers prologues returnNull rejects, and returns the requested constant.
     bundle.returnAtEntry("AppUpdateHandler", "block_update_prompts")
     bundle.returnAtEntry("shouldShowAppRating", "hide_app_rating", Constant.FALSE)

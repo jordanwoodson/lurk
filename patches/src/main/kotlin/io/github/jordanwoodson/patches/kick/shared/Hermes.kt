@@ -17,6 +17,11 @@ internal class HermesBundle(input: ByteArray) {
     /** File offset of the literal value buffer, where array and object literals keep their values. */
     val literalStart: Int
     val literalSize: Int
+    /** The object key buffer, and the shape table whose entries (key offset, property count) index it. */
+    private val keyStart: Int
+    private val keySize: Int
+    private val shapeTable: Int
+    private val shapeCount: Int
     private val changes = mutableListOf<HermesEdit>()
     val edits: List<HermesEdit> get() = changes.toList()
 
@@ -60,7 +65,13 @@ internal class HermesBundle(input: ByteArray) {
         }
         literalStart = align(cursor)
         literalSize = u32(80)
-        checkedEnd(literalStart, literalSize, 1)
+        cursor = checkedEnd(literalStart, literalSize, 1)
+        keyStart = align(cursor)
+        keySize = u32(84)
+        cursor = checkedEnd(keyStart, keySize, 1)
+        shapeTable = align(cursor)
+        shapeCount = u32(88)
+        checkedEnd(shapeTable, shapeCount, 8)
         functions = List(functionCount) { id ->
             val position = 128 + id * 12
             val first = u32Bits(position)
@@ -129,6 +140,43 @@ internal class HermesBundle(input: ByteArray) {
             offset += length
         }
         return result
+    }
+
+    /**
+     * The property names of the object literal [instruction] creates (NewObjectWithBuffer or its long form),
+     * in slot order, which is the order PutOwnBySlotIdx fills them. A key that isn't a string is null.
+     */
+    fun objectKeys(instruction: HermesInstruction): List<String?> {
+        val shape = when (instruction.opcode) {
+            NEW_OBJECT_WITH_BUFFER -> instruction.u16(2)
+            NEW_OBJECT_WITH_BUFFER_LONG -> instruction.u32(2)
+            else -> fail("not an object literal instruction")
+        }
+        ensure(shape in 0 until shapeCount, "object shape outside the table")
+        var cursor = keyStart + u32(shapeTable + shape * 8)
+        val count = u32(shapeTable + shape * 8 + 4)
+        val keys = mutableListOf<String?>()
+        // Serialized literals: a tag (type in bits 4-6, run length in the low bits, 12 bits if bit 7 is set),
+        // then the run's values.
+        while (keys.size < count) {
+            ensure(cursor < keyStart + keySize, "object keys outside the key buffer")
+            val tag = u8(cursor++)
+            val run = if (tag and 0x80 != 0) ((tag and 0x0f) shl 8) or u8(cursor++) else tag and 0x0f
+            val type = (tag ushr 4) and 7
+            val width = intArrayOf(0, 0, 0, 8, 4, 2, 1, 4)[type]
+            repeat(run) {
+                ensure(cursor + width <= keyStart + keySize, "object keys outside the key buffer")
+                keys += when (type) {
+                    4 -> strings.getOrNull(u32(cursor))
+                    5 -> strings.getOrNull(u8(cursor) or (u8(cursor + 1) shl 8))
+                    6 -> strings.getOrNull(u8(cursor))
+                    else -> null
+                }
+                cursor += width
+            }
+        }
+        ensure(keys.size == count, "object key run overruns its shape")
+        return keys
     }
 
     /** An anonymous function must be selected by a unique bytecode anchor, never its build-local ID. */
@@ -449,6 +497,8 @@ internal class HermesBundle(input: ByteArray) {
             "16abc238a4434433393333444444444444444444444444334455343454545223367556896866886688474768474554454465" +
             "45565644455675747322423321136879574543636a464622222232333336443223eii5734332536363684747474747474747" +
             "47474747474747474747"
+        private const val NEW_OBJECT_WITH_BUFFER = 0x01
+        private const val NEW_OBJECT_WITH_BUFFER_LONG = 0x02
         private const val MOV = 0x10
         private const val GET_BY_ID = 0x45
         private const val RET = 0x76
