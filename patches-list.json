@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when the release workflow (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.10.0-dev.6",
+  "version": "1.10.0-dev.7",
   "patches": [
     {
       "name": "Anonymous chat",
@@ -76,6 +76,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Background audio",
+      "description": "Keeps live streams and videos playing as audio when you leave Kick, using Kick's own audio notification. A second switch turns off the automatic picture-in-picture window. On by default, as on Twitch. Turn it off in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
@@ -884,7 +912,7 @@
     },
     {
       "name": "Default video quality",
-      "description": "Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling.",
+      "description": "Sets the default adaptive quality ceiling to the selected height when that rendition exists. Kick can still choose a lower quality. The player's Auto option uses this ceiling. A lower starting ceiling can be set for mobile data in Lurk settings > Playback; it's off until then.",
       "default": false,
       "category": null,
       "compatiblePackages": [
@@ -2105,6 +2133,34 @@
     },
     {
       "name": "Normal latency",
+      "description": "Adds a switch that turns off low-latency mode for live streams: a few seconds more delay, fewer rebuffers on weak connections. Starts off. Turn it on in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Normal latency",
       "description": "Adds a setting that turns off the player's low-latency mode for live streams: a few seconds more delay to the broadcaster, for fewer rebuffers on a weak connection. Off until turned on in Lurk settings.",
       "default": true,
       "category": null,
@@ -2551,6 +2607,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Sleep timer",
+      "description": "Pauses playback a chosen time after it last started or resumed, including background audio. Starts off. Choose a time in Lurk settings > Playback.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,

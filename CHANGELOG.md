@@ -1,3 +1,12 @@
+## [1.10.0-dev.7](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.6...v1.10.0-dev.7) (2026-10-17)
+
+### ✨ New Features
+
+* **kick:** add a mobile-data quality ceiling ([583b4aa](https://github.com/jordanwoodson/lurk-morphe-patches/commit/583b4aaf6c36ebbc1ff458cfd7a03ebfd3b1d499))
+* **kick:** add background audio ([f83cc4a](https://github.com/jordanwoodson/lurk-morphe-patches/commit/f83cc4ab2dddff386058e76503a72254c99e5591))
+* **kick:** add normal latency ([fdb38f7](https://github.com/jordanwoodson/lurk-morphe-patches/commit/fdb38f7026df1fe8c8e591b9ec0977f64900249e))
+* **kick:** add sleep timer ([dfa6f13](https://github.com/jordanwoodson/lurk-morphe-patches/commit/dfa6f13a3269ff1889e2c54cf025d592cff11784))
+
 ## [1.10.0-dev.6](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.5...v1.10.0-dev.6) (2026-10-17)
 
 ### ✨ New Features
