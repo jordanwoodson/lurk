@@ -1,3 +1,13 @@
+## [1.10.0-dev.6](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.5...v1.10.0-dev.6) (2026-10-17)
+
+### ✨ New Features
+
+* **kick:** block update prompts ([417966e](https://github.com/jordanwoodson/lurk-morphe-patches/commit/417966ebbc42eb7ce9501713f6498ee7f7ec5bcc))
+* **kick:** hide chat highlights ([217d3f7](https://github.com/jordanwoodson/lurk-morphe-patches/commit/217d3f796960bf8139413f02eb9eb2aebef256b3))
+* **kick:** hide rating prompt ([f4be805](https://github.com/jordanwoodson/lurk-morphe-patches/commit/f4be80589758708f3ffc34411b024ebca9a5a334))
+* **kick:** show deleted messages ([8b57d25](https://github.com/jordanwoodson/lurk-morphe-patches/commit/8b57d25b3b5cdd6185ce29c06392fe966cc71d97))
+* **kick:** stay on channel when it hosts ([51a98b4](https://github.com/jordanwoodson/lurk-morphe-patches/commit/51a98b41c3ac1501e1c775e33cdf48757aa94bd6))
+
 ## [1.10.0-dev.5](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0-dev.4...v1.10.0-dev.5) (2026-10-16)
 
 ### ✨ New Features
