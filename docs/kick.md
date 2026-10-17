@@ -293,8 +293,13 @@ be triggered from outside.
 `useAppRating` opens Kick's rating sheet after a won prediction, a number of follows or a
 redeemed reward, through `showAppRatingDialog`. That asks the rating store's
 `shouldShowAppRating` first (never shown, or more than 120 days ago), and the patch makes
-it return false. The developer-settings button that forces the sheet is untouched. The
-triggers need an account, so this was checked statically.
+it return false. The developer-settings button that forces the sheet is untouched. Those
+triggers need an account, but one more path doesn't: when a trigger fires in landscape, the
+rating store persists `shouldShowAppRatingOnNextPortrait`, and `AppRatingOrientationHandler`
+opens the sheet on the next portrait screen, gated only by the `appRating` feature flag and
+`shouldShowAppRating`. Checked on the emulator by setting that flag in Kick's AsyncStorage
+(`app-rating`) before starting Kick: with the switch off the "Rate us" sheet appeared at once;
+with it on (the default) no sheet appeared.
 
 ### Show deleted messages
 
@@ -333,12 +338,13 @@ clears the chat, the page empties its message list (`app.innerHTML = ""`, from i
 nothing, so the messages stay and new ones keep arriving.
 
 Checked on the emulator (Android 16, signed out) on large live channels. Real events: with the
-switch on, 43 timeouts in about 20 minutes and a moderator's delete left the messages in place,
-marked "(Timed out)" or "(Deleted)", with "moderator timed out X" lines; with it off and Kick
-restarted, a timeout removed the user's message and added no line, as in stock. Bans and clears
-can't be caused from outside, so in a test build with WebView debugging on, realtime frames in
-the page's own format (a delete, a permanent ban, a clear, a mid-tier KICKs gift) were handed to
-the page's socket, which runs them through Kick's own handlers. With the switches on: the
+switch on, 43 timeouts in about 20 minutes, a moderator's delete and a permanent ban left the
+messages in place, marked "(Timed out)", "(Deleted)" or "(Banned)", with "moderator timed out X"
+lines; with it off and Kick restarted, a timeout removed the user's message and added no line,
+as in stock. No moderator cleared a chat in 15 minutes across 14 large live channels. So for
+clears, and for both states of every event, a test build with WebView debugging on handed
+realtime frames in the page's own format (a delete, a permanent ban, a clear, a mid-tier KICKs
+gift) to the page's socket, which runs them through Kick's own handlers. With the switches on: the
 deleted and the banned user's messages stayed struck through with "(Deleted)" and "(Banned)"
 plus "X banned Y", the clear left all messages, and the KICKs gift showed the moderators' menu.
 With them off: "Deleted by a moderator", the banned user's messages removed with no line, the
