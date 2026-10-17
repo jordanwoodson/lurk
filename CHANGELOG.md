@@ -1,3 +1,9 @@
+## [1.11.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0...v1.11.0) (2026-10-17)
+
+### ✨ New Features
+
+* **kick:** add 7TV emotes, and hide chat lines and ignore clears in the chat page ([a920061](https://github.com/jordanwoodson/lurk-morphe-patches/commit/a920061acdd59edf242c443702545b18db279586))
+
 ## [1.11.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0...v1.11.0-dev.1) (2026-10-17)
 
 ### ✨ New Features
