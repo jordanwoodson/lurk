@@ -7,9 +7,10 @@ classes or Compose UI. Kick uses React Native/Expo, Hermes bytecode and native
 player modules. Several features are good candidates for independent Kick patches.
 
 The assessment below, up to "Workspace result", was the starting point and is kept as
-it was written. Twelve Kick patches have since been implemented; the notes from
+it was written. Twelve Kick patches were implemented from it, and a second batch,
+inspired by Xtra and by Lurk's own Twitch patches, added more. The notes from
 "Implemented patch set" on describe them and separate tested behavior from the
-remaining limitations.
+remaining limitations. Everything is checked against Kick 40.32.1.
 
 ## Input and analysis
 
@@ -214,20 +215,29 @@ details and validation follow.
 
 ## Implemented patch set
 
-| Patch | Selected by default | Behavior |
-| --- | --- | --- |
-| Change app name | No | Configurable launcher label; default `Kick Lurk`. |
-| Lurk icon | Yes | Adaptive Lurk icon in Kick green, including themed icon. |
-| Remove tracking permissions | Yes | Removes the four verified advertising/referrer permissions. |
-| Clone app | No | Separate package, permissions and 13 provider authorities; defaults to `com.kick.mobile.lurk`. |
-| Disable analytics | Yes | Firebase collection/event bridge, Insider initialization/events/queued jobs, Datadog initialization, Mux/Datazoom and PAL nonce suppression. Promise completion is preserved. |
-| Disable autoplay | Yes | Changes the initial feed-preview preference; saved preferences and Kick's own toggle take precedence. |
-| Default video quality | No | Configurable adaptive default/Auto ceiling, consistently applied to initialization, reset and cleanup. Explicit player selections retain Kick's normal rules. |
-| Hide KICKs tipping | No | Gift-shop, purchase and leaderboard tipping entry points; received gifts remain. |
-| Hide subscription upsells | No | Subscribe/gift-subscription prompts, preserving the subscribed badge. |
-| Hide Clips | No | Browse/channel/category tabs and channel clip rail. Direct playback routes remain. |
-| Clean share links | Yes | Known campaign/click parameters on Kick URLs only; functional parameters, other hosts and attachments remain. |
-| Bypass VOD ad sessions | No | Experimental original-VOD-URL fallback. Its runtime switch also starts off. No live-ad removal claim. |
+| Patch | Selected by default | Lurk settings | Behavior |
+| --- | --- | --- | --- |
+| Change app name | No | None (patch time) | Configurable launcher label; default `Kick Lurk`. |
+| Lurk icon | Yes | None (patch time) | Adaptive Lurk icon in Kick green, including themed icon. |
+| Remove tracking permissions | Yes | None (patch time) | Removes the four verified advertising/referrer permissions. |
+| Clone app | No | None (patch time) | Separate package, permissions and 13 provider authorities; defaults to `com.kick.mobile.lurk`. |
+| Disable analytics | Yes | On | Firebase collection/event bridge, Insider initialization/events/queued jobs, Datadog initialization, Mux/Datazoom and PAL nonce suppression. Promise completion is preserved. |
+| Disable autoplay | Yes | On | Changes the initial feed-preview preference; saved preferences and Kick's own toggle take precedence. |
+| Default video quality | No | On | Configurable adaptive default/Auto ceiling, consistently applied to initialization, reset and cleanup. Explicit player selections retain Kick's normal rules. |
+| Hide KICKs tipping | No | On | Gift-shop, purchase and leaderboard tipping entry points; received gifts remain. |
+| Hide subscription upsells | No | On | Subscribe/gift-subscription prompts, preserving the subscribed badge. |
+| Hide Clips | No | On | Browse/channel/category tabs and channel clip rail. Direct playback routes remain. |
+| Clean share links | Yes | On | Known campaign/click parameters on Kick URLs only; functional parameters, other hosts and attachments remain. |
+| Bypass VOD ad sessions | No | Off | Experimental original-VOD-URL fallback. No live-ad removal claim. |
+| Block update prompts | Yes | On | Kick's forced-update screen and update sheet, and the Play Store version lookup behind them. |
+
+The second batch follows one switch policy, the same in all three apps: every patch whose
+effect can be decided at run time has a Lurk setting that turns it fully off, and a new
+patch with a switch is selected by default while its switch starts off, so a freshly
+patched app behaves like stock until you turn something on. The exceptions start on:
+lockout protection (Block update prompts), nags (Hide rating prompt), local privacy (Don't
+save searches), and features that match what the same patch does by default on Twitch
+(Show deleted messages, Background audio).
 
 There is no cookie-notice or Premium-unlock patch: no corresponding Kick feature
 was established. The VOD patch does not promise removal of ads already stitched
@@ -243,6 +253,27 @@ its runtime switch restores Kick's default when disabled.
 Hermes patches disable Expo OTA updates, including the controller path that reads
 the update database. Native-only combinations leave Expo enabled. Repatch with a
 supported new app version to receive JavaScript updates.
+
+## Second batch
+
+Each entry says what Kick does, what the patch changes and how it was checked. Hermes
+switches take effect after **Restart Kick** on the Lurk settings screen; native ones apply
+at once. Function names are Kick's own JavaScript names; anonymous functions are found by
+the properties they read and the strings they load.
+
+### Block update prompts
+
+Kick's root layout renders `AppUpdateHandler`. On start it compares the remote minimum
+version (`mobileAndroidForcedUpdateVersion`) and the suggested-update flags with the
+installed version, asks Google Play for the store version, and stores the result. A child
+then opens the forced-update screen, which can't be dismissed, after five seconds, or
+shows an "update available" sheet. A patched app can't take a Play update, so the patch
+returns null from `AppUpdateHandler`: neither prompt shows and the Play lookup doesn't
+run. It is a leaf of the root layout with no children, and nothing else calls the check.
+Expo's own over-the-air updates are already off whenever Kick's JavaScript is patched.
+If Kick's server ever rejects an old version, you won't see Kick's warning: patch a newer
+version. Checked: Kick starts and renders Home with the switch on; the forced path can't
+be triggered from outside.
 
 ## Implementation contracts and verification
 
