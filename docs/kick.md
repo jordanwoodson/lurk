@@ -230,6 +230,7 @@ details and validation follow.
 | Clean share links | Yes | On | Known campaign/click parameters on Kick URLs only; functional parameters, other hosts and attachments remain. |
 | Bypass VOD ad sessions | No | Off | Experimental original-VOD-URL fallback. No live-ad removal claim. |
 | Block update prompts | Yes | On | Kick's forced-update screen and update sheet, and the Play Store version lookup behind them. |
+| Hide rating prompt | Yes | On | Kick's automatic "rate the app" prompts. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -274,6 +275,14 @@ Expo's own over-the-air updates are already off whenever Kick's JavaScript is pa
 If Kick's server ever rejects an old version, you won't see Kick's warning: patch a newer
 version. Checked: Kick starts and renders Home with the switch on; the forced path can't
 be triggered from outside.
+
+### Hide rating prompt
+
+`useAppRating` opens Kick's rating sheet after a won prediction, a number of follows or a
+redeemed reward, through `showAppRatingDialog`. That asks the rating store's
+`shouldShowAppRating` first (never shown, or more than 120 days ago), and the patch makes
+it return false. The developer-settings button that forces the sheet is untouched. The
+triggers need an account, so this was checked statically.
 
 ## Implementation contracts and verification
 
