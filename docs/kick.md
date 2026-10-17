@@ -238,6 +238,7 @@ details and validation follow.
 | Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
 | Sleep timer | Yes | Off (choice) | Pauses playback a chosen time after it last started. |
 | Default startup tab | Yes | Home (choice) | Opens Kick on Browse or Following instead. |
+| Hide Home sections | Yes | Three switches, all off | Featured, recommended streams and categories rows on Home. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -422,6 +423,13 @@ fresh start from the launcher (no saved state, no link), the patch makes the lau
 such a link before `MainActivity.onCreate` reads it. Links, notifications and restored
 activities keep their own intent, and since the activity is `singleTask`, returning to a
 running Kick keeps the current screen.
+
+### Hide Home sections
+
+`HomePageIndex` renders `FeaturedStreamsRow`, `RecommendedStreamsRow` and `CategoriesRow`,
+then the sections Kick's server configures. Each row loads its own data and shows its own
+loading placeholder, so returning null removes it and its placeholder; the server
+sections move up. The recommended row only shows when signed in.
 
 ## Implementation contracts and verification
 
