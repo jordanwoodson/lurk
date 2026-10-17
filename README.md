@@ -64,9 +64,9 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 ## Patches
 
 <!-- PATCHES_START EXPANDED -->
-> **[v1.10.0](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.10.0)**&nbsp;&nbsp;•&nbsp;&nbsp;`main`&nbsp;&nbsp;•&nbsp;&nbsp;102 patches total
+> **[v1.11.0-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/releases/tag/v1.11.0-dev.1)**&nbsp;&nbsp;•&nbsp;&nbsp;`dev`&nbsp;&nbsp;•&nbsp;&nbsp;103 patches total
 <details open>
-<summary><img src="assets/kick-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;25 patches</summary>
+<summary><img src="assets/kick-icon-round.webp" width="28" height="28" align="center" alt="">&nbsp;&nbsp;<b>Kick</b>&nbsp;&nbsp;•&nbsp;&nbsp;26 patches</summary>
 <br>
 
 **🎯 Supported versions:**
@@ -91,16 +91,17 @@ Lurk. Kick's and Twitch's JavaScript settings apply after a restart, which the s
 | Hide Clips | Hides Clips tabs in Browse, channels and categories, and the popular-clips row on channels. Shared clip links still open. |  |
 | Hide Home sections | Hides the featured carousel, recommended streams and categories rows on Home, each with its own switch. Starts off. Turn them on in Lurk settings > Interface. |  |
 | Hide KICKs tipping | Hides the chat gift-shop button, KICKs purchase button and leaderboard tipping prompt. |  |
-| Hide chat highlights | Hides pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs gifts and celebration prompts, each with its own switch. Lines in the chat itself, including sub and gift messages, are unchanged. Starts off. Turn them on in Lurk settings > Interface. |  |
+| Hide chat highlights | Hides pinned messages, polls and predictions, goals, sub and gift messages, host messages, reward redemptions, event and drops banners, pinned KICKs gifts and celebration prompts, each with its own switch. Other chat messages are unchanged. Starts off. Turn them on in Lurk settings > Interface. |  |
 | Hide rating prompt | Stops Kick from asking you to rate the app. On by default. Turn it off in Lurk settings > Interface. |  |
 | Hide subscription upsells | Hides channel Subscribe and Gift a Sub buttons and the leaderboard gift-subscription prompt. Keeps the existing subscribed indicator. |  |
 | Lurk icon | Replaces Kick's launcher icon with Lurk artwork, including Android's themed icon. |  |
 | Normal latency | Adds a switch that turns off low-latency mode for live streams: a few seconds more delay, fewer rebuffers on weak connections. Starts off. Turn it on in Lurk settings > Playback. |  |
 | Remove tracking permissions | Removes advertising ID, ad attribution and Google Play install-referrer permissions. Other identifiers and analytics require separate controls. |  |
 | Seek interval | Sets how far the rewind and forward buttons skip in videos and rewound live streams: 5, 15, 20 or 30 seconds instead of 10. Starts at Kick's 10 seconds. Choose another in Lurk settings > Playback. |  |
-| Show deleted messages | Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. Chat clears still clear. On by default, as on Twitch. Turn it off in Lurk settings > Chat. |  |
+| Show deleted messages | Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. A second switch keeps the chat when a moderator clears it. Both on by default, as on Twitch. Turn them off in Lurk settings > Chat. |  |
 | Sleep timer | Pauses playback a chosen time after it last started or resumed, including background audio. Starts off. Choose a time in Lurk settings > Playback. |  |
 | Stay on channel when it hosts | When the channel you're watching hosts another one, stays on it instead of switching when the countdown ends. Kick's Watch now button still switches. Starts off. Turn it on in Lurk settings > Interface. |  |
+| Third-party emotes | Adds a switch that shows the channel's 7TV emotes, and 7TV's global emotes, in live chat. When on, it sends the channel owner's Kick user ID to 7tv.io and loads emote images from cdn.7tv.app. Not in the emote picker or autocomplete. Starts off. Turn it on in Lurk settings > Chat. |  |
 
 </details>
 

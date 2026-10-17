@@ -1,6 +1,6 @@
 {
   "NOTE": "Do NOT manually edit this file. This file is automatically updated when the release workflow (release.yml) runs. Manually editing this file can break your releases and break third party tools that use this file.",
-  "version": "1.10.0",
+  "version": "1.11.0-dev.1",
   "patches": [
     {
       "name": "AMOLED black",
@@ -1825,7 +1825,7 @@
     },
     {
       "name": "Hide chat highlights",
-      "description": "Hides pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs gifts and celebration prompts, each with its own switch. Lines in the chat itself, including sub and gift messages, are unchanged. Starts off. Turn them on in Lurk settings > Interface.",
+      "description": "Hides pinned messages, polls and predictions, goals, sub and gift messages, host messages, reward redemptions, event and drops banners, pinned KICKs gifts and celebration prompts, each with its own switch. Other chat messages are unchanged. Starts off. Turn them on in Lurk settings > Interface.",
       "default": true,
       "category": null,
       "compatiblePackages": [
@@ -2619,7 +2619,7 @@
     },
     {
       "name": "Show deleted messages",
-      "description": "Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. Chat clears still clear. On by default, as on Twitch. Turn it off in Lurk settings > Chat.",
+      "description": "Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete is meant for the channel's moderators. A second switch keeps the chat when a moderator clears it. Both on by default, as on Twitch. Turn them off in Lurk settings > Chat.",
       "default": true,
       "category": null,
       "compatiblePackages": [
@@ -2915,6 +2915,34 @@
           "targets": [
             {
               "version": "31.6.0",
+              "versionCodes": null,
+              "isExperimental": false,
+              "minSdk": null,
+              "description": null
+            }
+          ]
+        }
+      ],
+      "options": []
+    },
+    {
+      "name": "Third-party emotes",
+      "description": "Adds a switch that shows the channel's 7TV emotes, and 7TV's global emotes, in live chat. When on, it sends the channel owner's Kick user ID to 7tv.io and loads emote images from cdn.7tv.app. Not in the emote picker or autocomplete. Starts off. Turn it on in Lurk settings > Chat.",
+      "default": true,
+      "category": null,
+      "compatiblePackages": [
+        {
+          "packageName": "com.kick.mobile",
+          "name": "Kick",
+          "description": null,
+          "apkFileType": "APKM",
+          "appIconColor": "#53FC18",
+          "signatures": [
+            "b12320227268c9c37e190b493120a7f6ce83c0e9a761f9213df677b58d095b73"
+          ],
+          "targets": [
+            {
+              "version": "40.32.1",
               "versionCodes": null,
               "isExperimental": false,
               "minSdk": null,
