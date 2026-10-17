@@ -14,10 +14,14 @@ from io import BytesIO
 import json
 from pathlib import Path
 import re
+import sys
 from zipfile import is_zipfile, ZipFile
 
 from hermes_dec.parsers.hbc_bytecode_parser import parse_hbc_bytecode
 from hermes_dec.parsers.hbc_file_parser import HBCReader
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # Also under python -I.
+from verify_literals import verify as verify_literals  # noqa: E402
 
 STOCK_SHA256 = "a9d911b3f8b640d8e56b7527929a093c2356d97992409c453d167fdf39538d9a"
 
@@ -41,9 +45,22 @@ def decoded(reader, header, data):
     return instructions
 
 
+def selected_bytes(edit, value):
+    """What an edit writes for a setting value: "true"/"false" for a switch, a number for a choice."""
+    if "values" in edit:
+        chosen = edit["values"].get(value)
+    else:
+        chosen = edit["replacement"] if value == "true" else None
+    return bytes.fromhex(chosen if chosen is not None else edit["original"])
+
+
+def default_value(edit):
+    return edit["default"] if "values" in edit else ("true" if edit["default"] else "false")
+
+
 def verify(stock, embedded, manifest):
     assert sha256(stock).hexdigest() == STOCK_SHA256, "Unexpected stock asset"
-    assert manifest["format"] == 1 and manifest["version"] == 99, "Unexpected manifest format"
+    assert manifest["format"] == 2 and manifest["version"] == 99, "Unexpected manifest format"
     assert manifest["sourceSha256"] == STOCK_SHA256, "Manifest source differs"
     assert sha256(embedded).hexdigest() == manifest["embeddedSha256"], "Embedded hash differs"
     assert len(embedded) == len(stock), "Bundle length changed"
@@ -54,40 +71,57 @@ def verify(stock, embedded, manifest):
     previous_end = 0
     for edit in edits:
         assert re.fullmatch(r"[a-z][a-z0-9_]*", edit["key"]), "Invalid setting key"
-        for field in ("original", "replacement"):
-            assert re.fullmatch(r"(?:[0-9a-f]{2})+", edit[field]), "Invalid lowercase byte encoding"
-        original, replacement = bytes.fromhex(edit["original"]), bytes.fromhex(edit["replacement"])
+        candidates = [edit["original"]] + (list(edit["values"].values()) if "values" in edit else [edit["replacement"]])
+        for value in candidates:
+            assert re.fullmatch(r"(?:[0-9a-f]{2})+", value), "Invalid lowercase byte encoding"
+            assert len(value) == len(edit["original"]), "Relocating edit"
+        original = bytes.fromhex(edit["original"])
         offset = edit["offset"]
-        assert len(original) == len(replacement), "Relocating edit"
         assert previous_end <= offset and offset + len(original) <= len(stock) - 20, "Overlapping or unbounded edits"
         previous_end = offset + len(original)
         assert stock[offset:previous_end] == original, "Original bytes differ"
-        assert type(edit["default"]) is bool, "Default is not a boolean"
-        if edit["default"]:
-            expected[offset:previous_end] = replacement
+        if "values" in edit:
+            assert type(edit["default"]) is str and all(re.fullmatch(r"-?[0-9]+", value)
+                                                        for value in list(edit["values"]) + [edit["default"]])
+        else:
+            assert type(edit["default"]) is bool, "Default is not a boolean"
+        expected[offset:previous_end] = selected_bytes(edit, default_value(edit))
     assert footer(expected) == embedded, "Embedded content differs outside declared edits"
 
     reader = HBCReader()
     reader.read_whole_file(BytesIO(stock))
     assert reader.header.version == 99
     affected = set()
+    literal_edits = []
     for edit in edits:
         owners = [index for index, header in enumerate(reader.function_headers)
                   if header.offset <= edit["offset"] and
                   edit["offset"] + len(bytes.fromhex(edit["original"])) <= header.offset + header.bytecodeSizeInBytes]
-        assert len(owners) == 1, "Edit is not contained in one unique function"
-        affected.add(owners[0])
+        if owners:
+            assert len(owners) == 1, "Edit is not contained in one unique function"
+            affected.add(owners[0])
+        else:
+            literal_edits.append(edit)
+    if literal_edits:
+        # Edits outside function bytecode must be literal values only the intended literals read.
+        verify_literals(stock, manifest)
 
     keys = sorted({edit["key"] for edit in edits})
-    # All off, all on, and each toggle alone must remain valid independently.
-    states = [set(), set(keys)] + [{key} for key in keys]
-    for enabled in states:
+    choices = {edit["key"]: sorted(set(edit["values"]) | {"0", "-7"}) for edit in edits if "values" in edit}
+    def off(key):
+        return "-7" if key in choices else "false"
+    # All off, all on, each switch alone and each choice value alone (including "0" and an unknown value).
+    states = [{key: off(key) for key in keys}, {key: "true" for key in keys if key not in choices}]
+    for key in keys:
+        for value in choices.get(key, ["true"]):
+            states.append({other: off(other) for other in keys} | {key: value})
+    for state in states:
         selected = bytearray(embedded)
         for edit in edits:
-            value = bytes.fromhex(edit["replacement"] if edit["key"] in enabled else edit["original"])
+            value = selected_bytes(edit, state.get(edit["key"], off(edit["key"])))
             selected[edit["offset"]:edit["offset"] + len(value)] = value
         selected = footer(selected)
-        if not enabled:
+        if all(value == off(key) for key, value in state.items()):
             assert selected == stock, "All-off failed to restore stock byte for byte"
         for index in affected:
             header = reader.function_headers[index]
@@ -118,8 +152,9 @@ def verify(stock, embedded, manifest):
         assert any(item.inst.name == "LoadConstFalse" and item.arg1 == 2 for item in new_instructions)
         assert reader.object_shape_keys[3987][2].strip("'\"") == "showStreamPreviews"
 
-    print(f"PASS: {len(edits)} edits in {len(affected)} functions; {len(keys)} independent settings; "
-          "all-off exact restoration, unchanged layout, valid instruction boundaries and branches")
+    print(f"PASS: {len(edits)} edits in {len(affected)} functions and {len(literal_edits)} literals; "
+          f"{len(keys)} independent settings ({len(choices)} choices); all-off exact restoration, unchanged "
+          "layout, valid instruction boundaries and branches")
 
 
 if __name__ == "__main__":

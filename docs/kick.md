@@ -249,26 +249,52 @@ supported new app version to receive JavaScript updates.
 The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its function
 and string tables, requires unique targets and rejects overlapping or unequal-length
 edits. The official Morphe `hermesPatch` performs the actual replacements and footer
-update. A generated manifest records the original/default byte ranges. The native
-bundle loader takes a settings snapshot. When every switch is at its patch-time
+update. A generated manifest (`assets/lurk-hermes.json`, format 2) records each edit's
+original bytes and, for a switch, its replacement and default, or, for a choice, the
+bytes each choice value writes and the value the APK ships with. The native
+bundle loader takes a settings snapshot. When every setting is at its patch-time
 default it loads the embedded asset as is and deletes any earlier private copy;
 otherwise it verifies the embedded hash, chooses ranges from the snapshot, refreshes
-SHA-1 and atomically writes an app-private bundle. Disabling every switch
-reconstructs the original bundle byte for byte; reloading in the same process keeps
-the original snapshot. On a manifest/file error it logs and uses embedded defaults.
+SHA-1 and atomically writes an app-private bundle. Turning every switch off and every
+choice to 0 reconstructs the original bundle byte for byte; reloading in the same
+process keeps the original snapshot. On a manifest/file error it logs and uses
+embedded defaults.
+
+The edit helpers, all equal-length and fail-closed:
+
+- `returnNull` / `returnAtEntry`: return null, undefined or false as a function's first
+  instruction. `returnAtEntry` takes any prologue of environment, global, parameter and
+  property loads, decoded with the v99 instruction lengths, and refuses a function that
+  branches into the replaced bytes.
+- `trueProperty` / `falseProperty`: the function's single `GetById` of a property loads
+  a constant instead, in the same general register.
+- `skipGuard`: a handler's opening `if (!event) return;` jump becomes a `Mov` of the
+  tested register onto itself, so the handler always returns before doing anything.
+- `dataEdit` / `dataChoice`: values in the literal buffer that array and object literals
+  read, as a switch or a choice. Their replacement window is grown until its original
+  bytes are unique in the bundle.
+- `functionUsing`: selects an anonymous function by the properties it reads and the
+  strings it loads, rather than by bytes that embed build-local string IDs.
 
 Verification tools retained in this repository:
 
 - `tests/kick/verify_resources.py`: actual decoded resource/manifest assertions,
   including signature-protected token sharing, intact internet permission and
   (`--analytics`) Firebase Analytics starting disabled.
-- `tests/kick/HermesProbe.kt`: actual-bundle parsing, negative controls, uniqueness,
-  overlap rejection, preview literals and exact restoration.
+- `tests/kick/HermesProbe.kt`: actual-bundle parsing, negative controls for every
+  helper, uniqueness, overlap rejection, preview literals, unique literal windows and
+  exact restoration. It runs on the JVM, compiled with `kick/shared/Hermes.kt` against
+  Morphe Desktop.
 - `tests/kick/test_hermes.py`: independent instruction/branch decoding of emitted
-  edits, all-on/all-off/individual combinations and SHA checks.
+  edits; all-on, all-off, each switch alone and each choice value (plus 0 and an
+  unknown value); SHA checks.
+- `tests/kick/verify_literals.py`: for literal-buffer edits, decodes every function and
+  requires that only the intended array/object literals read the edited bytes, and that
+  every choice value keeps each literal's tags, count and length. `test_hermes.py` runs it.
 - `bin/test-kick`: executes the injected Java loader on Android, checking defaults,
-  process snapshots, independent switches and exact stock restoration; invokes the
-  two Insider job guards and checks synchronous completion without SDK dispatch.
+  process snapshots, independent switches, the exact bytes of each choice value and
+  exact stock restoration; invokes the two Insider job guards and checks synchronous
+  completion without SDK dispatch.
 - `tests/kick/verify_privacy.py`: production share/PAL helpers with boundary doubles;
   31 assertions, including host spoofing, functional parameters and switch isolation.
 - `tests/kick/verify_quality.py`: interprets actual reset/setter instructions to

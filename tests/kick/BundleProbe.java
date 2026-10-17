@@ -8,8 +8,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -18,6 +21,7 @@ import org.json.JSONObject;
 public final class BundleProbe {
     private static final String STOCK = "a9d911b3f8b640d8e56b7527929a093c2356d97992409c453d167fdf39538d9a";
     private static final Map<String, Boolean> switches = new HashMap<>();
+    private static final Map<String, String> choices = new HashMap<>();
 
     private static void check(boolean value, String message) {
         if (!value) throw new AssertionError(message);
@@ -27,6 +31,12 @@ public final class BundleProbe {
         StringBuilder value = new StringBuilder();
         for (byte b : MessageDigest.getInstance(algorithm).digest(bytes)) value.append(String.format("%02x", b & 255));
         return value.toString();
+    }
+
+    private static byte[] unhex(String value) {
+        byte[] result = new byte[value.length() / 2];
+        for (int i = 0; i < result.length; i++) result[i] = (byte) Integer.parseInt(value.substring(2 * i, 2 * i + 2), 16);
+        return result;
     }
 
     private static byte[] read(AssetManager assets, String name) throws Exception {
@@ -88,6 +98,9 @@ public final class BundleProbe {
                 if (method.getName().equals("getBoolean")) {
                     return switches.getOrDefault((String) values[0], (Boolean) values[1]);
                 }
+                if (method.getName().equals("getString")) {
+                    return choices.getOrDefault((String) values[0], (String) values[1]);
+                }
                 throw new UnsupportedOperationException(method.getName());
             });
         Context context = new ContextWrapper(null) {
@@ -114,10 +127,20 @@ public final class BundleProbe {
         Files.write(stale.toPath(), new byte[]{1});
         check(prepare.invoke(null, assets, "assets://index.android.bundle") == null, "Defaults made a private copy");
         check(!stale.exists(), "Defaults left a stale private copy");
-        for (int i = 0; i < edits.length(); i++) switches.put(edits.getJSONObject(i).getString("key"), false);
+        Map<String, JSONObject> choiceValues = new HashMap<>();
+        for (int i = 0; i < edits.length(); i++) {
+            JSONObject edit = edits.getJSONObject(i);
+            if (edit.has("values")) {
+                choices.put(edit.getString("key"), "0");
+                choiceValues.put(edit.getString("key"), edit.getJSONObject("values"));
+            } else {
+                switches.put(edit.getString("key"), false);
+            }
+        }
         check(prepare.invoke(null, assets, "assets://index.android.bundle") == null, "Settings changed without restart");
 
-        // Simulate process restart; every edit off must reconstruct the independently hashed stock bundle.
+        // Simulate process restart; every switch off and every choice at 0 must reconstruct the
+        // independently hashed stock bundle.
         byte[] restored = load(prepare, prepared, defaults, assets, embedded);
         check(digest("SHA-256", restored).equals(STOCK), "All-off did not restore the stock bundle");
         for (String key : switches.keySet()) {
@@ -130,7 +153,33 @@ public final class BundleProbe {
                 Arrays.copyOfRange(selected, content.length, selected.length)), "Invalid Hermes footer: " + key);
             switches.put(key, false);
         }
-        System.out.println("PASS: loader defaults, process snapshot, all-off stock restoration, " + switches.size() + " independent switches");
+        // Each choice value writes exactly its bytes at its edits; an unknown value keeps the original.
+        int values = 0;
+        for (String key : choiceValues.keySet()) {
+            JSONObject options = choiceValues.get(key);
+            List<String> tried = new ArrayList<>();
+            for (Iterator<String> names = options.keys(); names.hasNext(); ) tried.add(names.next());
+            tried.add("-7");
+            for (String value : tried) {
+                choices.put(key, value);
+                byte[] selected = load(prepare, prepared, defaults, assets, embedded);
+                byte[] expected = restored.clone();
+                for (int i = 0; i < edits.length(); i++) {
+                    JSONObject edit = edits.getJSONObject(i);
+                    if (!key.equals(edit.getString("key"))) continue;
+                    String bytes = edit.getJSONObject("values").optString(value, edit.getString("original"));
+                    byte[] write = unhex(bytes);
+                    System.arraycopy(write, 0, expected, edit.getInt("offset"), write.length);
+                }
+                byte[] content = Arrays.copyOf(expected, expected.length - 20);
+                System.arraycopy(MessageDigest.getInstance("SHA-1").digest(content), 0, expected, content.length, 20);
+                check(Arrays.equals(selected, expected), "Choice bytes differ: " + key + "=" + value);
+                values++;
+            }
+            choices.put(key, "0");
+        }
+        System.out.println("PASS: loader defaults, process snapshot, all-off stock restoration, " + switches.size() +
+            " independent switches, " + choiceValues.size() + " choices with " + values + " exact values");
         verifyAnalyticsJobs(settings);
     }
 }
