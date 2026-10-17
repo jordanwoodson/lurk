@@ -234,6 +234,7 @@ details and validation follow.
 | Show deleted messages | Yes | On | Moderator-style struck-through deleted, timed-out and banned messages in chat. |
 | Hide chat highlights | Yes | Eight switches, all off | Pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs, celebration prompts. |
 | Stay on channel when it hosts | Yes | Off | The host dialog's countdown no longer switches channels. |
+| Background audio | Yes | On; a second switch for picture-in-picture, off | Audio keeps playing through Kick's own audio service when you leave the app. |
 | Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
@@ -358,6 +359,30 @@ whose end callback switches to the hosted channel if you're on a stream, clip or
 screen. The patch returns from that callback, so the dialog stays at zero with its buttons:
 Watch now still switches and closing it keeps you where you are. Hosting can't be
 triggered on demand, so this was checked statically.
+
+### Background audio
+
+Kick already keeps audio going with the screen locked and in picture-in-picture: its
+`KickIvsPlayerV2Manager.shouldRunAudioService()` is `isPlaying && (screen locked ||
+picture-in-picture)`, and `AudioService` is a media-playback foreground service with a
+notification. Leaving the app without picture-in-picture (the device has none, or the
+second switch is on) starts nothing, so the audio stops once Android freezes the app.
+
+The patch starts Kick's audio service from `MainActivity.onUserLeaveHint()`, while Kick is
+still in front, which Android allows; starting it later from the background would throw.
+`shouldRunAudioService()` then also returns true while Kick was left playing, so the player
+state changes, unlock and resume that would stop the service keep it, and
+`onActivityResume` hands control back to Kick's own rule. With background audio on and
+picture-in-picture off by default, the only change from stock is where Kick couldn't open
+picture-in-picture: the audio keeps playing. Closing the picture-in-picture window still
+pauses, as in stock. "No automatic picture-in-picture" skips Kick's automatic window when
+you leave while watching: both the window Kick opens from `onUserLeaveHint` and, on
+Android 12 and later, the system's auto-enter, which Kick turns on in the window's
+picture-in-picture parameters (`updatePipParams`). Kick's own picture-in-picture button
+still works. Checked on the emulator (Android 16), signed out, on a live stream: with
+the defaults, Home opens picture-in-picture and `AudioService` runs in the foreground as
+in stock; with automatic picture-in-picture off, Home leaves no window, `AudioService`
+runs in the foreground and the stream's audio track keeps playing.
 
 ### Normal latency
 
