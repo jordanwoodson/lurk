@@ -11,6 +11,7 @@ import io.github.jordanwoodson.patches.shared.settings.Section
 import io.github.jordanwoodson.patches.shared.settings.SwitchSetting
 
 private const val SHOW_DELETED = "chat_show_deleted"
+private const val IGNORE_CLEARS = "chat_ignore_clears"
 
 @Suppress("unused")
 val showDeletedMessagesPatch = bytecodePatch(
@@ -18,11 +19,11 @@ val showDeletedMessagesPatch = bytecodePatch(
     description = "Keeps chat messages that moderators delete, or remove with a timeout or ban, struck through " +
         "with a (Deleted), (Timed out) or (Banned) label, the way Kick's chat shows them to moderators, along with " +
         "its ban, timeout and unban lines. Large KICKs gifts in chat also get the moderators' menu, whose Delete " +
-        "is meant for the channel's moderators. Chat clears still clear. On by default, as on Twitch. Turn it " +
-        "off in Lurk settings > Chat.",
+        "is meant for the channel's moderators. A second switch keeps the chat when a moderator clears it. Both " +
+        "on by default, as on Twitch. Turn them off in Lurk settings > Chat.",
 ) {
     compatibleWith(COMPATIBILITY_KICK)
-    dependsOn(kickHermesPatch)
+    dependsOn(kickHermesPatch, kickChatPagePatch)
 
     execute {
         moderatorChatView()
@@ -32,6 +33,14 @@ val showDeletedMessagesPatch = bytecodePatch(
                 SHOW_DELETED,
                 "Show deleted messages",
                 "Keep deleted, timed-out and banned messages, struck through, as moderators see them.",
+                Section.CHAT,
+                restart = true,
+            ),
+            // The chat page empties its message list on a clear; KickChat's script keeps it.
+            SwitchSetting(
+                IGNORE_CLEARS,
+                "Ignore chat clears",
+                "Keep the messages when a moderator clears the chat. Timeouts and bans still apply.",
                 Section.CHAT,
                 restart = true,
             ),

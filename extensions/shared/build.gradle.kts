@@ -14,3 +14,9 @@ configurations.configureEach {
         exclude(group = "org.jetbrains", module = "annotations")
     }
 }
+
+dependencies {
+    // Kick's 7TV interceptor implements okhttp3.Interceptor. Kick ships OkHttp unrenamed; the patch checks the
+    // classes and methods it uses at patch time, and the library stays out of the dex.
+    compileOnly(libs.okhttp)
+}
