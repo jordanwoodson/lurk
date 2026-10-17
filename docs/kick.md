@@ -239,6 +239,7 @@ details and validation follow.
 | Sleep timer | Yes | Off (choice) | Pauses playback a chosen time after it last started. |
 | Default startup tab | Yes | Home (choice) | Opens Kick on Browse or Following instead. |
 | Hide Home sections | Yes | Three switches, all off | Featured, recommended streams and categories rows on Home. |
+| Seek interval | Yes | Kick's 10 seconds (choice) | 5, 15, 20 or 30-second skips in videos and rewound live streams. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -430,6 +431,14 @@ running Kick keeps the current screen.
 then the sections Kick's server configures. Each row loads its own data and shows its own
 loading placeholder, so returning null removes it and its placeholder; the server
 sections move up. The recommended row only shows when signed in.
+
+### Seek interval
+
+Kick's player config holds `controls.skip.scale = {livestream: [60], vod: [10, 10, 10],
+'live-vod': [10, 10, 10], clip: [10]}`. The `vod` and `live-vod` arrays read the same three
+integers in the literal buffer, and nothing else reads them, so a choice edit rewrites the
+three values. The live-edge and clip arrays share their bytes with unrelated literals and
+stay.
 
 ## Implementation contracts and verification
 
