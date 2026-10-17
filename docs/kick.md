@@ -241,6 +241,7 @@ details and validation follow.
 | Hide Home sections | Yes | Three switches, all off | Featured, recommended streams and categories rows on Home. |
 | Seek interval | Yes | Kick's 10 seconds (choice) | 5, 15, 20 or 30-second skips in videos and rewound live streams. |
 | Don't save searches | Yes | On | New searches aren't added to the search history. |
+| AMOLED black | Yes | Off (choice) | Pure black background, optionally near-black cards and sheets. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -447,6 +448,18 @@ The search-history store's `addHistoryEntry` prepends each query. It returns at 
 opening guard instead, so nothing is added; removing a saved search still works. The store
 is saved together with the sign-in tokens, so the patch doesn't clear it natively, and
 searches saved before stay until you remove them.
+
+### AMOLED black
+
+Kick is dark only. Its `Colors.surface.default` object holds `highest` `#1C1E20`, `base`
+`#141517` and `lowest` `#090A0B`. Hermes stores strings overlapping each other (`'#141517'`
+shares bytes with `'1'`, `'17'` and others), so the colours aren't edited in place: the
+object's string IDs in the literal buffer are swapped for existing strings. "Black
+background" makes `lowest` `#000000`; "Black background and surfaces" also makes `base`
+`#0B0B0C`, one step above black, so cards and sheets still stand out. `highest` (raised
+elements and borders) stays. `MainActivity.onCreate` also sets the window background,
+seen during transitions, to black. The splash screen, drawn before any app code runs,
+stays Kick's `#090A0B`, and colours hardcoded in components stay as they are.
 
 ## Implementation contracts and verification
 
