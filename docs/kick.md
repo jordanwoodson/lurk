@@ -234,6 +234,7 @@ details and validation follow.
 | Show deleted messages | Yes | On | Moderator-style struck-through deleted, timed-out and banned messages in chat. |
 | Hide chat highlights | Yes | Eight switches, all off | Pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs, celebration prompts. |
 | Stay on channel when it hosts | Yes | Off | The host dialog's countdown no longer switches channels. |
+| Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -358,6 +359,13 @@ screen. The patch returns from that callback, so the dialog stays at zero with i
 Watch now still switches and closing it keeps you where you are. Hosting can't be
 triggered on demand, so this was checked statically.
 
+### Normal latency
+
+Kick's player view turns on IVS low-latency mode for every player it creates, and nothing
+else sets it. The patch hooks the IVS SDK's `setLiveLowLatencyEnabled(boolean)`, the same
+hook Lurk uses on Twitch: with the switch on, the request becomes false. It applies to
+streams opened afterwards.
+
 ## Implementation contracts and verification
 
 The Hermes helper accepts only the pinned v99 bundle SHA-256, parses its function
@@ -418,6 +426,9 @@ Verification tools retained in this repository:
   negative control reproduces the initial-only patch's 1080p-to-720p reset bug.
 - `tests/kick/verify_analytics_jobs.py`: compares actual decoded job methods with
   stock, including unchanged instructions, branches and exception handlers when off.
+- `tests/kick/verify_player.py`: production `KickPlayer` with boundary doubles: the
+  mobile-data ceiling's decision table (with and without a Default video quality
+  height), normal latency and the background audio decisions.
 
 The combined APK was built and patched with all twelve patches. Its resource,
 signature and alignment checks passed. Native-only and Clips-only combinations
