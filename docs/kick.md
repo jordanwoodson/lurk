@@ -240,6 +240,7 @@ details and validation follow.
 | Default startup tab | Yes | Home (choice) | Opens Kick on Browse or Following instead. |
 | Hide Home sections | Yes | Three switches, all off | Featured, recommended streams and categories rows on Home. |
 | Seek interval | Yes | Kick's 10 seconds (choice) | 5, 15, 20 or 30-second skips in videos and rewound live streams. |
+| Don't save searches | Yes | On | New searches aren't added to the search history. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -439,6 +440,13 @@ Kick's player config holds `controls.skip.scale = {livestream: [60], vod: [10, 1
 integers in the literal buffer, and nothing else reads them, so a choice edit rewrites the
 three values. The live-edge and clip arrays share their bytes with unrelated literals and
 stay.
+
+### Don't save searches
+
+The search-history store's `addHistoryEntry` prepends each query. It returns at its
+opening guard instead, so nothing is added; removing a saved search still works. The store
+is saved together with the sign-in tokens, so the patch doesn't clear it natively, and
+searches saved before stay until you remove them.
 
 ## Implementation contracts and verification
 
