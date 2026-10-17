@@ -153,6 +153,9 @@ bash bin/test-twitch "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"       # inject
 bash bin/test-twitch-privacy "$MORPHE_WORK/out/twitch-31.6.0-patched.apk"
 ```
 
+- The emulator's host renderer keeps about 400 MB for every app process that is killed, so a day of
+  force-stops and relaunches adds up. `bin/emu status` shows its size; `bin/emu stop` then `bin/emu start`
+  releases it. On Linux it runs under a 12 GB memory cap.
 - `bin/test-<app>` and the other `bin/test-twitch-*` scripts compile a probe from `tests/<app>/`
   with the Android SDK, push it with the patched APK and run it with `app_process`, so the
   probe calls the app's real, patched methods on ART. Several accept `--compile-only`.
