@@ -1,3 +1,9 @@
+## [1.11.1-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.11.0...v1.11.1-dev.1) (2026-10-17)
+
+### 🐛 Bug Fixes
+
+* **kick:** keep Watch now working with Stay on channel when it hosts ([ea45640](https://github.com/jordanwoodson/lurk-morphe-patches/commit/ea456409fff2c00eacb89160ea5babffa97f5221))
+
 ## [1.11.0](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.10.0...v1.11.0) (2026-10-17)
 
 ### ✨ New Features
