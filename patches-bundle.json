@@ -1,7 +1,7 @@
 {
-  "created_at": "2026-10-17T08:30:31",
-  "description": "## [1.11.1-dev.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.11.0...v1.11.1-dev.1) (2026-10-17)\n\n### 🐛 Bug Fixes\n\n* **kick:** keep Watch now working with Stay on channel when it hosts ([ea45640](https://github.com/jordanwoodson/lurk-morphe-patches/commit/ea456409fff2c00eacb89160ea5babffa97f5221))",
-  "download_url": "https://github.com/jordanwoodson/lurk-morphe-patches/releases/download/v1.11.1-dev.1/patches-1.11.1-dev.1.mpp",
+  "created_at": "2026-10-17T08:33:23",
+  "description": "## [1.11.1](https://github.com/jordanwoodson/lurk-morphe-patches/compare/v1.11.0...v1.11.1) (2026-10-17)\n\n### 🐛 Bug Fixes\n\n* **kick:** keep Watch now working with Stay on channel when it hosts ([ea45640](https://github.com/jordanwoodson/lurk-morphe-patches/commit/ea456409fff2c00eacb89160ea5babffa97f5221))",
+  "download_url": "https://github.com/jordanwoodson/lurk-morphe-patches/releases/download/v1.11.1/patches-1.11.1.mpp",
   "signature_download_url": "",
-  "version": "1.11.1-dev.1"
+  "version": "1.11.1"
 }
