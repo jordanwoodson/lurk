@@ -1,10 +1,13 @@
 name: Release
 
+# Pushes to main publish stable releases and pushes to dev pre-releases, when their commits call for one
+# (see .github/scripts/release.py). Every push also gets a build check. "Run workflow" publishes a release
+# an earlier run left unfinished.
 on:
   workflow_dispatch:
   push:
 
-# Two quick pushes would otherwise run semantic-release on the same branch at once.
+# One run per branch at a time. Each releases the branch as it is when it starts.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
@@ -14,7 +17,7 @@ jobs:
     name: Release
     permissions:
       contents: write
-      packages: write
+      packages: read
       id-token: write
       attestations: write
     runs-on: ubuntu-latest
@@ -30,34 +33,25 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 'lts/*'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      # Semantic release runs its own Gradle build command.
-      # Only dev and main branch will generate a release as specified by .releaserc
+      # Morphe's Gradle plugin is published on GitHub Packages; GITHUB_TOKEN can read it.
       - name: Release
-        uses: cycjimmy/semantic-release-action@v6
         id: release
+        if: github.ref_name == 'main' || github.ref_name == 'dev'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/release.py
 
+      # Also after a run that published something and then failed.
       - name: Attest
-        if: steps.release.outputs.new_release_published == 'true'
+        if: ${{ !cancelled() && steps.release.outputs.published == 'true' }}
         uses: actions/attest-build-provenance@v4
         with:
-          subject-name: 'Morphe Patches ${{ steps.release.outputs.new_release_git_tag }}'
-          subject-path: patches/build/libs/patches-*.mpp
+          subject-path: ${{ steps.release.outputs.assets }}
 
-      # Always verify compilation when semantic-release did not publish a release.
-      # This covers non-main/dev branches, chore commits, docs commits, etc.
+      # The release build covers the branch; anything else (no release, other branches) builds here.
       - name: Verify project compiles
-        if: steps.release.outputs.new_release_published != 'true'
+        if: steps.release.outputs.built != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :patches:buildAndroid clean --no-daemon
+        run: ./gradlew :patches:buildAndroid --no-daemon

@@ -175,6 +175,13 @@ worth pinning, and say in the pull request what you ran.
 - Work on the `dev` branch. Pushing `feat:` or `fix:` commits there makes `release.yml` publish a
   pre-release; `chore:` commits don't release but still build. Merge `dev` into `main` (no squash)
   for a stable release; `open_pull_request.yml` keeps a `dev` → `main` PR open for that.
+- `release.yml` runs `.github/scripts/release.py`. The version comes from the commits since the last
+  release tag on the branch: `feat` is a minor release, `fix`, `perf` and `bump` a patch, `feat!:` or a
+  `BREAKING CHANGE:` footer a major one; `dev` adds `-dev.N`. The script writes the generated files,
+  builds the bundle, pushes the release commit and its tag together, then creates the GitHub release with
+  the `.mpp`. If that last step fails, the next run (or "Run workflow" on the Release workflow) publishes
+  the missing release. A stable release is merged back into `dev`. To preview the next release and its
+  notes: `git fetch && python3 .github/scripts/release.py --dry-run --branch dev`.
 - Use semantic commit messages: `feat(twitch): ...`, `fix(kick): ...`, `chore: ...`.
 - Don't hand-edit generated files: `patches-list.json`, `patches-bundle.json`, `CHANGELOG.md`, or
   the patch list in `README.md` (written by `.github/scripts/generate_patches_readme.py`). Don't
