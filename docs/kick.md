@@ -233,7 +233,7 @@ details and validation follow.
 | Hide rating prompt | Yes | On | Kick's automatic "rate the app" prompts. |
 | Show deleted messages | Yes | On; Ignore chat clears, on | Moderator-style struck-through deleted, timed-out and banned messages in chat; a moderator's clear keeps the messages. |
 | Hide chat highlights | Yes | Nine switches, all off | Pinned messages, polls and predictions, goals, sub and gift messages, host messages, reward redemptions, event and drops banners, pinned KICKs, celebration prompts. |
-| Stay on channel when it hosts | Yes | Off | The host dialog's countdown no longer switches channels. |
+| Stay on channel when it hosts | Yes | Off | The host dialog waits for Watch now instead of switching when its countdown ends. |
 | Background audio | Yes | On; a second switch for picture-in-picture, off | Audio keeps playing through Kick's own audio service when you leave the app. |
 | Normal latency | Yes | Off | Turns off low-latency mode for live streams. |
 | Sleep timer | Yes | Off (choice) | Pauses playback a chosen time after it last started. |
@@ -330,17 +330,20 @@ then shows as an ordinary one, as in stock Kick.
 "Ignore chat clears", the second switch, is on by default as on Twitch. When a moderator
 clears the chat, the page empties its message list (`app.innerHTML = ""`, from its
 `ChatroomClearEvent` handler); the chat page script makes that one assignment on the list do
-nothing, so the messages stay and new ones keep arriving. A clear can't be triggered from
-outside, so the switch was checked with the script on a copy of the page's structure
-(`tests/kick/test_chat_page.py`) and by confirming in the patched app that the page's list
-carries the change.
+nothing, so the messages stay and new ones keep arriving.
 
-Checked on the emulator (Android 16, signed out) on a large live channel's Chat tab, by
-screenshots and the realtime event log: with the switch on, both timeouts in six minutes left
-the user's messages in place marked "(Timed out)" and added "moderator timed out X for 2
-minutes"; with it off and Kick restarted, a timeout removed the user's message and added no
-line, as in stock. Manual deletes and bans didn't happen during the tests; they go through the
-same flag.
+Checked on the emulator (Android 16, signed out) on large live channels. Real events: with the
+switch on, 43 timeouts in about 20 minutes and a moderator's delete left the messages in place,
+marked "(Timed out)" or "(Deleted)", with "moderator timed out X" lines; with it off and Kick
+restarted, a timeout removed the user's message and added no line, as in stock. Bans and clears
+can't be caused from outside, so in a test build with WebView debugging on, realtime frames in
+the page's own format (a delete, a permanent ban, a clear, a mid-tier KICKs gift) were handed to
+the page's socket, which runs them through Kick's own handlers. With the switches on: the
+deleted and the banned user's messages stayed struck through with "(Deleted)" and "(Banned)"
+plus "X banned Y", the clear left all messages, and the KICKs gift showed the moderators' menu.
+With them off: "Deleted by a moderator", the banned user's messages removed with no line, the
+chat emptied (40 lines to none) and no menu, as in stock. Whether Kick's server refuses the
+menu's Delete from a non-moderator wasn't tested; it needs an account.
 
 ### Hide chat highlights
 
@@ -367,18 +370,34 @@ never called. The chat page script hides those lines by the page's own classes f
 so they take no space; the page still receives them. Pinned KICKs sits here rather than under
 Hide KICKs tipping because it shows a gift someone already sent. Checked on the emulator: the
 pinned KICKs and prediction cards disappear, and with the sub callbacks returning no sub card
-appeared above chat. In the patched app's chat page, with the three line switches on, the page's
-own sub, gift, host and reward elements were hidden and messages weren't; the current page still
-builds those lines with those classes. No new sub, gift, host or reward arrived on the channel
-during a twelve-minute run, so a real one wasn't seen hidden.
+appeared above chat. On a channel with channel-point rewards, all 85 real redemptions in nine
+minutes were drawn by the page and hidden. Subs, gifts and hosts were rare during the tests, so
+those were handed to the page's socket as realtime frames in a test build (see Show deleted
+messages): with the switches on Kick drew each line and it stayed hidden; with them off each
+showed, as in stock.
 
 ### Stay on channel when it hosts
 
-When the channel you watch hosts another one, `JoinHostDialogContent` starts a countdown
-whose end callback switches to the hosted channel if you're on a stream, clip or VOD
-screen. The patch returns from that callback, so the dialog stays at zero with its buttons:
-Watch now still switches and closing it keeps you where you are. Hosting can't be
-triggered on demand, so this was checked statically.
+When the channel you watch hosts another one, Kick's realtime connection sends
+`ChatMoveToSupportedChannelEvent` and `JoinHostDialogContent` shows "X is taking you to watch
+another stream" with a countdown (`useCountdown({duration, startOnMount: true, onEnd})`). The
+component is mounted with the stream screen; the countdown restarts when an event arrives,
+and at zero `onEnd` switches to the hosted channel if you're on a stream, clip or VOD screen.
+Watch now doesn't switch by itself: it sets the dialog's `pressed` state, which hides it, and
+shows a "taking you to X in N seconds" toast, and the countdown's end does the switching.
+Cancel and close clear the event.
+
+The patch sets `startOnMount` to that `pressed` state instead of `true`, so the countdown only
+runs after Watch now. Until then the dialog waits, showing the full duration, for Watch now,
+Cancel or close. The literal's `startOnMount` is a constant, so the store goes where the
+options memo wrote its cache entry for `onEnd`; the options object is then rebuilt on each
+render, which `useCountdown`, reading only its fields, doesn't notice. (The first version
+returned from `onEnd` instead, which also stopped Watch now from switching.)
+
+Checked on the emulator with a test build that hands the app's own realtime module a host
+event, so the real dialog appears: with the switch off, the countdown ran and switched
+channels; with it on, the dialog waited at "Redirect in 10s" for over half a minute, and Watch
+now switched once Kick's countdown had run.
 
 ### Background audio
 

@@ -76,7 +76,11 @@ fun main(args: Array<String>) {
     val hostEnd = bundle.functionUsing("host countdown end", reads = listOf("currentPath"),
         loads = listOf("/stream", "/clip", "/vod"))
     rejects { bundle.skipGuard(hostEnd, "invalid") } // Its first JmpTrue isn't a return guard.
-    bundle.returnAtEntry(hostEnd, "stay_on_host", Constant.UNDEFINED, defaultEnabled = false)
+    bundle.returnAtEntry(hostEnd, "host_end", Constant.UNDEFINED, defaultEnabled = false)
+    // Stay on channel edits the host dialog's countdown options instead: Watch now relies on hostEnd too.
+    check(bundle.instructions(bundle.function("JoinHostDialogContent")).count {
+        (it.opcode == 1 || it.opcode == 2) && bundle.objectKeys(it) == listOf("duration", "startOnMount", "onEnd")
+    } == 1)
 
     // Literal edits: exact original bytes, unique replacement windows, choices with their own bytes.
     val skip = 201721
