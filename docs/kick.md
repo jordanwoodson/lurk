@@ -232,6 +232,7 @@ details and validation follow.
 | Block update prompts | Yes | On | Kick's forced-update screen and update sheet, and the Play Store version lookup behind them. |
 | Hide rating prompt | Yes | On | Kick's automatic "rate the app" prompts. |
 | Show deleted messages | Yes | On | Moderator-style struck-through deleted, timed-out and banned messages in chat. |
+| Hide chat highlights | Yes | Eight switches, all off | Pinned messages, polls and predictions, goals, the sub, gift and host cards above chat, event and drops banners, pinned KICKs, celebration prompts. |
 
 The second batch follows one switch policy, the same in all three apps: every patch whose
 effect can be decided at run time has a Lurk setting that turns it fully off, and a new
@@ -323,6 +324,30 @@ the user's messages in place marked "(Timed out)" and added "moderator timed out
 minutes"; with it off and Kick restarted, a timeout removed the user's message and added no
 line, as in stock. Manual deletes and bans didn't happen during the tests; they go through the
 same flag.
+
+### Hide chat highlights
+
+| Switch | What it changes | Hidden |
+| --- | --- | --- |
+| Hide pinned messages | `PinnedMessage` returns null | The message pinned above chat |
+| Hide polls and predictions | `PollFloating`, `PredictionBannerView` return null | Poll and prediction cards; a hidden poll can't be voted in |
+| Hide goals | `FloatingGoalCard` returns null | The channel goal card |
+| Hide sub and gift cards | The sub and gift card callbacks return | The "just subscribed" and gift cards above chat |
+| Hide host cards | The host card callback returns | The "is hosting" card above chat |
+| Hide event and drops banners | `DropsBanner`, `StreamEventBanner` return null | Drops campaign and "Only on Kick" event banners |
+| Hide pinned KICKs | `PinnedKicks` returns null | KICKs gifts pinned above chat |
+| Hide celebration prompts | `ConsumingCelebration` returns null | The celebration button in the chat footer |
+
+The components' parents are ordinary lists and footers, so the space closes up. A new
+subscriber, a gift and a host each queue a timed card (`EventBanner`) in the floating stack
+above chat, where pinned messages, polls and goals also live. Three anonymous callbacks, which
+Kick's realtime listeners call, queue them; they now return at once. The lines for the same
+events inside the chat come from Kick's chat web page (see Show deleted messages) and still
+show, and so do reward redemptions, which only appear there; the app's own sub, gift, host and
+reward handlers are never called. Pinned KICKs sits here rather than under Hide KICKs tipping
+because it shows a gift someone already sent. Checked on the emulator: the pinned KICKs and
+prediction cards disappear, and with the sub callbacks returning no sub card appeared above
+chat while "just subscribed!" lines kept showing in the chat page.
 
 ## Implementation contracts and verification
 
